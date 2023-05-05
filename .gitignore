@@ -166,5 +166,4 @@ requirements_old.txt
 # other packages
 exfor_dictionary/
 endflib_sql/
-pickles/
 sql/
