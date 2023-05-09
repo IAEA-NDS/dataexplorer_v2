@@ -77,10 +77,10 @@ layout = html.Div([
                     [
                         html.H4("Fission product yield", className="card-title"),
                         html.P(
-                            "Nuclear reaction cross section ",
+                            "Fission fragment and fission product yields from nuclear fission.",
                             className="card-text",
                         ),
-                        dbc.Button("Go to plot", href="reactions/xs", color="success"),
+                        dbc.Button("Go to plot", href="reactions/fy", color="success"),
                     ],
                 ),
             ],
@@ -98,10 +98,10 @@ layout = html.Div([
                     [
                         html.H4("Angular distribution", className="card-title"),
                         html.P(
-                            "Cross section plot filtered by a residual product.",
+                            "Angular distribution",
                             className="card-text",
                         ),
-                        dbc.Button("Go to plot", href="reactions/residual", color="success"),
+                        dbc.Button("Go to plot", href="reactions/da", color="success"),
                     ],
                 ),
             ],
@@ -120,10 +120,10 @@ layout = html.Div([
                     [
                         html.H4("Energy distribution", className="card-title"),
                         html.P(
-                            "Nuclear reaction cross section ",
+                            "Energy distribution of a particle during nuclear reaction",
                             className="card-text",
                         ),
-                        dbc.Button("Go somewhere", href="reactions/xs", color="warning"),
+                        dbc.Button("Go somewhere", href="reactions/de", color="warning"),
                     ],
                 ),
             ],
@@ -143,7 +143,7 @@ layout = html.Div([
                             "Cross section plot filtered by a residual product.",
                             className="card-text",
                         ),
-                        dbc.Button("Go somewhere", href="reactions/residual", color="warning"),
+                        dbc.Button("Go somewhere", href="exfor", color="warning"),
                     ],
                 ),
             ],

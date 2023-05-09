@@ -231,7 +231,10 @@ def layout(**query_strings):
     prevent_initial_call=True,
 )
 def redirect_to_pages_de(dataset):
-    return page_urls[dataset]
+    if dataset:
+        return page_urls[dataset]
+    else:
+        raise PreventUpdate
 
 
 
@@ -241,7 +244,10 @@ def redirect_to_pages_de(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages_de(type):
-    return lib_page_urls[type]
+    if type:
+        return lib_page_urls[type]
+    else:
+        raise PreventUpdate
 
 
 
@@ -292,7 +298,7 @@ def update_url_de(type, elem, mass, reaction):
     # prevent_initial_call=True,
 )
 def update_fig_de(type, elem, mass, reaction):
-    input_check(type, elem, mass, reaction)
+    elem, mass, reaction = input_check(type, elem, mass, reaction)
     print(type, elem, mass, reaction)
     df = pd.DataFrame()
     index_df = pd.DataFrame()
@@ -340,7 +346,7 @@ def update_fig_de(type, elem, mass, reaction):
         i = 0
         for e in legend.keys():
             fig.add_trace(
-                go.Scatter(
+                go.Scattergl(
                     x=df[df["entry_id"] == e]["e_out"],
                     y=df[df["entry_id"] == e]["data"],
                     error_x=dict(type="data", array=df[df["entry_id"] == e]["de_out"]),

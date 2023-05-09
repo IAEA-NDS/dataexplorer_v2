@@ -75,10 +75,10 @@ def input_lib(**query_strings):
             options=[
                 {"label": f"{pt.lower()},x", "value": pt} for pt in PARTICLE
             ],
-            placeholder="Reaction e.g. (n,g)",
+            placeholder="Reaction e.g. (p,x)",
             persistence=True,
             persistence_type="memory",
-            value=query_strings["inc_pt"] if query_strings.get("inc_pt") else "p,x",
+            value=query_strings["inc_pt"].upper() if query_strings.get("inc_pt") else "P",
             style={"font-size": "small", "width": "100%"},
         ),
         html.P("Residual product"),
@@ -97,7 +97,7 @@ def input_lib(**query_strings):
             # multi=False,
             persistence=True,
             persistence_type="memory",
-            value=query_strings["rp_mass"] if query_strings.get("rp_mass") else "99",
+            value=query_strings["rp_mass"] if query_strings.get("rp_mass") else "99m",
             style={"font-size": "small", "width": "100%"},
         ),
         html.Br(),
@@ -160,7 +160,7 @@ right_layout_lib = [
                 dcc.RadioItems(
                     id="xaxis_type_rp",
                     options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
-                    value="log",
+                    value="linear",
                     persistence=True,
                     persistence_type="memory",
                     labelStyle={"display": "inline-block"},
@@ -172,7 +172,7 @@ right_layout_lib = [
                 dcc.RadioItems(
                     id="yaxis_type_rp",
                     options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
-                    value="log",
+                    value="linear",
                     persistence=True,
                     persistence_type="memory",
                     labelStyle={"display": "inline-block"},
@@ -255,7 +255,10 @@ def layout(**query_strings):
     prevent_initial_call=True,
 )
 def redirect_to_pages_rp(dataset):
-    return page_urls[dataset]
+    if dataset:
+        return page_urls[dataset]
+    else:
+        raise PreventUpdate
 
 
 
@@ -265,7 +268,10 @@ def redirect_to_pages_rp(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages_rp(type):
-    return lib_page_urls[type]
+    if type:
+        return lib_page_urls[type]
+    else:
+        raise PreventUpdate
 
 
 
@@ -281,13 +287,13 @@ def redirect_to_subpages_rp(type):
     ],
     prevent_initial_call=True,
 )
-def update_url_rp(type, elem, mass, reaction, rp_elem, rp_mass):
+def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     
-    input_check(type, elem, mass, reaction)
-    input_check(type, rp_elem, rp_mass, reaction)
-    print(type, elem, mass, reaction, "-->", rp_elem, rp_mass)
+    input_check(type, elem, mass, inc_pt)
+    input_check(type, rp_elem, rp_mass, inc_pt)
+    print(type, elem, mass, inc_pt, "-->", rp_elem, rp_mass)
 
-    if type=="Residual" and (elem and mass and reaction and rp_elem and rp_mass):
+    if type=="Residual" and (elem and mass and inc_pt and rp_elem and rp_mass):
 
         url = BASE_URL + "/reactions/residual"
 
@@ -295,8 +301,8 @@ def update_url_rp(type, elem, mass, reaction, rp_elem, rp_mass):
             url += "?&target_elem=" + elem
         if mass:
             url += "&target_mass=" + mass
-        if reaction:
-            url += "&inc_pt=" + reaction
+        if inc_pt:
+            url += "&inc_pt=" + inc_pt
         if rp_elem:
             url += "&rp_elem=" + rp_elem
         if rp_mass:
@@ -325,21 +331,22 @@ def update_url_rp(type, elem, mass, reaction, rp_elem, rp_mass):
     ],
     # prevent_initial_call=True,
 )
-def update_fig_rp(type, elem, mass, reaction, rp_elem, rp_mass):
-    input_check(type, elem, mass, reaction)
-    input_check(type, rp_elem, rp_mass, reaction)
+def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
+
+    elem, mass, inc_pt = input_check(type, elem, mass, inc_pt)
+    rp_elem, rp_mass, inc_pt = input_check(type, rp_elem, rp_mass, inc_pt)
 
     df = pd.DataFrame()
     index_df = pd.DataFrame()
-    fig = default_chart(xaxis_type="linear", yaxis_type="linear", reaction=reaction, mt=None)
+    fig = default_chart(xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None)
 
-    entids, entries = reaction_query(type, elem, mass, reaction=reaction, branch=None, rp_elem=rp_elem, rp_mass=rp_mass)
-    libs = lib_query(type, elem, mass, reaction=f"{reaction.upper()},X", mt=None, rp_elem=rp_elem, rp_mass=rp_mass)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)}"
+    entids, entries = reaction_query(type, elem, mass, reaction=inc_pt, branch=None, rp_elem=rp_elem, rp_mass=rp_mass)
+    libs = lib_query(type, elem, mass, reaction=f"{inc_pt.upper()},X", mt=None, rp_elem=rp_elem, rp_mass=rp_mass)
+    search_result = f"Search results for {type} {elem}-{mass}({inc_pt.lower()},x) --> {rp_elem}-{rp_mass}: {len(entids)}"
 
 
     if not entids and not libs:
-        return search_result, fig, df.to_dict("records")
+        return search_result, fig, None, None
 
     if libs:
         df_lib = lib_residual_data_query(libs.keys())
@@ -349,7 +356,7 @@ def update_fig_rp(type, elem, mass, reaction, rp_elem, rp_mass):
             # new_col = next(line_color)
             # new_col = color_libs(l)
             fig.add_trace(
-                go.Scatter(
+                go.Scattergl(
                     x=df_lib[df_lib["reaction_id"] == l]["en_inc"].astype(float),
                     y=df_lib[df_lib["reaction_id"] == l]["data"].astype(float),
                     showlegend=True,
@@ -372,7 +379,7 @@ def update_fig_rp(type, elem, mass, reaction, rp_elem, rp_mass):
         i = 0
         for e in legend.keys():
             fig.add_trace(
-                go.Scatter(
+                go.Scattergl(
                     x=df[df["entry_id"] == e]["en_inc"],
                     y=df[df["entry_id"] == e]["data"],
                     error_x=dict(type="data", array=df[df["entry_id"] == e]["den_inc"]),
@@ -423,21 +430,21 @@ def update_fig_rp(type, elem, mass, reaction, rp_elem, rp_mass):
 
 
 
-# @callback(
-#     Output("main_fig_rp", "figure", allow_duplicate=True),
-#     [
-#     Input("xaxis_type_rp", "value"),
-#     Input("yaxis_type_rp", "value"),
-#     ],
-#     State("main_fig_rp", "figure"),
-#     prevent_initial_call=True,
-# )
-# def update_axis_rp(xaxis_type, yaxis_type, fig):
-#     ## Switch the axis type
-#     fig.get("layout").get("yaxis").update({"type":yaxis_type})
-#     fig.get("layout").get("xaxis").update({"type":xaxis_type})
+@callback(
+    Output("main_fig_rp", "figure", allow_duplicate=True),
+    [
+    Input("xaxis_type_rp", "value"),
+    Input("yaxis_type_rp", "value"),
+    ],
+    State("main_fig_rp", "figure"),
+    prevent_initial_call=True,
+)
+def update_axis_rp(xaxis_type, yaxis_type, fig):
+    ## Switch the axis type
+    fig.get("layout").get("yaxis").update({"type":yaxis_type})
+    fig.get("layout").get("xaxis").update({"type":xaxis_type})
 
-#     return fig
+    return fig
 
 
 

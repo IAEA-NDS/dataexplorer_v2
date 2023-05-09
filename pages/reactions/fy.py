@@ -22,12 +22,12 @@ from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib
 from libraries2023.datahandle.list import (
     PARTICLE_FY,
     read_mt_json,
-    elemtoz_nz,
     read_mass_range,
+    MT_LIST_FY,
 )
 from config import session, session_lib, engines, BASE_URL
 from libraries2023.datahandle.tabs import create_tabs_fy
-from sql.queries import reaction_query_fy, get_entry_bib, data_query
+from sql.queries import reaction_query_fy, get_entry_bib, data_query, lib_query, lib_data_query_fy
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fy")
@@ -188,7 +188,6 @@ right_layout_fy = [
         children=main_fig_fy,
         type="circle",
     ),
-    dcc.Store(id="entry_json"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     create_tabs_fy(),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
@@ -258,7 +257,10 @@ def layout(**query_strings):
     prevent_initial_call=True,
 )
 def redirect_to_pages(dataset):
-    return page_urls[dataset]
+    if dataset:
+        return page_urls[dataset]
+    else:
+        raise PreventUpdate
 
 
 
@@ -268,7 +270,10 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages(type):
-    return lib_page_urls[type]
+    if type:
+        return lib_page_urls[type]
+    else:
+        raise PreventUpdate
 
 
 
@@ -325,7 +330,7 @@ def redirection_fy(type, elem, mass, reaction):
     ],
 )
 def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_product_fy, plot_opt_fy, energy_range):
-    input_check(type, elem, mass, reaction)
+    elem, mass, reaction = input_check(type, elem, mass, reaction)
     print(type, elem, mass, reaction, branch)
 
     df = pd.DataFrame()
@@ -334,11 +339,10 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
 
     fig = go.Figure(
         layout=go.Layout(
-            xaxis={"title": "Mass number", "type": "linear", "dtick": 10},
+            xaxis={"title": "Mass number", "type": "linear"},
             yaxis={
                 "title": "Fission yields [/fission]",
-                "type": "linear",
-                "exponentformat": "power",
+                "type": "linear"
             },
             margin={"l": 40, "b": 40, "t": 30, "r": 0},
         )
@@ -346,8 +350,49 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
 
     lower, upper = energy_range_conversion(energy_range)
     entids, entries = reaction_query_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, energy_range)
+    mt = MT_LIST_FY[branch]
+    libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
     search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)} at {lower}-{upper} MeV for {reac_product_fy}"
-    print(search_result)
+
+
+    if not entids and not libs:
+        return search_result, fig, [], None, None
+
+
+    if libs:
+        df_lib = lib_data_query_fy(libs.keys(),lower, upper)
+
+        if plot_opt_fy == "Mass":
+            x_ax = "mass"
+            dff = df_lib.groupby(['reaction_id', 'mass', 'en_inc'], as_index=False)['data'].max(numeric_only=True)
+            print(dff)
+            # for a in df_lib["mass"].unique():
+            #     # df_lib.loc[df_lib['mass'] == a, 'data'].sum()
+
+            #     x_ax = "mass"
+            #     fig.update_layout(dict(xaxis={"title": "Mass number"}))
+
+        elif plot_opt_fy == "Charge":
+            x_ax = "charge"
+            fig.update_layout(dict(xaxis={"title": "Charge number"}))
+
+        elif plot_opt_fy == "Energy":
+            x_ax = "en_inc"
+            fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
+
+
+        for l in libs.keys():
+            fig.add_trace(
+                go.Scattergl(
+                    x=dff[dff["reaction_id"] == l]["mass"].astype(float),
+                    y=dff[dff["reaction_id"] == l]["data"].astype(float),
+                    showlegend=True,
+                    # line_color=new_col,
+                    name=str(libs[l]),
+                    mode="lines",
+                )
+            )
+
 
 
     if entries:
@@ -397,7 +442,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
         #------
         for e in legend.keys():
             fig.add_trace(
-                go.Scatter(
+                go.Scattergl(
                     x=df2[df2["entry_id"] == e][x_ax],
                     y=df2[df2["entry_id"] == e]["data"],
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),

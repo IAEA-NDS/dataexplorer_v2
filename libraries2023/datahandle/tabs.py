@@ -89,13 +89,13 @@ def create_tabs(pageparam):
                                 "format": Format(precision=4, scheme=Scheme.exponent),
                             },
                             {
-                                "name": "XS[b]",
+                                "name": "Data",
                                 "id": "data",
                                 "type": "numeric",
                                 "format": Format(precision=4, scheme=Scheme.exponent),
                             },
                             {
-                                "name": "dXS[b]",
+                                "name": "dData",
                                 "id": "ddata",
                                 "type": "numeric",
                                 "format": Format(precision=2, scheme=Scheme.exponent),
@@ -177,6 +177,7 @@ def create_tabs_fy():
                                 "type": "numeric",
                                 "format": Format(precision=4, scheme=Scheme.exponent),
                             },
+                            {"name": "x4_code", "id": "x4_code"},
 
                         ],
                         filter_action="native",
@@ -214,13 +215,13 @@ def create_tabs_fy():
                             {"name": "Z", "id": "charge", "type": "numeric"},
                             {"name": "Iso", "id": "isomer", "type": "numeric"},
                             {
-                                "name": "Yield",
+                                "name": "Data",
                                 "id": "data",
                                 "type": "numeric",
                                 "format": Format(precision=4, scheme=Scheme.exponent),
                             },
                             {
-                                "name": "dYield",
+                                "name": "dData",
                                 "id": "ddata",
                                 "type": "numeric",
                                 "format": Format(precision=2, scheme=Scheme.exponent),

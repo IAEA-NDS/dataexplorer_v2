@@ -20,9 +20,12 @@ from dash.exceptions import PreventUpdate
 # from app import app
 from man import manual
 from libraries2023.datahandle.list import (
+    PARTICLE,
     ELEMS,
+    reaction_list,
     elemtoz_nz,
     read_mass_range,
+    
 )
 
 toast = html.Div(
@@ -80,10 +83,10 @@ page_urls = {
 
 
 lib_selections = [
-    {
-        "label": "AGGRID",
-        "value": "AGTEST",
-    },
+    # {
+    #     "label": "AGGRID",
+    #     "value": "AGTEST",
+    # },
     {
         "label": "Cross Section (XS)",
         "value": "SIG",
@@ -104,6 +107,10 @@ lib_selections = [
         "label": "Energy Distribution (DE)", 
         "value": "DE"
     },
+    {
+        "label": "Fission observables",
+        "value": "FIS",
+    },
     # {
     #     "label": "Ion Induced Reactions",
     #     "value": "ION",
@@ -120,6 +127,7 @@ lib_page_urls = {
     "FY": "/dataexplorer/reactions/fy",
     "DA": "/dataexplorer/reactions/da",
     "DE": "/dataexplorer/reactions/de",
+    "FIS": "/dataexplorer/reactions/fission",
     # "ION": "/dataexplorer/reactions/ion",
 }
 
@@ -235,8 +243,8 @@ def data_length_unify(data_dict):
     return data_dict
 
 
-
 mass_range = read_mass_range()
+
 def input_check(type, elem, mass, reaction):
 
     if not type or not elem or not mass or not reaction:
@@ -253,11 +261,24 @@ def input_check(type, elem, mass, reaction):
         min = mass_range[elemtoz_nz(elem.capitalize())]["min"]
         max = mass_range[elemtoz_nz(elem.capitalize())]["max"]
 
-        if not int(min) < int(re.sub(r"\D", "", mass)) < int(max):
+        if not int(min) < int(get_number_from_string(mass)) < int(max):
             raise PreventUpdate
 
     else:
         raise PreventUpdate
+    
+    return elem.capitalize(), mass.lower(), reaction.upper()
+
+
+def generate_reactions():
+    options=[
+        {"label": f"{proj.lower()},n", "value": f"{proj.lower()},n"}
+        if proj != "N" and reac == "INL" else
+        {"label": f"{proj.lower()},{reac.lower()}", "value": f"{proj.lower()},{reac.lower()}"}
+        for proj in PARTICLE for reac in reaction_list.keys() 
+    ]
+    return options
+
 
 
 
@@ -274,3 +295,12 @@ def energy_range_conversion(energy_range):
 
     else:
         return None, None
+
+
+
+def get_number_from_string(str):
+    return re.sub(r"\D+", "", str)
+
+
+def get_str_from_string(str):
+    return re.sub(r"\d+", "", str)

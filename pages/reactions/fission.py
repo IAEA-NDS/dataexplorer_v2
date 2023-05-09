@@ -9,83 +9,94 @@
 
 import pandas as pd
 import dash
-import re
+import json
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 from collections import OrderedDict
-from dash.exceptions import PreventUpdate
+from operator import getitem
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion, generate_reactions, reaction_list
-from config import BASE_URL
+
+from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
+from libraries2023.datahandle.list import (
+    PARTICLE_FY,
+    read_mt_json,
+    read_mass_range,
+)
+from config import session, session_lib, engines, BASE_URL
 from libraries2023.datahandle.tabs import create_tabs
-from libraries2023.datahandle.figs import default_chart, default_axis
-from sql.queries import reaction_query, get_entry_bib, data_query, lib_query, lib_xs_data_query
+from sql.queries import reaction_query_fission, get_entry_bib, data_query
 
 ## Registration of page
-dash.register_page(__name__, path="/reactions/xs")
+dash.register_page(__name__, path="/reactions/fission")
 
 
 ## Initialize common data
-
+reaction_list = read_mt_json()
+mass_range = read_mass_range()
 
 
 ## Input layout
-def input_lib(**query_strings):
+def input_fy(**query_strings):
     return [
         dcc.Dropdown(
             id="reaction_category",
-            # options=[{"label": j, "value": i} for i, j in sorted(WEB_CATEGORY.items())],
             options=lib_selections,
             placeholder="Select reaction",
             persistence=True,
             persistence_type="memory",
-            value="SIG",
+            value="FIS",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
-            id="target_elem",
+            id="target_elem_fis",
             placeholder="Target element: C, c, Pd, pd, PD",
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
                 if query_strings.get("target_elem")
-                else "Ag",
+                else "U",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
-            id="target_mass",
+            id="target_mass_fis",
             placeholder="Target mass: 0:natural, m:metastable",
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
                 if query_strings.get("target_mass")
-                else "109",
+                else "233",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
-            id="reaction",
-            options=generate_reactions(),
-            placeholder="Reaction e.g. (n,g)",
+            id="reaction_fis",
+            options=[f"{pt.lower()},f" for pt in PARTICLE_FY],
+            placeholder="Reaction e.g. (n,f)",
             persistence=True,
             persistence_type="memory",
-            value=query_strings["reaction"] if query_strings.get("reaction") else "n,p",
+            value=query_strings["reaction"] if query_strings.get("reaction") else "n,f",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
-            id="reac_branch",
-            options=[],
+            id="reac_branch_fis",
+            options=[
+                    {"label": "neutron multiplicity", "value": "nu_n"}, 
+                    {"label": "delayed neutron yield", "value": "dn"}, 
+                    {"label": "gamma multiplicity", "value": "nu_g"}, 
+                    {"label": "neutron spectra", "value": "pfns"}, 
+                    {"label": "gamma spectra", "value": "pfgs"},
+                    ],
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
+            value="dn",
             style={"font-size": "small", "width": "100%"},
         ),
-        html.Br(),
-        html.Br(),
         html.P("Fileter EXFOR records by"),
         html.Label("Energy Range"),
         dcc.RangeSlider(
-            id="energy_range",
+            id="energy_range_fis",
             min=0,
             max=9,
             marks={0: "eV", 3: "keV", 6: "MeV", 9: "GeV"},
@@ -95,9 +106,10 @@ def input_lib(**query_strings):
         html.Br(),
         html.Label("Year Range"),
         dcc.RangeSlider(
-            id="year_range",
+            id="year_range_fis",
             min=1930,
             max=2023,
+            step=1,
             marks={
                 i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
             },
@@ -107,9 +119,10 @@ def input_lib(**query_strings):
         ),
     ]
 
-## main figure
-main_fig = dcc.Graph(
-    id="main_fig_xs",
+
+## Default figure
+main_fig_fy = dcc.Graph(
+    id="main_fig_fis",
     config={
         "displayModeBar": True,
         "scrollZoom": True,
@@ -125,13 +138,11 @@ main_fig = dcc.Graph(
 )
 
 
-
-
 ## Layout of right panel
-right_layout_lib = [
+right_layout_fy = [
     libs_navbar,
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    html.Div(id="result_cont"),
+    html.Div(id="result_cont_fis"),
     # Log/Linear switch
     dbc.Row(
         [
@@ -140,7 +151,7 @@ right_layout_lib = [
                 dcc.RadioItems(
                     id="xaxis_type",
                     options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
-                    value="log",
+                    value="linear",
                     persistence=True,
                     persistence_type="memory",
                     labelStyle={"display": "inline-block"},
@@ -152,7 +163,7 @@ right_layout_lib = [
                 dcc.RadioItems(
                     id="yaxis_type",
                     options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
-                    value="log",
+                    value="linear",
                     persistence=True,
                     persistence_type="memory",
                     labelStyle={"display": "inline-block"},
@@ -162,23 +173,23 @@ right_layout_lib = [
         ]
     ),
     dcc.Loading(
-        children=main_fig,
+        children=main_fig_fy,
         type="circle",
     ),
+    dcc.Store(id="entry_json"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("XS"),
-    dcc.Store(id="exp-data_store"),
+    create_tabs("FIS"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
 
 
-## Main layout of libraries-2023 page
-# layout = html.Div(
+
+
 def layout(**query_strings):
     return html.Div(
         [
-            dcc.Location(id="location"),
+            dcc.Location(id="location_fis"),
             dbc.Row(
                 [
                     ### left panel
@@ -196,7 +207,7 @@ def layout(**query_strings):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
-                                    html.Div(input_lib(**query_strings)),
+                                    html.Div(input_fy(**query_strings)),
                                 ],
                                 style={"margin-left": "10px"},
                             ),
@@ -211,7 +222,7 @@ def layout(**query_strings):
                     dbc.Col(
                         [
                             html.Div(
-                                children=right_layout_lib,
+                                children=right_layout_fy,
                                 style={"margin-right": "20px", "margin-left": "10px"},
                             ),
                         ],
@@ -230,7 +241,7 @@ def layout(**query_strings):
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
-    Output("location", "href", allow_duplicate=True),
+    Output("location_fis", "href", allow_duplicate=True),
     Input("dataset", "value"),
     prevent_initial_call=True,
 )
@@ -241,8 +252,9 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
+
 @callback(
-    Output("location", "href", allow_duplicate=True),
+    Output("location_fis", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
     prevent_initial_call=True,
 )
@@ -253,25 +265,23 @@ def redirect_to_subpages(type):
         raise PreventUpdate
 
 
+
 @callback(
-    [
-        Output("location", "href", allow_duplicate=True),
-        Output("location", "refresh")
-     ],
+    Output("location_fis", "href", allow_duplicate=True),
     [
         Input("reaction_category", "value"),
-        Input("target_elem", "value"),
-        Input("target_mass", "value"),
-        Input("reaction", "value"),
+        Input("target_elem_fis", "value"),
+        Input("target_mass_fis", "value"),
+        Input("reaction_fis", "value"),
     ],
     prevent_initial_call=True,
 )
-def update_url(type, elem, mass, reaction):
-    input_check(type, elem, mass, reaction)
+def redirection_fy(type, elem, mass, reaction):
+    elem, mass, reaction = input_check(type, elem, mass, reaction)
 
-    if type=="SIG" and (elem and mass and reaction):
+    if type=="FIS" and (elem and mass and reaction):
 
-        url = BASE_URL + "/reactions/xs"
+        url = BASE_URL + "/reactions/fission"
 
         if elem:
             url += "?&target_elem=" + elem
@@ -279,101 +289,55 @@ def update_url(type, elem, mass, reaction):
             url += "&target_mass=" + mass
         if reaction:
             url += "&reaction=" + reaction
-        return url, False
-    
+
+        return url
+
     else:
         raise PreventUpdate
 
 
 
 
-
 @callback(
     [
-        Output("reac_branch", "options"),
-        Output("reac_branch", "value"),
-    ],
-    Input("reaction", "value"),
-)
-def update_branch_list(reaction):
-
-    if reaction:
-        if reaction.split(",")[1] == "inl":
-            return [{"label": "L"+str(n), "value": n} for n in range(0,40)], 1
-        else:
-            return [{"label": "Partial", "value": "PAR"}], None
-    else:
-        return [{"label": "Partial", "value": "PAR"}], None
-    
-
-
-
-
-@callback(
-    [
-        Output("result_cont", "children"),
-        Output("main_fig_xs", "figure"),
-        Output("index_table_xs", "data"),
-        Output("exfor_table_xs", "data")
+        Output("result_cont_fis", "children"),
+        Output("main_fig_fis", "figure"),
+        Output("index_table_fis", "data"),
+        Output("exfor_table_fis", "data"),
     ],
     [
         Input("reaction_category", "value"),
-        Input("target_elem", "value"),
-        Input("target_mass", "value"),
-        Input("reaction", "value"),
-        Input("reac_branch", "value"),
+        Input("target_elem_fis", "value"),
+        Input("target_mass_fis", "value"),
+        Input("reaction_fis", "value"),
+        Input("reac_branch_fis", "value"),
+        Input("energy_range_fis", "value"),
     ],
-    # prevent_initial_call=True,
 )
-def update_fig(type, elem, mass, reaction, branch):
-    elem, mass, reaction = input_check(type, elem, mass, reaction)
+def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
+    input_check(type, elem, mass, reaction)
     print(type, elem, mass, reaction, branch)
-    
+
     df = pd.DataFrame()
     index_df = pd.DataFrame()
+    reac_products = []
 
-    if not branch:
-        if reaction.split(",")[0].upper() != "N" and reaction.split(",")[1].upper() == "INL":
-            ## in case if it is not neutron induced reaction then INL (MT=4) is for the production of one neutron which is the sum of the MT=50-90
-            mt = "004"
+    fig = go.Figure(
+        layout=go.Layout(
+            xaxis={"title": "Incident neutron energy [MeV]", "type": "linear"},
+            yaxis={
+                "title": "Fission obserbvable",
+                "type": "linear",
+            },
+            margin={"l": 40, "b": 40, "t": 30, "r": 0},
+        )
+    )
 
-        else:
-            mt = reaction_list[reaction.split(",")[1].upper()]["mt"].zfill(3)
+    lower, upper = energy_range_conversion(energy_range)
+    entids, entries = reaction_query_fission(type, elem, mass, reaction, branch, energy_range)
+    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)} at {lower}-{upper} MeV "
+    print(search_result)
 
-    elif branch == "PAR":
-        mt = None
-
-    else:
-        mt = reaction_list[f"N{branch}"]["mt"].zfill(3)
-
-    xaxis_type, yaxis_type = default_axis(mt)
-    fig =  default_chart(xaxis_type, yaxis_type, reaction, mt)
-
-    entids, entries = reaction_query(type, elem, mass, reaction, branch)
-    libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}), MT={mt}, Number of EXFOR data: {len(entids)}"
-
-
-    if not entids and not libs:
-        return search_result, fig, index_df.to_dict("records"), df.to_dict("records")
-
-    if libs:
-        df_lib = lib_xs_data_query(libs.keys())
-
-        for l in libs.keys():
-            # line_color = color_libs(l)
-            # new_col = next(line_color)
-            # new_col = color_libs(l)
-            fig.add_trace(
-                go.Scattergl(
-                    x=df_lib[df_lib["reaction_id"] == l]["en_inc"].astype(float),
-                    y=df_lib[df_lib["reaction_id"] == l]["data"].astype(float),
-                    showlegend=True,
-                    # line_color=new_col,
-                    name=str(libs[l]),
-                    mode="lines",
-                )
-            )
 
     if entries:
         legend = get_entry_bib(entries)
@@ -383,28 +347,51 @@ def update_fig(type, elem, mass, reaction, branch):
             for t, v in entids.items()
             if k == t[:5]
         }
-        df = data_query(entids.keys(), branch)
+
+        ## All data
+        df = data_query(entids.keys())
+        ## Some case like 41084-007-0 contains None in residual
+        reac_products = sorted([i for i in df["residual"].unique() if i is not None])
+
+        df2=df.copy()
+
 
         i = 0
+        #------
         for e in legend.keys():
-            fig.add_trace(
-                go.Scattergl(
-                    x=df[df["entry_id"] == e]["en_inc"],
-                    y=df[df["entry_id"] == e]["data"],
-                    error_x=dict(type="data", array=df[df["entry_id"] == e]["den_inc"]),
-                    error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
-                    showlegend=True,
-                    name=f"{legend[e]['author']}, {legend[e]['year']}"
-                    if legend[e].get("year")
-                    else legend[e]["author"],
-                    marker=dict(size=8, symbol=i),
-                    mode="markers",
+            if any(branch == b for b in ("nu_n", "nu_g", "dn")):
+                fig.add_trace(
+                    go.Scatter(
+                        x=df2[df2["entry_id"] == e]["en_inc"],
+                        y=df2[df2["entry_id"] == e]["data"],
+                        error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
+                        showlegend=True,
+                        name=f"{legend[e]['author']}, {legend[e]['year']}"
+                            if legend[e].get("year")
+                            else legend[e]["author"],
+                        marker=dict(size=8, symbol=i),
+                        mode="markers",
+                    )
                 )
-            )
+            elif any(branch == b for b in ("pfns", "pfgs")):
+                fig.add_trace(
+                    go.Scatter(
+                        x=df2[df2["entry_id"] == e]["e_out"],
+                        y=df2[df2["entry_id"] == e]["data"],
+                        error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
+                        showlegend=True,
+                        name=f"{legend[e]['author']}, {legend[e]['year']}"
+                            if legend[e].get("year")
+                            else legend[e]["author"],
+                        marker=dict(size=8, symbol=i),
+                        mode="markers",
+                    )
+                )
             i += 1
 
             if i == 30:
                 i = 1
+        #------
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
@@ -415,7 +402,6 @@ def update_fig(type, elem, mass, reaction, branch):
             + index_df["entry_id"]
             + ")"
         )
-
         df['bib'] = df["entry_id"].map(legend)
         df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
@@ -436,19 +422,16 @@ def update_fig(type, elem, mass, reaction, branch):
 
 
 
-
-
-
 @callback(
-    Output("main_fig_xs", "figure", allow_duplicate=True),
+    Output("main_fig_fis", "figure", allow_duplicate=True),
     [
-    Input("xaxis_type", "value"),
-    Input("yaxis_type", "value"),
+        Input("xaxis_type", "value"),
+        Input("yaxis_type", "value"),
     ],
-    State("main_fig_xs", "figure"),
+    State("main_fig_fis", "figure"),
     prevent_initial_call=True,
 )
-def update_axis(xaxis_type, yaxis_type, fig):
+def update_axis_fy(xaxis_type, yaxis_type, fig):
     ## Switch the axis type
     fig.get("layout").get("yaxis").update({"type":yaxis_type})
     fig.get("layout").get("xaxis").update({"type":xaxis_type})
@@ -459,40 +442,27 @@ def update_axis(xaxis_type, yaxis_type, fig):
 
 @callback(
     [
-        Output("main_fig_xs", "figure", allow_duplicate=True),
-        Output("index_table_xs", "filter_query"),
+        Output("main_fig_fis", "figure", allow_duplicate=True),
+        Output("index_table_fis", "filter_query"),
     ],
-    [
-        Input("energy_range", "value"),
-        Input("year_range", "value"),
-    ],
-    State("main_fig_xs", "figure"),
+    Input("year_range_fis", "value"),
+    State("main_fig_fis", "figure"),
     prevent_initial_call=True,
 )
-def fileter_by_range_lib(energy_range, year_range, fig):
+def fileter_by_range_fy(year_range, fig):
     # print(json.dumps(fig, indent=1))
-    print(energy_range, year_range)
-    filter = ""
-    
+
+    filter = "{year} ge " + str(year_range[0]) + " && {year} le " + str(year_range[1])
+
     for records in fig.get("data"):
-        if len(records.get("name").split(","))>1:
-            author, year = records.get("name").split(",") 
+        author, year = records.get("name").split(",")
+        
+        if not year_range[0] < int(year) < year_range[1]:
+            records.update({"visible":"legendonly"})
 
-            sum_x = sum([float(x) for x in records["x"] if x is not None])
-            lower, upper = energy_range_conversion(energy_range)
-
-            print(lower, upper)
-            filter = "{year} ge " + str(year_range[0]) + " && {year} le " + str(year_range[1])
-            filter +=  " && {e_inc_min} ge " + str(lower) + " && {e_inc_max} le " + str(upper)
-
-            if not lower < sum_x/len(records["x"]) < upper or not year_range[0] < int(year) < year_range[1] :
-                records.update({"visible":"legendonly"})
-
-            if lower < sum_x/len(records["x"]) < upper and year_range[0] < int(year) < year_range[1]:
-                records.update({"visible":"true"})
-
+        if year_range[0] < int(year) < year_range[1]:
+            records.update({"visible":"true"})
 
     return fig, filter
-
 
 

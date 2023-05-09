@@ -12,18 +12,7 @@ import plotly.express as px
 import os
 import json
 
-from config import MT_PATH, MT_PATH_JSON
-
-
-# WEB_CATEGORY = {
-#     "SIG": "Cross Section (XS)",
-#     "Residual": "Residual Production XS",
-#     "DA": "Angular Distribution (DA)",
-#     "DE": "Energy Distribution (DE)",
-#     "DDX": "Double Differencial Cross Section (DDX)",
-#     "FY": "Fission Yield (FY)",
-#     "Others": "Fission Miscellaneous (MISC)",
-# }
+from config import MT_PATH_JSON
 
 # ------------------------------------------------------------------------------
 # Element
@@ -193,27 +182,11 @@ def read_mass_range():
 # MT / MF
 # ------------------------------------------------------------------------------
 
-# def read_mt():
-#     if os.path.exists(MT_PATH):
-#         mt_df = pd.read_csv(MT_PATH, sep="\s+", comment="#", index_col=False)
-#         mt_df["Reaction"] = mt_df["Reaction"].str.replace("\(|\)", "", regex=True)
-#         mt_df["MT"] = mt_df["MT"].astype(str).str.zfill(3)
-#     else:
-#         mt_df = pd.DataFrame(
-#             {
-#                 "MT": ["---"],
-#                 "Reaction": ["Nodata"],
-#                 "exforSF3": ["no"],
-#             },
-#             index=[],
-#         )
-#     return mt_df
-
-
 def read_mt_json():
     if os.path.exists(MT_PATH_JSON):
         with open(MT_PATH_JSON) as map_file:
             return json.load(map_file)
+reaction_list = read_mt_json()
 
 
 # ------------------------------------------------------------------------------
@@ -273,10 +246,7 @@ LIB_LIST_MAX.sort(reverse=True)
 # ------------------------------------------------------------------------------
 # Selection for FPY
 # ------------------------------------------------------------------------------
-
-ENERGIES = ["eV", "keV", "MeV", "0"]
-YIELD_TYPE = ["Primary", "Independent", "Cumulative"]
-MT_LIST_FY = [["Primary", "460"], ["Independent", "454"], ["Cumulative", "459"]]
+MT_LIST_FY = {"PRE": "460", "IND": "454", "CUM": "459"}
 
 
 # ------------------------------------------------------------------------------

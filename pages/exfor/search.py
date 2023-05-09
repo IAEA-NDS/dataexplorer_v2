@@ -90,6 +90,13 @@ def input_ex(**query_strings):
         dbc.Accordion([
             dbc.AccordionItem([
                 dcc.Input(
+                    id="authors",
+                    placeholder="one of the authors",
+                    persistence=True,
+                    persistence_type="memory",
+                    style={"font-size": "small", "width": "100%"},
+                ),
+                dcc.Input(
                     id="sf4",
                     placeholder="exfor sf4",
                     persistence=True,
@@ -185,6 +192,7 @@ serch_result_layout = [
                     },
                     {"name": "Points", "id": "points"},
                     {"name": "Reaction Code", "id": "x4_code"},
+                    {"name": "level", "id": "level_num"},
                     {"name": "Facility", "id": "main_facility_type"},
                 ],
                 filter_action="native",
@@ -322,13 +330,14 @@ def update_url_ex(type, elem, mass, reaction):
     Input("reaction_ex", "value"),
 )
 def update_branch_list(reaction):
-    # if not reaction:
-    #     return [""]
+
     if reaction:
         if reaction.split(",")[1] == "inl":
             return [{"label": "L"+str(n), "value": n} for n in range(0,40)], 1
+        else:
+            return [{"label": "Partial", "value": "PAR"}], None
     else:
-        return [{"label": "Partial", "value": "PAR"}], ""
+        return [{"label": "Partial", "value": "PAR"}], None
 
 
 
