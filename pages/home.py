@@ -16,166 +16,210 @@ import dash_bootstrap_components as dbc
 from common import footer, libs_navbar
 
 ## Registration of page
-dash.register_page(__name__, path="/", title='IAEA Nuclear Dataexplorer', description='Nuclear reaction experimental and evaluated data plotter')
+dash.register_page(
+    __name__,
+    path="/",
+    title="IAEA Nuclear Dataexplorer",
+    description="Nuclear reaction experimental and evaluated data plotter",
+)
 
-layout = html.Div([
-    # libs_navbar,
-    dbc.Row(dbc.Col(html.H1("IAEA Nuclear Dataexplorer"), width=6), justify="center",),
-    dbc.Row([
-        dbc.Card(
+layout = html.Div(
+    [
+        # libs_navbar,
+        dbc.Row(
+            dbc.Col(html.H1("IAEA Nuclear Dataexplorer"), width=6),
+            justify="center",
+        ),
+        dbc.Row(
             [
-                dbc.CardImg(
-                    src=dash.get_asset_url("1.jpg"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-                dbc.CardBody(
+                dbc.Card(
                     [
-                        html.H4("Nulcear reaction cross section plot", className="card-title"),
-                        html.P(
-                            "Nuclear reaction cross section ",
-                            className="card-text",
+                        dbc.CardImg(
+                            src=dash.get_asset_url("1.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
                         ),
-                        dbc.Button("Go to plot", href="reactions/xs", color="primary"),
+                        dbc.CardBody(
+                            [
+                                html.H4(
+                                    "Nulcear reaction cross section plot",
+                                    className="card-title",
+                                ),
+                                html.P(
+                                    "Nuclear reaction cross section ",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go to plot", href="reactions/xs", color="primary"
+                                ),
+                            ],
+                        ),
                     ],
+                    style={"width": "30%", "height": "200px"},
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardImg(
+                            src=dash.get_asset_url("2.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
+                        ),
+                        dbc.CardBody(
+                            [
+                                html.H4(
+                                    "Residual production cross section",
+                                    className="card-title",
+                                ),
+                                html.P(
+                                    "Cross section plot filtered by a residual product.",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go to plot",
+                                    href="reactions/residual",
+                                    color="primary",
+                                ),
+                            ],
+                        ),
+                    ],
+                    style={"width": "30%"},
                 ),
             ],
-            style={"width": "30%", "height": "200px"},
+            className="mb-4",
+            justify="center",
         ),
-        dbc.Card(
+        dbc.Row(
             [
-                dbc.CardImg(
-                    src=dash.get_asset_url("2.jpg"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-
-                dbc.CardBody(
+                dbc.Card(
                     [
-                        html.H4("Residual production cross section", className="card-title"),
-                        html.P(
-                            "Cross section plot filtered by a residual product.",
-                            className="card-text",
+                        dbc.CardImg(
+                            src=dash.get_asset_url("3.png"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
                         ),
-                        dbc.Button("Go to plot", href="reactions/residual", color="primary"),
+                        dbc.CardBody(
+                            [
+                                html.H4(
+                                    "Fission product yield", className="card-title"
+                                ),
+                                html.P(
+                                    "Fission fragment and fission product yields from nuclear fission.",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go to plot", href="reactions/fy", color="success"
+                                ),
+                            ],
+                        ),
                     ],
+                    style={"width": "30%"},
                 ),
-
-            ],
-            style={"width": "30%"},
-        ),
-    ],className="mb-4",justify="center",),
-    dbc.Row([
-        dbc.Card(
-            [
-                dbc.CardImg(
-                    src=dash.get_asset_url("3.png"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-                dbc.CardBody(
+                dbc.Card(
                     [
-                        html.H4("Fission product yield", className="card-title"),
-                        html.P(
-                            "Fission fragment and fission product yields from nuclear fission.",
-                            className="card-text",
+                        dbc.CardImg(
+                            src=dash.get_asset_url("4.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
                         ),
-                        dbc.Button("Go to plot", href="reactions/fy", color="success"),
-                    ],
-                ),
-            ],
-            style={"width": "30%"},
-        ),
-        dbc.Card(
-            [
-                dbc.CardImg(
-                    src=dash.get_asset_url("4.jpg"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-
-                dbc.CardBody(
-                    [
-                        html.H4("Angular distribution", className="card-title"),
-                        html.P(
-                            "Angular distribution",
-                            className="card-text",
+                        dbc.CardBody(
+                            [
+                                html.H4("Angular distribution", className="card-title"),
+                                html.P(
+                                    "Angular distribution",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go to plot", href="reactions/da", color="success"
+                                ),
+                            ],
                         ),
-                        dbc.Button("Go to plot", href="reactions/da", color="success"),
                     ],
+                    style={"width": "30%"},
                 ),
             ],
-            style={"width": "30%"},
+            className="mb-4",
+            justify="center",
         ),
-    ],className="mb-4",justify="center",),
-    dbc.Row([
-        dbc.Card(
+        dbc.Row(
             [
-                dbc.CardImg(
-                    src=dash.get_asset_url("5.jpg"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-                dbc.CardBody(
+                dbc.Card(
                     [
-                        html.H4("Energy distribution", className="card-title"),
-                        html.P(
-                            "Energy distribution of a particle during nuclear reaction",
-                            className="card-text",
+                        dbc.CardImg(
+                            src=dash.get_asset_url("5.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
                         ),
-                        dbc.Button("Go somewhere", href="reactions/de", color="warning"),
+                        dbc.CardBody(
+                            [
+                                html.H4("Energy distribution", className="card-title"),
+                                html.P(
+                                    "Energy distribution of a particle during nuclear reaction",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go somewhere", href="reactions/de", color="warning"
+                                ),
+                            ],
+                        ),
                     ],
+                    style={"width": "30%"},
+                ),
+                dbc.Card(
+                    [
+                        dbc.CardImg(
+                            src=dash.get_asset_url("6.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
+                        ),
+                        dbc.CardBody(
+                            [
+                                html.H4("EXFOR statistics", className="card-title"),
+                                html.P(
+                                    "Cross section plot filtered by a residual product.",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go somewhere", href="exfor", color="warning"
+                                ),
+                            ],
+                        ),
+                    ],
+                    style={"width": "30%"},
                 ),
             ],
-            style={"width": "30%"},
+            className="mb-4",
+            justify="center",
         ),
-        dbc.Card(
+        html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+        dbc.Row(
             [
-                dbc.CardImg(
-                    src=dash.get_asset_url("6.jpg"),
-                    top=True,
-                    style={"opacity": 0.3, "width": "400px", "height": "200px"},
-                ),
-                dbc.CardBody(
+                dbc.Card(
                     [
-                        html.H4("EXFOR statistics", className="card-title"),
-                        html.P(
-                            "Cross section plot filtered by a residual product.",
-                            className="card-text",
+                        dbc.CardImg(
+                            src=dash.get_asset_url("api.jpg"),
+                            top=True,
+                            style={"opacity": 0.3, "width": "400px", "height": "200px"},
                         ),
-                        dbc.Button("Go somewhere", href="exfor", color="warning"),
+                        dbc.CardBody(
+                            [
+                                html.H4("API Manual", className="card-title"),
+                                html.P(
+                                    "Nuclear reaction cross section ",
+                                    className="card-text",
+                                ),
+                                dbc.Button(
+                                    "Go to plot", href="/api_manual", color="success"
+                                ),
+                            ],
+                        ),
                     ],
+                    style={"width": "30%"},
                 ),
             ],
-            style={"width": "30%"},
+            className="mb-4",
+            justify="center",
         ),
-    ],className="mb-4",justify="center",),
-    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    dbc.Row([
-    dbc.Card(
-        [
-            dbc.CardImg(
-                src=dash.get_asset_url("api.jpg"),
-                top=True,
-                style={"opacity": 0.3, "width": "400px", "height": "200px"},
-            ),
-            dbc.CardBody(
-                [
-                    html.H4("API Manual", className="card-title"),
-                    html.P(
-                        "Nuclear reaction cross section ",
-                        className="card-text",
-                    ),
-                    dbc.Button("Go to plot", href="/api_manual", color="success"),
-                ],
-            ),
-        ],
-        style={"width": "30%"},
-    ),
-    ],className="mb-4",justify="center",),
-
-
-    footer,
-  
-
-], className="mx-auto" )
+        footer,
+    ],
+    className="mx-auto",
+)

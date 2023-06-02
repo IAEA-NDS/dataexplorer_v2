@@ -27,7 +27,7 @@ from common import (
     data_length_unify,
 )
 from exfor.exfor_record import get_record, get_git_history_api
-from exfor_dictionary.exfor_dictionary import Diction
+from exfor_dictionary import Diction
 from exfor.exfor_stat import stat_right_layout
 
 
@@ -122,7 +122,6 @@ def generate_fig(df):
             )
         )
 
-
     button_x_dict = dict(
         direction="down",
         showactive=True,
@@ -193,14 +192,21 @@ record_right_layout = [
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     dbc.Row(
         [
-            dbc.Col([
-                html.Div(children=[
-                    dbc.Badge("Download CSV", id="btn_csv",  href="#", color="secondary",),
-                    dcc.Download(id="download-dataframe-csv"),
-                    ],
-                    style={"textAlign": "right", "margin-bottom": "10px"}
+            dbc.Col(
+                [
+                    html.Div(
+                        children=[
+                            dbc.Badge(
+                                "Download CSV",
+                                id="btn_csv",
+                                href="#",
+                                color="secondary",
+                            ),
+                            dcc.Download(id="download-dataframe-csv"),
+                        ],
+                        style={"textAlign": "right", "margin-bottom": "10px"},
                     ),
-                html.Div(id="data-table"),
+                    html.Div(id="data-table"),
                 ]
             ),
             dbc.Col(main_fig),
@@ -212,20 +218,18 @@ record_right_layout = [
 ]
 
 
-
 ## EXFOR page layout
 def layout(entry_id=None):
-
     if entry_id:
         if len(entry_id) == 5:
             right_layout = record_right_layout
-        
+
         elif len(entry_id) == 11:
             right_layout = record_right_layout
 
         else:
             raise PreventUpdate
-        
+
     else:
         right_layout = stat_right_layout
 
@@ -267,10 +271,10 @@ def layout(entry_id=None):
                     dbc.Col(
                         [
                             html.Div(
-                                id="right_layout", 
+                                id="right_layout",
                                 children=right_layout,
                                 style={"margin-right": "20px"},
-                                ),
+                            ),
                             html.P("test", id="ppp"),
                         ],
                         width=10,
@@ -283,7 +287,6 @@ def layout(entry_id=None):
     )
 
 
-
 def show_compile_history(entry_json):
     hist_data = []
     for history in entry_json["histories"]:
@@ -291,7 +294,6 @@ def show_compile_history(entry_json):
             dbc.Row([dbc.Col(history["x4_code"]), dbc.Col(history["free_txt"])])
         ]
     return hist_data
-
 
 
 def show_entry_links(entnum, entry_json):
@@ -303,7 +305,13 @@ def show_entry_links(entnum, entry_json):
         show_compile_history(entry_json),
         target=f"exfor_compile_history",
         placement="bottom",
-        style={"font-size": "small", "max-width": 400, "min-width": 400, "word-break": "break-all", "word-wrap": "break-word"},#, "white-space": "normal"},
+        style={
+            "font-size": "small",
+            "max-width": 400,
+            "min-width": 400,
+            "word-break": "break-all",
+            "word-wrap": "break-word",
+        },  # , "white-space": "normal"},
     )
 
     return dbc.Row(
@@ -344,8 +352,6 @@ def show_entry_links(entnum, entry_json):
             )
         ]
     )
-
-
 
 
 def show_entry_bib(entry_json):
@@ -397,7 +403,6 @@ def show_entry_bib(entry_json):
     reac = {}
 
     for sub in entry_json["reactions"].keys():
-
         for p, dic in entry_json["reactions"][sub].items():
             ## add reaction code to entry_id e.g. 11111-002-0: (92-U-235(N,F),,SIG)
             reac[entry_json["entry"] + "-" + sub + "-" + p] = dic["x4_code"]
@@ -422,7 +427,6 @@ def show_entry_bib(entry_json):
     data = dbc.Row(bib_row_data + reac_dropdown)
 
     return data
-
 
 
 def show_entry_experimental_condition(entid, entry_json):
@@ -490,7 +494,6 @@ def make_tooltip(key, x4_code):
     tooltips = []
 
     if key == "facility":
-        
         if len(codes) == 1:
             descript = D.get_facility(codes[0])
             descript_inst = ""
@@ -509,7 +512,6 @@ def make_tooltip(key, x4_code):
         tooltips = [html.A(f"{x4_code}", id=f"tooltip-target-{x4_code}"), tooltip]
 
     elif key == "references":
-
         try:
             descript = D.get_journal(codes[1])
         except:
@@ -567,7 +569,6 @@ def make_tooltip(key, x4_code):
             tooltips += [html.A(f"({code}) ", id=f"tooltip-target-{code}"), tooltip]
 
     return tooltips
-
 
 
 def generate_data_table(entry_id, entry_json):
@@ -642,9 +643,6 @@ def generate_data_table(entry_id, entry_json):
     return df
 
 
-
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -655,7 +653,6 @@ def generate_data_table(entry_id, entry_json):
 )
 def redirect_to_pages(dataset):
     return page_urls[dataset]
-
 
 
 @callback(
@@ -674,18 +671,16 @@ def redirect_to_url(entry_id):
     return url
 
 
-
 ## Get JSON and store it
 @callback(Output("entry_store", "data"), Input("exfor_entid", "value"))
 def entry_store(entry_id):
     if not entry_id:
         raise PreventUpdate
-    
+
     elif len(entry_id) != 5 and len(entry_id) != 11:
         raise PreventUpdate
     else:
         return get_record(entry_id[0:5])
-
 
 
 ## Generate links
@@ -696,14 +691,12 @@ def entry_store(entry_id):
 def entnumexfor_entid(entry_id, entry_json):
     if not entry_id:
         raise PreventUpdate
-    
+
     elif len(entry_id) != 5 and len(entry_id) != 11:
         raise PreventUpdate
-    
+
     else:
         return show_entry_links(entry_id[0:5], entry_json)
-
-
 
 
 ## EXFOR experimental BIB
@@ -714,13 +707,12 @@ def entnumexfor_entid(entry_id, entry_json):
 def get_entry_bib(entry_id, entry_json):
     if not entry_id:
         raise PreventUpdate
-    
+
     elif len(entry_id) != 5 and len(entry_id) != 11:
         raise PreventUpdate
-    
+
     else:
         return show_entry_bib(entry_json)
-
 
 
 ## input
@@ -731,14 +723,12 @@ def get_entry_bib(entry_id, entry_json):
 def get_entry_exp(entry_id):
     if not entry_id:
         raise PreventUpdate
-    
+
     elif len(entry_id) != 11:
         raise PreventUpdate
 
     if len(entry_id) == 11:
         return entry_id
-
-
 
 
 ## EXFOR experimental condition
@@ -749,16 +739,14 @@ def get_entry_exp(entry_id):
 def get_entry_exp(selected_id, entry_json):
     if not selected_id:
         raise PreventUpdate
-    
+
     if len(selected_id) != 11:
         raise PreventUpdate
-    
+
     if selected_id and entry_json:
         return show_entry_experimental_condition(selected_id, entry_json)
     else:
         raise PreventUpdate
-
-
 
 
 # Get table and update data
@@ -769,26 +757,28 @@ def get_entry_exp(selected_id, entry_json):
 def update_fig_data(selected_id, entry_json):
     if not selected_id:
         raise PreventUpdate
-    
+
     if len(selected_id) != 11:
         raise PreventUpdate
-    
+
     df = generate_data_table(selected_id, entry_json)
     fig = generate_fig(df)
 
-    table = dash_table.DataTable(
-        id="data-column",
-        data=df.to_dict('records'),
-        columns=[{'id': c, 'name': c} for c in df.columns],
-        sort_action="native",
-        sort_mode="single",
-        row_selectable="multi",
-        # column_selectable="single",
-        page_action="native",
-        page_current=0,
-        page_size=20,
-        filter_action="native",
+    table = (
+        dash_table.DataTable(
+            id="data-column",
+            data=df.to_dict("records"),
+            columns=[{"id": c, "name": c} for c in df.columns],
+            sort_action="native",
+            sort_mode="single",
+            row_selectable="multi",
+            # column_selectable="single",
+            page_action="native",
+            page_current=0,
+            page_size=20,
+            filter_action="native",
         ),
+    )
 
     if len(df.index) == 0:
         return None, fig
@@ -818,10 +808,6 @@ def update_fig_data(selected_id, entry_json):
     return table, fig
 
 
-
-
-
-
 @callback(
     Output("download-dataframe-csv", "data"),
     Input("btn_csv", "n_clicks"),
@@ -831,9 +817,6 @@ def update_fig_data(selected_id, entry_json):
 def func(n_clicks, data):
     df = pd.DataFrame.from_dict(data)
     return dcc.send_data_frame(df.to_csv, "data.csv")
-
-
-
 
 
 # if __name__ == "__main__":

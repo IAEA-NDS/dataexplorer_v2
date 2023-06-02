@@ -12,7 +12,7 @@ import plotly.express as px
 import os
 import json
 
-from config import MT_PATH_JSON
+from config import MT_PATH_JSON, MT50_PATH_JSON
 
 # ------------------------------------------------------------------------------
 # Element
@@ -182,18 +182,30 @@ def read_mass_range():
 # MT / MF
 # ------------------------------------------------------------------------------
 
+
 def read_mt_json():
     if os.path.exists(MT_PATH_JSON):
         with open(MT_PATH_JSON) as map_file:
             return json.load(map_file)
+
+
 reaction_list = read_mt_json()
+
+
+def read_mt50_json():
+    if os.path.exists(MT50_PATH_JSON):
+        with open(MT50_PATH_JSON) as map_file:
+            return json.load(map_file)
+
+
+mt50_list = read_mt50_json()
 
 
 # ------------------------------------------------------------------------------
 # Incident particles
 # ------------------------------------------------------------------------------
 
-PARTICLE    = ["N", "P", "D", "T", "A", "H", "G"]
+PARTICLE = ["N", "P", "D", "T", "A", "H", "G"]
 PARTICLE_FY = ["N", "0", "P", "D", "T", "A", "H", "G"]
 
 

@@ -16,11 +16,28 @@ import plotly.graph_objects as go
 from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion, generate_reactions, reaction_list
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+    generate_reactions,
+)
 from config import BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from libraries2023.datahandle.figs import default_chart, default_axis
-from sql.queries import reaction_query, get_entry_bib, data_query, lib_query, lib_xs_data_query
+from libraries.datahandle.list import reaction_list, mt50_list
+from libraries.datahandle.tabs import create_tabs
+from libraries.datahandle.figs import default_chart, default_axis
+from exforparser.sql.queries import (
+    reaction_query,
+    get_entry_bib,
+    data_query,
+    lib_query,
+    lib_xs_data_query,
+)
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/xs")
@@ -29,9 +46,9 @@ dash.register_page(__name__, path="/reactions/xs")
 ## Initialize common data
 
 
-
 ## Input layout
 def input_lib(**query_strings):
+    print(query_strings)
     return [
         dcc.Dropdown(
             id="reaction_category",
@@ -49,8 +66,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "Ag",
+            if query_strings.get("target_elem")
+            else "Al",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -59,8 +76,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "109",
+            if query_strings.get("target_mass")
+            else "27",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
@@ -98,6 +115,7 @@ def input_lib(**query_strings):
             id="year_range",
             min=1930,
             max=2023,
+            step=1,
             marks={
                 i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
             },
@@ -106,6 +124,7 @@ def input_lib(**query_strings):
             vertical=False,
         ),
     ]
+
 
 ## main figure
 main_fig = dcc.Graph(
@@ -125,8 +144,6 @@ main_fig = dcc.Graph(
 )
 
 
-
-
 ## Layout of right panel
 right_layout_lib = [
     libs_navbar,
@@ -139,7 +156,9 @@ right_layout_lib = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -151,7 +170,9 @@ right_layout_lib = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -166,7 +187,7 @@ right_layout_lib = [
         type="circle",
     ),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("XS"),
+    create_tabs("xs"),
     dcc.Store(id="exp-data_store"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
@@ -224,8 +245,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -241,6 +260,7 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
+
 @callback(
     Output("location", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -253,11 +273,12 @@ def redirect_to_subpages(type):
         raise PreventUpdate
 
 
+
 @callback(
     [
-        Output("location", "href", allow_duplicate=True),
+        Output("location", "href", allow_duplicate=True), 
         Output("location", "refresh")
-     ],
+    ],
     [
         Input("reaction_category", "value"),
         Input("target_elem", "value"),
@@ -269,8 +290,7 @@ def redirect_to_subpages(type):
 def update_url(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
-    if type=="SIG" and (elem and mass and reaction):
-
+    if type == "SIG" and (elem and mass and reaction):
         url = BASE_URL + "/reactions/xs"
 
         if elem:
@@ -278,9 +298,9 @@ def update_url(type, elem, mass, reaction):
         if mass:
             url += "&target_mass=" + mass
         if reaction:
-            url += "&reaction=" + reaction
+            url += "&reaction=" + reaction.replace("+","%2B")
         return url, False
-    
+
     else:
         raise PreventUpdate
 
@@ -296,15 +316,13 @@ def update_url(type, elem, mass, reaction):
     Input("reaction", "value"),
 )
 def update_branch_list(reaction):
-
     if reaction:
         if reaction.split(",")[1] == "inl":
-            return [{"label": "L"+str(n), "value": n} for n in range(0,40)], 1
+            return [{"label": "L" + str(n), "value": n} for n in range(0, 40)], 1
         else:
             return [{"label": "Partial", "value": "PAR"}], None
     else:
         return [{"label": "Partial", "value": "PAR"}], None
-    
 
 
 
@@ -313,8 +331,9 @@ def update_branch_list(reaction):
     [
         Output("result_cont", "children"),
         Output("main_fig_xs", "figure"),
-        Output("index_table_xs", "data"),
-        Output("exfor_table_xs", "data")
+        Output("index_table_xs", "rowData"),
+        Output("index_table_xs", "selectedRows"),
+        Output("exfor_table_xs", "data"),
     ],
     [
         Input("reaction_category", "value"),
@@ -328,12 +347,15 @@ def update_branch_list(reaction):
 def update_fig(type, elem, mass, reaction, branch):
     elem, mass, reaction = input_check(type, elem, mass, reaction)
     print(type, elem, mass, reaction, branch)
-    
+
     df = pd.DataFrame()
     index_df = pd.DataFrame()
 
     if not branch:
-        if reaction.split(",")[0].upper() != "N" and reaction.split(",")[1].upper() == "INL":
+        if (
+            reaction.split(",")[0].upper() != "N"
+            and reaction.split(",")[1].upper() == "INL"
+        ):
             ## in case if it is not neutron induced reaction then INL (MT=4) is for the production of one neutron which is the sum of the MT=50-90
             mt = "004"
 
@@ -344,18 +366,19 @@ def update_fig(type, elem, mass, reaction, branch):
         mt = None
 
     else:
-        mt = reaction_list[f"N{branch}"]["mt"].zfill(3)
+        mt = mt50_list[f"N{branch}"]["mt"].zfill(3)
 
-    xaxis_type, yaxis_type = default_axis(mt)
-    fig =  default_chart(xaxis_type, yaxis_type, reaction, mt)
+    xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
+    fig = default_chart(xaxis_type, yaxis_type, reaction, str(mt).zfill(3))
 
-    entids, entries = reaction_query(type, elem, mass, reaction, branch)
+    entries = reaction_query(type, elem, mass, reaction, branch)
     libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}), MT={mt}, Number of EXFOR data: {len(entids)}"
+    search_result = f"Search results for {type} {elem}-{mass}({reaction}), MT={mt}, Number of EXFOR data: {len(entries)}"
 
+    print(libs)
 
-    if not entids and not libs:
-        return search_result, fig, index_df.to_dict("records"), df.to_dict("records")
+    if not entries and not libs:
+        return search_result, fig, None, None, None
 
     if libs:
         df_lib = lib_xs_data_query(libs.keys())
@@ -376,16 +399,20 @@ def update_fig(type, elem, mass, reaction, branch):
             )
 
     if entries:
-        legend = get_entry_bib(entries)
+        legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
-            for t, v in entids.items()
+            for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entids.keys(), branch)
+        df = data_query(entries.keys(), branch)
+
+        print(len(legend), len(entries))
+        # assert len(legend) == len(entries)
 
         i = 0
+
         for e in legend.keys():
             fig.add_trace(
                 go.Scattergl(
@@ -395,8 +422,12 @@ def update_fig(type, elem, mass, reaction, branch):
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
                     name=f"{legend[e]['author']}, {legend[e]['year']}"
-                    if legend[e].get("year")
-                    else legend[e]["author"],
+                    if legend.get(e)
+                        and legend[e].get("author")
+                        and legend[e].get("year")
+                    else f"{legend[e]['author']}, 1900"
+                    if legend.get(e)
+                    else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -408,21 +439,21 @@ def update_fig(type, elem, mass, reaction, branch):
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id"] = (
+        index_df["entry_id_link"] = (
             "["
             + index_df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + index_df["entry_id"]
             + ")"
         )
 
-        df['bib'] = df["entry_id"].map(legend)
-        df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
+        df["bib"] = df["entry_id"].map(legend)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
-        df["entry_id"] = (
+        df["entry_id_link"] = (
             "["
             + df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + df["entry_id"]
             + ")"
         )
@@ -431,68 +462,100 @@ def update_fig(type, elem, mass, reaction, branch):
         search_result,
         fig,
         index_df.to_dict("records"),
+        index_df.to_dict("records"),
         df.to_dict("records"),
     )
-
-
-
 
 
 
 @callback(
     Output("main_fig_xs", "figure", allow_duplicate=True),
     [
-    Input("xaxis_type", "value"),
-    Input("yaxis_type", "value"),
+        Input("xaxis_type", "value"),
+        Input("yaxis_type", "value"),
     ],
     State("main_fig_xs", "figure"),
     prevent_initial_call=True,
 )
 def update_axis(xaxis_type, yaxis_type, fig):
-    ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type":yaxis_type})
-    fig.get("layout").get("xaxis").update({"type":xaxis_type})
 
-    return fig
+    if xaxis_type and yaxis_type and fig:
+        fig.get("layout").get("yaxis").update({"type": yaxis_type})
+        fig.get("layout").get("xaxis").update({"type": xaxis_type})
+
+        return fig
+
 
 
 
 @callback(
     [
         Output("main_fig_xs", "figure", allow_duplicate=True),
-        Output("index_table_xs", "filter_query"),
+        Output("index_table_xs", "filterModel", allow_duplicate=True),
     ],
-    [
-        Input("energy_range", "value"),
-        Input("year_range", "value"),
-    ],
+    Input("energy_range", "value"),
     State("main_fig_xs", "figure"),
     prevent_initial_call=True,
 )
-def fileter_by_range_lib(energy_range, year_range, fig):
+def fileter_by_en_range_lib(energy_range, fig):
     # print(json.dumps(fig, indent=1))
-    print(energy_range, year_range)
-    filter = ""
+
+    if energy_range and fig:
+        for record in fig.get("data"):
+            record.update({"visible": "true"})
+            if len(record.get("name").split(",")) > 1:
+
+                if energy_range:
+                    ## get the average energy of the dataset
+                    sum_x = sum([float(x) for x in record["x"] if x is not None])
+                    lower, upper = energy_range_conversion(energy_range)
+                    print(lower, upper)
+
+                    if not lower < sum_x / len(record["x"]) < upper:
+                        record.update({"visible": "legendonly"})
+
+                    elif lower < sum_x / len(record["x"]) < upper:
+                        record.update({"visible": "true"})
+                    
+                    filter_model = {
+                        'e_inc_min': {'filterType': 'number', 'type': 'greaterThan', 'filter': lower},
+                        'e_inc_max': {'filterType': 'number', 'type': 'lessThan', 'filter': upper},
+                        }
+
+        return fig, filter_model
+
+
+
+@callback(
+    [
+        Output("main_fig_xs", "figure", allow_duplicate=True),
+        Output("index_table_xs", "filterModel", allow_duplicate=True),
+    ],
+    Input("year_range", "value"),
+    State("main_fig_xs", "figure"),
+    prevent_initial_call=True,
+)
+def fileter_by_year_range_lib(year_range, fig):
     
-    for records in fig.get("data"):
-        if len(records.get("name").split(","))>1:
-            author, year = records.get("name").split(",") 
+    if year_range and fig:
+        for record in fig.get("data"):
+            record.update({"visible": "true"})
+            if len(record.get("name").split(",")) > 1:
+                author, year = record.get("name").split(",")
 
-            sum_x = sum([float(x) for x in records["x"] if x is not None])
-            lower, upper = energy_range_conversion(energy_range)
+                if year_range:
+                    if not year_range[0] < int(year) < year_range[1]:
+                        record.update({"visible": "legendonly"})
 
-            print(lower, upper)
-            filter = "{year} ge " + str(year_range[0]) + " && {year} le " + str(year_range[1])
-            filter +=  " && {e_inc_min} ge " + str(lower) + " && {e_inc_max} le " + str(upper)
+                    if year_range[0] < int(year) < year_range[1]:
+                        record.update({"visible": "true"})
 
-            if not lower < sum_x/len(records["x"]) < upper or not year_range[0] < int(year) < year_range[1] :
-                records.update({"visible":"legendonly"})
+                    filter_model = {
+                        'year': {'filterType': 'number', 'type': 'greaterThan', 'filter': year_range[0]},
+                        'year': {'filterType': 'number', 'type': 'lessThan', 'filter': year_range[1]},
+                        }
 
-            if lower < sum_x/len(records["x"]) < upper and year_range[0] < int(year) < year_range[1]:
-                records.update({"visible":"true"})
-
-
-    return fig, filter
+        return fig, filter_model
 
 
 

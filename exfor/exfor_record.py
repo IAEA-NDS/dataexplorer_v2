@@ -7,14 +7,12 @@ sys.path.append("../")
 from config import MASTER_GIT_REPO_PATH, owner, repo, api_token, API_BASE_URL, HEADERS
 
 
-
-
 # --------------------------------------------------------------- #
 #             Record
 # --------------------------------------------------------------- #
 def get_record(entnum):
     url = API_BASE_URL + "exfor/entry/" + entnum
-    
+
     try:
         r = requests.get(url, headers=HEADERS, verify=False)
         return r.json()

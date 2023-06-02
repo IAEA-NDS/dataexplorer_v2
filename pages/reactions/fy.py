@@ -18,16 +18,31 @@ from collections import OrderedDict
 from operator import getitem
 
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+)
+from libraries.datahandle.list import (
     PARTICLE_FY,
     read_mt_json,
     read_mass_range,
     MT_LIST_FY,
 )
 from config import session, session_lib, engines, BASE_URL
-from libraries2023.datahandle.tabs import create_tabs_fy
-from sql.queries import reaction_query_fy, get_entry_bib, data_query, lib_query, lib_data_query_fy
+from libraries.datahandle.tabs import create_tabs_fy
+from exforparser.sql.queries import (
+    reaction_query_fy,
+    get_entry_bib,
+    data_query,
+    lib_query,
+    lib_data_query_fy,
+)
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fy")
@@ -56,8 +71,8 @@ def input_fy(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "U",
+            if query_strings.get("target_elem")
+            else "U",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -66,8 +81,8 @@ def input_fy(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "233",
+            if query_strings.get("target_mass")
+            else "233",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
@@ -81,7 +96,11 @@ def input_fy(**query_strings):
         ),
         dcc.Dropdown(
             id="reac_branch_fy",
-            options=[{"label": "Primary", "value": "PRE"}, {"label": "Independent", "value": "IND"}, {"label": "Cumulative", "value": "CUM"}],
+            options=[
+                {"label": "Primary", "value": "PRE"},
+                {"label": "Independent", "value": "IND"},
+                {"label": "Cumulative", "value": "CUM"},
+            ],
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
@@ -91,8 +110,13 @@ def input_fy(**query_strings):
         html.Label("Measured for"),
         dcc.RadioItems(
             id="mesurement_opt_fy",
-            options=[{"label": "Mass", "value": "A"}, {"label": "Element", "value": "Z"}, {"label": "Product", "value": "Product"}],
-            value="A"),
+            options=[
+                {"label": "Mass", "value": "A"},
+                {"label": "Element", "value": "Z"},
+                {"label": "Product", "value": "Product"},
+            ],
+            value="A",
+        ),
         html.Label("Filter by"),
         dcc.Dropdown(
             id="reac_product_fy",
@@ -103,7 +127,7 @@ def input_fy(**query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("Plot by"),
-        dcc.RadioItems(['Mass', 'Charge','Energy'], 'Mass', id="plot_opt_fy"),
+        dcc.RadioItems(["Mass", "Charge", "Energy"], "Mass", id="plot_opt_fy"),
         html.Br(),
         html.P("Fileter EXFOR records by"),
         html.Label("Energy Range"),
@@ -162,7 +186,9 @@ right_layout_fy = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -174,7 +200,9 @@ right_layout_fy = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -193,8 +221,6 @@ right_layout_fy = [
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
-
-
 
 
 def layout(**query_strings):
@@ -246,8 +272,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -263,7 +287,6 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
-
 @callback(
     Output("location_fy", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -274,7 +297,6 @@ def redirect_to_subpages(type):
         return lib_page_urls[type]
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -290,8 +312,7 @@ def redirect_to_subpages(type):
 def redirection_fy(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
-    if type=="FY" and (elem and mass and reaction):
-
+    if type == "FY" and (elem and mass and reaction):
         url = BASE_URL + "/reactions/fy"
 
         if elem:
@@ -305,8 +326,6 @@ def redirection_fy(type, elem, mass, reaction):
 
     else:
         raise PreventUpdate
-
-
 
 
 @callback(
@@ -329,7 +348,17 @@ def redirection_fy(type, elem, mass, reaction):
         Input("energy_range_fy", "value"),
     ],
 )
-def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_product_fy, plot_opt_fy, energy_range):
+def update_fig_fy(
+    type,
+    elem,
+    mass,
+    reaction,
+    branch,
+    mesurement_opt_fy,
+    reac_product_fy,
+    plot_opt_fy,
+    energy_range,
+):
     elem, mass, reaction = input_check(type, elem, mass, reaction)
     print(type, elem, mass, reaction, branch)
 
@@ -340,32 +369,33 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
     fig = go.Figure(
         layout=go.Layout(
             xaxis={"title": "Mass number", "type": "linear"},
-            yaxis={
-                "title": "Fission yields [/fission]",
-                "type": "linear"
-            },
+            yaxis={"title": "Fission yields [/fission]", "type": "linear"},
             margin={"l": 40, "b": 40, "t": 30, "r": 0},
         )
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    entids, entries = reaction_query_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, energy_range)
+    print(lower, upper)
+    entries = reaction_query_fy(
+        type, elem, mass, reaction, branch, mesurement_opt_fy, energy_range
+    )
+
     mt = MT_LIST_FY[branch]
     libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)} at {lower}-{upper} MeV for {reac_product_fy}"
+    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV for {reac_product_fy}"
 
-
-    if not entids and not libs:
+    if not entries and not libs:
         return search_result, fig, [], None, None
 
-
     if libs:
-        df_lib = lib_data_query_fy(libs.keys(),lower, upper)
-
+        df_lib = lib_data_query_fy(libs.keys(), lower, upper)
+        print(df_lib)
         if plot_opt_fy == "Mass":
             x_ax = "mass"
-            dff = df_lib.groupby(['reaction_id', 'mass', 'en_inc'], as_index=False)['data'].max(numeric_only=True)
-            print(dff)
+            dff = df_lib.groupby(["reaction_id", "mass", "en_inc"], as_index=False)[
+                "data"
+            ].max(numeric_only=True)
+
             # for a in df_lib["mass"].unique():
             #     # df_lib.loc[df_lib['mass'] == a, 'data'].sum()
 
@@ -380,7 +410,6 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
             x_ax = "en_inc"
             fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
 
-
         for l in libs.keys():
             fig.add_trace(
                 go.Scattergl(
@@ -393,27 +422,25 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
                 )
             )
 
-
-
     if entries:
-        legend = get_entry_bib(entries)
+        legend = get_entry_bib(entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
-            for t, v in entids.items()
+            for t, v in entries.items()
             if k == t[:5]
         }
 
         ## All data
-        df = data_query(entids.keys())
+        df = data_query(entries.keys())
         ## Some case like 41084-007-0 contains None in residual
         reac_products = sorted([i for i in df["residual"].unique() if i is not None])
 
-        df2=df.copy()
+        df2 = df.copy()
 
         ## Filtered by reaction product
         if reac_product_fy:
-            df2 = df2[df2["residual"]==reac_product_fy]
+            df2 = df2[df2["residual"] == reac_product_fy]
 
         if mesurement_opt_fy == "A":
             x_ax = "mass"
@@ -423,7 +450,6 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
 
         else:
             x_ax = "mass"
-
 
         if plot_opt_fy == "Mass":
             x_ax = "mass"
@@ -437,9 +463,8 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
             x_ax = "en_inc"
             fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
 
-
         i = 0
-        #------
+        # ------
         for e in legend.keys():
             fig.add_trace(
                 go.Scattergl(
@@ -448,8 +473,8 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
                     name=f"{legend[e]['author']}, {legend[e]['year']}"
-                        if legend[e].get("year")
-                        else legend[e]["author"],
+                    if legend[e].get("year")
+                    else legend[e]["author"],
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -458,7 +483,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
 
             if i == 30:
                 i = 1
-        #------
+        # ------
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
@@ -469,8 +494,8 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
             + index_df["entry_id"]
             + ")"
         )
-        df['bib'] = df["entry_id"].map(legend)
-        df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
+        df["bib"] = df["entry_id"].map(legend)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id"] = (
             "["
@@ -489,7 +514,6 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
     )
 
 
-
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     [
@@ -501,11 +525,10 @@ def update_fig_fy(type, elem, mass, reaction, branch, mesurement_opt_fy, reac_pr
 )
 def update_axis_fy(xaxis_type, yaxis_type, fig):
     ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type":yaxis_type})
-    fig.get("layout").get("xaxis").update({"type":xaxis_type})
+    fig.get("layout").get("yaxis").update({"type": yaxis_type})
+    fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
 
 
 @callback(
@@ -524,13 +547,11 @@ def fileter_by_range_fy(year_range, fig):
 
     for records in fig.get("data"):
         author, year = records.get("name").split(",")
-        
+
         if not year_range[0] < int(year) < year_range[1]:
-            records.update({"visible":"legendonly"})
+            records.update({"visible": "legendonly"})
 
         if year_range[0] < int(year) < year_range[1]:
-            records.update({"visible":"true"})
+            records.update({"visible": "true"})
 
     return fig, filter
-
-

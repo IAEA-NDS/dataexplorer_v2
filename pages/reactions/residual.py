@@ -16,17 +16,32 @@ import plotly.graph_objects as go
 from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+)
+from libraries.datahandle.list import (
     PARTICLE,
     read_mt_json,
     read_mass_range,
 )
 
 from config import BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from libraries2023.datahandle.figs import default_chart
-from sql.queries import reaction_query, get_entry_bib, data_query, lib_query, lib_residual_data_query
+from libraries.datahandle.tabs import create_tabs
+from libraries.datahandle.figs import default_chart
+from exforparser.sql.queries import (
+    reaction_query,
+    get_entry_bib,
+    data_query,
+    lib_query,
+    lib_residual_data_query,
+)
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/residual")
@@ -56,8 +71,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "Mo",
+            if query_strings.get("target_elem")
+            else "Mo",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -66,19 +81,19 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "100",
+            if query_strings.get("target_mass")
+            else "100",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
             id="reaction_rp",
-            options=[
-                {"label": f"{pt.lower()},x", "value": pt} for pt in PARTICLE
-            ],
+            options=[{"label": f"{pt.lower()},x", "value": pt} for pt in PARTICLE],
             placeholder="Reaction e.g. (p,x)",
             persistence=True,
             persistence_type="memory",
-            value=query_strings["inc_pt"].upper() if query_strings.get("inc_pt") else "P",
+            value=query_strings["inc_pt"].upper()
+            if query_strings.get("inc_pt")
+            else "P",
             style={"font-size": "small", "width": "100%"},
         ),
         html.P("Residual product"),
@@ -127,6 +142,7 @@ def input_lib(**query_strings):
         ),
     ]
 
+
 ## main figure
 main_fig = dcc.Graph(
     id="main_fig_rp",
@@ -145,8 +161,6 @@ main_fig = dcc.Graph(
 )
 
 
-
-
 ## Layout of right panel
 right_layout_lib = [
     libs_navbar,
@@ -159,7 +173,9 @@ right_layout_lib = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type_rp",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -171,7 +187,9 @@ right_layout_lib = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type_rp",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -186,7 +204,7 @@ right_layout_lib = [
         type="circle",
     ),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("RP"),
+    create_tabs("rp"),
     dcc.Store(id="exp-data_store"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
@@ -244,8 +262,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -261,7 +277,6 @@ def redirect_to_pages_rp(dataset):
         raise PreventUpdate
 
 
-
 @callback(
     Output("location_rp", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -272,7 +287,6 @@ def redirect_to_subpages_rp(type):
         return lib_page_urls[type]
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -288,13 +302,11 @@ def redirect_to_subpages_rp(type):
     prevent_initial_call=True,
 )
 def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
-    
     input_check(type, elem, mass, inc_pt)
     input_check(type, rp_elem, rp_mass, inc_pt)
     print(type, elem, mass, inc_pt, "-->", rp_elem, rp_mass)
 
-    if type=="Residual" and (elem and mass and inc_pt and rp_elem and rp_mass):
-
+    if type == "Residual" and (elem and mass and inc_pt and rp_elem and rp_mass):
         url = BASE_URL + "/reactions/residual"
 
         if elem:
@@ -308,10 +320,9 @@ def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
         if rp_mass:
             url += "&rp_mass=" + rp_mass
         return url
-    
+
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -332,20 +343,30 @@ def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     # prevent_initial_call=True,
 )
 def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
-
     elem, mass, inc_pt = input_check(type, elem, mass, inc_pt)
     rp_elem, rp_mass, inc_pt = input_check(type, rp_elem, rp_mass, inc_pt)
 
     df = pd.DataFrame()
     index_df = pd.DataFrame()
-    fig = default_chart(xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None)
+    fig = default_chart(
+        xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None
+    )
 
-    entids, entries = reaction_query(type, elem, mass, reaction=inc_pt, branch=None, rp_elem=rp_elem, rp_mass=rp_mass)
-    libs = lib_query(type, elem, mass, reaction=f"{inc_pt.upper()},X", mt=None, rp_elem=rp_elem, rp_mass=rp_mass)
-    search_result = f"Search results for {type} {elem}-{mass}({inc_pt.lower()},x) --> {rp_elem}-{rp_mass}: {len(entids)}"
+    entries = reaction_query(
+        type, elem, mass, reaction=inc_pt, branch=None, rp_elem=rp_elem, rp_mass=rp_mass
+    )
+    libs = lib_query(
+        type,
+        elem,
+        mass,
+        reaction=f"{inc_pt.upper()},X",
+        mt=None,
+        rp_elem=rp_elem,
+        rp_mass=rp_mass,
+    )
+    search_result = f"Search results for {type} {elem}-{mass}({inc_pt.lower()},x) --> {rp_elem}-{rp_mass}: {len(entries)}"
 
-
-    if not entids and not libs:
+    if not entries and not libs:
         return search_result, fig, None, None
 
     if libs:
@@ -367,14 +388,14 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
             )
 
     if entries:
-        legend = get_entry_bib(entries)
+        legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
-            for t, v in entids.items()
+            for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entids.keys(), branch=None)
+        df = data_query(entries.keys(), branch=None)
 
         i = 0
         for e in legend.keys():
@@ -402,18 +423,18 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
         index_df["entry_id"] = (
             "["
             + index_df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + index_df["entry_id"]
             + ")"
         )
-    
-        df['bib'] = df["entry_id"].map(legend)
-        df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
+
+        df["bib"] = df["entry_id"].map(legend)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id"] = (
             "["
             + df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + df["entry_id"]
             + ")"
         )
@@ -426,26 +447,21 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     )
 
 
-
-
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     [
-    Input("xaxis_type_rp", "value"),
-    Input("yaxis_type_rp", "value"),
+        Input("xaxis_type_rp", "value"),
+        Input("yaxis_type_rp", "value"),
     ],
     State("main_fig_rp", "figure"),
     prevent_initial_call=True,
 )
 def update_axis_rp(xaxis_type, yaxis_type, fig):
     ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type":yaxis_type})
-    fig.get("layout").get("xaxis").update({"type":xaxis_type})
+    fig.get("layout").get("yaxis").update({"type": yaxis_type})
+    fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
 
 
 # @callback(
@@ -464,10 +480,10 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
 #     # print(json.dumps(fig, indent=1))
 #     print(energy_range, year_range)
 #     filter = ""
-    
+
 #     for records in fig.get("data"):
 #         if len(records.get("name").split(","))>1:
-#             author, year = records.get("name").split(",") 
+#             author, year = records.get("name").split(",")
 
 #             sum_x = sum([float(x) for x in records["x"] if x is not None])
 #             lower, upper = energy_range_conversion(energy_range)
@@ -483,6 +499,3 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
 
 
 #     return fig, filter
-
-
-

@@ -18,15 +18,24 @@ from collections import OrderedDict
 from operator import getitem
 
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+)
+from libraries.datahandle.list import (
     PARTICLE_FY,
     read_mt_json,
     read_mass_range,
 )
 from config import session, session_lib, engines, BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from sql.queries import reaction_query_fission, get_entry_bib, data_query
+from libraries.datahandle.tabs import create_tabs
+from exforparser.sql.queries import reaction_query_fission, get_entry_bib, data_query
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fission")
@@ -55,8 +64,8 @@ def input_fy(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "U",
+            if query_strings.get("target_elem")
+            else "U",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -65,8 +74,8 @@ def input_fy(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "233",
+            if query_strings.get("target_mass")
+            else "233",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
@@ -81,12 +90,12 @@ def input_fy(**query_strings):
         dcc.Dropdown(
             id="reac_branch_fis",
             options=[
-                    {"label": "neutron multiplicity", "value": "nu_n"}, 
-                    {"label": "delayed neutron yield", "value": "dn"}, 
-                    {"label": "gamma multiplicity", "value": "nu_g"}, 
-                    {"label": "neutron spectra", "value": "pfns"}, 
-                    {"label": "gamma spectra", "value": "pfgs"},
-                    ],
+                {"label": "neutron multiplicity", "value": "nu_n"},
+                {"label": "delayed neutron yield", "value": "dn"},
+                {"label": "gamma multiplicity", "value": "nu_g"},
+                {"label": "neutron spectra", "value": "pfns"},
+                {"label": "gamma spectra", "value": "pfgs"},
+            ],
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
@@ -150,7 +159,9 @@ right_layout_fy = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -162,7 +173,9 @@ right_layout_fy = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -182,8 +195,6 @@ right_layout_fy = [
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
-
-
 
 
 def layout(**query_strings):
@@ -235,8 +246,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -252,7 +261,6 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
-
 @callback(
     Output("location_fis", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -263,7 +271,6 @@ def redirect_to_subpages(type):
         return lib_page_urls[type]
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -279,8 +286,7 @@ def redirect_to_subpages(type):
 def redirection_fy(type, elem, mass, reaction):
     elem, mass, reaction = input_check(type, elem, mass, reaction)
 
-    if type=="FIS" and (elem and mass and reaction):
-
+    if type == "FIS" and (elem and mass and reaction):
         url = BASE_URL + "/reactions/fission"
 
         if elem:
@@ -294,8 +300,6 @@ def redirection_fy(type, elem, mass, reaction):
 
     else:
         raise PreventUpdate
-
-
 
 
 @callback(
@@ -334,41 +338,43 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    entids, entries = reaction_query_fission(type, elem, mass, reaction, branch, energy_range)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)} at {lower}-{upper} MeV "
+    entries = reaction_query_fission(
+        type, elem, mass, reaction, branch, energy_range
+    )
+    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV "
     print(search_result)
 
-
     if entries:
-        legend = get_entry_bib(entries)
+        legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
-            for t, v in entids.items()
+            for t, v in entries.items()
             if k == t[:5]
         }
 
         ## All data
-        df = data_query(entids.keys())
+        df = data_query(entries.keys())
         ## Some case like 41084-007-0 contains None in residual
         reac_products = sorted([i for i in df["residual"].unique() if i is not None])
 
-        df2=df.copy()
-
+        df2 = df.copy()
 
         i = 0
-        #------
+        # ------
         for e in legend.keys():
             if any(branch == b for b in ("nu_n", "nu_g", "dn")):
                 fig.add_trace(
                     go.Scatter(
                         x=df2[df2["entry_id"] == e]["en_inc"],
                         y=df2[df2["entry_id"] == e]["data"],
-                        error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
+                        error_y=dict(
+                            type="data", array=df[df["entry_id"] == e]["ddata"]
+                        ),
                         showlegend=True,
                         name=f"{legend[e]['author']}, {legend[e]['year']}"
-                            if legend[e].get("year")
-                            else legend[e]["author"],
+                        if legend[e].get("year")
+                        else legend[e]["author"],
                         marker=dict(size=8, symbol=i),
                         mode="markers",
                     )
@@ -378,11 +384,13 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
                     go.Scatter(
                         x=df2[df2["entry_id"] == e]["e_out"],
                         y=df2[df2["entry_id"] == e]["data"],
-                        error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
+                        error_y=dict(
+                            type="data", array=df[df["entry_id"] == e]["ddata"]
+                        ),
                         showlegend=True,
                         name=f"{legend[e]['author']}, {legend[e]['year']}"
-                            if legend[e].get("year")
-                            else legend[e]["author"],
+                        if legend[e].get("year")
+                        else legend[e]["author"],
                         marker=dict(size=8, symbol=i),
                         mode="markers",
                     )
@@ -391,7 +399,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
 
             if i == 30:
                 i = 1
-        #------
+        # ------
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
@@ -402,8 +410,8 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
             + index_df["entry_id"]
             + ")"
         )
-        df['bib'] = df["entry_id"].map(legend)
-        df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
+        df["bib"] = df["entry_id"].map(legend)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id"] = (
             "["
@@ -421,7 +429,6 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
     )
 
 
-
 @callback(
     Output("main_fig_fis", "figure", allow_duplicate=True),
     [
@@ -433,11 +440,10 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
 )
 def update_axis_fy(xaxis_type, yaxis_type, fig):
     ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type":yaxis_type})
-    fig.get("layout").get("xaxis").update({"type":xaxis_type})
+    fig.get("layout").get("yaxis").update({"type": yaxis_type})
+    fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
 
 
 @callback(
@@ -456,13 +462,11 @@ def fileter_by_range_fy(year_range, fig):
 
     for records in fig.get("data"):
         author, year = records.get("name").split(",")
-        
+
         if not year_range[0] < int(year) < year_range[1]:
-            records.update({"visible":"legendonly"})
+            records.update({"visible": "legendonly"})
 
         if year_range[0] < int(year) < year_range[1]:
-            records.update({"visible":"true"})
+            records.update({"visible": "true"})
 
     return fig, filter
-
-

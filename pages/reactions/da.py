@@ -16,15 +16,30 @@ from collections import OrderedDict
 from operator import getitem
 from dash.exceptions import PreventUpdate
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+)
+from libraries.datahandle.list import (
     PARTICLE,
     read_mt_json,
     read_mass_range,
 )
 from config import BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from sql.queries import reaction_query, get_entry_bib, data_query, lib_query, lib_xs_data_query
+from libraries.datahandle.tabs import create_tabs
+from exforparser.sql.queries import (
+    reaction_query,
+    get_entry_bib,
+    data_query,
+    lib_query,
+    lib_xs_data_query,
+)
 
 
 ## Registration of page
@@ -53,8 +68,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "Au",
+            if query_strings.get("target_elem")
+            else "Au",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -63,15 +78,19 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "197",
+            if query_strings.get("target_mass")
+            else "197",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
             id="reaction_da",
             options=[
-                {"label": f"{proj.lower()},{reac.lower()}", "value": f"{proj.lower()},{reac.lower()}"}
-                for proj in PARTICLE for reac in reaction_list.keys() 
+                {
+                    "label": f"{proj.lower()},{reac.lower()}",
+                    "value": f"{proj.lower()},{reac.lower()}",
+                }
+                for proj in PARTICLE
+                for reac in reaction_list.keys()
             ],
             placeholder="Reaction e.g. (n,g)",
             persistence=True,
@@ -126,7 +145,6 @@ main_fig_de = dcc.Graph(
 )
 
 
-
 right_layout_de = [
     libs_navbar,
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
@@ -138,7 +156,9 @@ right_layout_de = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type_da",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -150,7 +170,9 @@ right_layout_de = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type_da",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="linear",
                     persistence=True,
                     persistence_type="memory",
@@ -165,7 +187,7 @@ right_layout_de = [
         type="circle",
     ),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("DA"),
+    create_tabs("da"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
@@ -235,7 +257,6 @@ def redirect_to_pages_da(dataset):
         raise PreventUpdate
 
 
-
 @callback(
     Output("location_da", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -246,7 +267,6 @@ def redirect_to_subpages_da(type):
         return lib_page_urls[type]
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -262,8 +282,7 @@ def redirect_to_subpages_da(type):
 def update_url_da(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
-    if type=="DA" and (elem and mass and reaction):
-
+    if type == "DA" and (elem and mass and reaction):
         url = BASE_URL + "/reactions/da"
 
         if elem:
@@ -273,11 +292,9 @@ def update_url_da(type, elem, mass, reaction):
         if reaction:
             url += "&reaction=" + reaction
         return url
-    
+
     else:
         raise PreventUpdate
-
-
 
 
 @callback(
@@ -304,41 +321,44 @@ def update_fig_da(type, elem, mass, reaction):
     mt = reaction_list[reaction.split(",")[1].upper()]["mt"].zfill(3)
 
     fig = go.Figure(
-            layout=go.Layout(
-                xaxis={
-                    "title": "Angle [Degree]",
-                    "type": "linear",
-                    "rangeslider": {
-                        "bgcolor": "White",
-                        "autorange": True,
-                        "thickness": 0.15,
-                    },
+        layout=go.Layout(
+            xaxis={
+                "title": "Angle [Degree]",
+                "type": "linear",
+                "rangeslider": {
+                    "bgcolor": "White",
+                    "autorange": True,
+                    "thickness": 0.15,
                 },
-                yaxis={
-                    "title": "Anglura distribution",
-                    "type": "linear",
-                    "fixedrange": False,
-                },
-                margin={"l": 40, "b": 40, "t": 30, "r": 0},
-            )
+            },
+            yaxis={
+                "title": "Anglura distribution",
+                "type": "linear",
+                "fixedrange": False,
+            },
+            margin={"l": 40, "b": 40, "t": 30, "r": 0},
         )
+    )
 
+    entries = reaction_query(
+        type, elem, mass, reaction, branch=None, rp_elem=None, rp_mass=None
+    )
+    search_result = (
+        f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)}"
+    )
 
-    entids, entries = reaction_query(type, elem, mass, reaction, branch=None, rp_elem=None, rp_mass=None)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)}"
-
-    if not entids:
+    if not entries:
         return search_result, fig, None, None
 
     if entries:
-        legend = get_entry_bib(entries)
+        legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
-            for t, v in entids.items()
+            for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entids.keys(), branch=None)
+        df = data_query(entries.keys(), branch=None)
 
         i = 0
         for e in legend.keys():
@@ -371,9 +391,8 @@ def update_fig_da(type, elem, mass, reaction):
             + ")"
         )
 
-
-        df['bib'] = df["entry_id"].map(legend)
-        df = pd.concat([df,df["bib"].apply(pd.Series)], axis=1)
+        df["bib"] = df["entry_id"].map(legend)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id"] = (
             "["
@@ -391,25 +410,21 @@ def update_fig_da(type, elem, mass, reaction):
     )
 
 
-
-
 @callback(
     Output("main_fig_da", "figure", allow_duplicate=True),
     [
-    Input("xaxis_type_da", "value"),
-    Input("yaxis_type_da", "value"),
+        Input("xaxis_type_da", "value"),
+        Input("yaxis_type_da", "value"),
     ],
     State("main_fig_da", "figure"),
     prevent_initial_call=True,
 )
 def update_axis(xaxis_type, yaxis_type, fig):
     ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type":yaxis_type})
-    fig.get("layout").get("xaxis").update({"type":xaxis_type})
+    fig.get("layout").get("yaxis").update({"type": yaxis_type})
+    fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
-
 
 
 @callback(
@@ -428,22 +443,34 @@ def fileter_by_range_lib(energy_range, year_range, fig):
     # print(json.dumps(fig, indent=1))
     print(energy_range, year_range)
     filter = ""
-    
+
     for records in fig.get("data"):
-        if len(records.get("name").split(","))>1:
-            author, year = records.get("name").split(",") 
+        if len(records.get("name").split(",")) > 1:
+            author, year = records.get("name").split(",")
 
             sum_x = sum([float(x) for x in records["x"] if x is not None])
             lower, upper = energy_range_conversion(energy_range)
 
-            filter = "{year} ge " + str(year_range[0]) + " && {year} le " + str(year_range[1])
-            filter +=  " && {e_inc_min} ge " + str(lower) + " && {e_inc_max} le " + str(upper)
+            filter = (
+                "{year} ge "
+                + str(year_range[0])
+                + " && {year} le "
+                + str(year_range[1])
+            )
+            filter += (
+                " && {e_inc_min} ge " + str(lower) + " && {e_inc_max} le " + str(upper)
+            )
 
-            if not lower < sum_x/len(records["x"]) < upper or not year_range[0] < int(year) < year_range[1] :
-                records.update({"visible":"legendonly"})
+            if (
+                not lower < sum_x / len(records["x"]) < upper
+                or not year_range[0] < int(year) < year_range[1]
+            ):
+                records.update({"visible": "legendonly"})
 
-            if lower < sum_x/len(records["x"]) < upper or year_range[0] < int(year) < year_range[1]:
-                records.update({"visible":"true"})
-
+            if (
+                lower < sum_x / len(records["x"]) < upper
+                or year_range[0] < int(year) < year_range[1]
+            ):
+                records.update({"visible": "true"})
 
     return fig, filter

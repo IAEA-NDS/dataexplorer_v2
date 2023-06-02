@@ -19,13 +19,12 @@ from dash.exceptions import PreventUpdate
 
 # from app import app
 from man import manual
-from libraries2023.datahandle.list import (
+from libraries.datahandle.list import (
     PARTICLE,
     ELEMS,
     reaction_list,
     elemtoz_nz,
     read_mass_range,
-    
 )
 
 toast = html.Div(
@@ -95,18 +94,9 @@ lib_selections = [
         "label": "Residual Production XS",
         "value": "Residual",
     },
-    {
-        "label": "Fission Yield (FY)", 
-        "value": "FY"
-    },
-    {
-        "label": "Angular Distribution (DA)", 
-        "value": "DA"
-    },
-    {
-        "label": "Energy Distribution (DE)", 
-        "value": "DE"
-    },
+    {"label": "Fission Yield (FY)", "value": "FY"},
+    {"label": "Angular Distribution (DA)", "value": "DA"},
+    {"label": "Energy Distribution (DE)", "value": "DE"},
     {
         "label": "Fission observables",
         "value": "FIS",
@@ -116,8 +106,6 @@ lib_selections = [
     #     "value": "ION",
     # },
 ]
-
-
 
 
 lib_page_urls = {
@@ -130,7 +118,6 @@ lib_page_urls = {
     "FIS": "/dataexplorer/reactions/fission",
     # "ION": "/dataexplorer/reactions/ion",
 }
-
 
 
 navbar = html.Div(
@@ -203,7 +190,6 @@ footer = html.Div(
 )
 
 
-
 def dict_merge(dicts_list):
     d = {**dicts_list[0]}
     for entry in dicts_list[1:]:
@@ -217,7 +203,6 @@ def dict_merge(dicts_list):
                 else v
             )
     return d
-
 
 
 def data_length_unify(data_dict):
@@ -245,10 +230,10 @@ def data_length_unify(data_dict):
 
 mass_range = read_mass_range()
 
-def input_check(type, elem, mass, reaction):
 
+def input_check(type, elem, mass, reaction):
     if not type or not elem or not mass or not reaction:
-    # if any(not i for i in (type, elem, mass, reaction)):
+        # if any(not i for i in (type, elem, mass, reaction)):
         raise PreventUpdate
 
     if elem.capitalize() not in ELEMS:
@@ -266,20 +251,22 @@ def input_check(type, elem, mass, reaction):
 
     else:
         raise PreventUpdate
-    
+
     return elem.capitalize(), mass.lower(), reaction.upper()
 
 
 def generate_reactions():
-    options=[
+    options = [
         {"label": f"{proj.lower()},n", "value": f"{proj.lower()},n"}
-        if proj != "N" and reac == "INL" else
-        {"label": f"{proj.lower()},{reac.lower()}", "value": f"{proj.lower()},{reac.lower()}"}
-        for proj in PARTICLE for reac in reaction_list.keys() 
+        if proj != "N" and reac == "INL"
+        else {
+            "label": f"{proj.lower()},{reac.lower()}",
+            "value": f"{proj.lower()},{reac.lower()}",
+        }
+        for proj in PARTICLE
+        for reac in reaction_list.keys()
     ]
     return options
-
-
 
 
 def energy_range_conversion(energy_range):
@@ -287,15 +274,14 @@ def energy_range_conversion(energy_range):
         if energy_range[0] <= 1:
             lower = 0
         else:
-            lower = 10 ** energy_range[0] / 1E+6
+            lower = 10 ** energy_range[0] / 1e6
 
-        upper = 10 ** energy_range[1]  / 1E+6
+        upper = 10 ** energy_range[1] / 1e6
 
         return lower, upper
 
     else:
         return None, None
-
 
 
 def get_number_from_string(str):

@@ -18,12 +18,12 @@ from common import footer, libs_navbar
 dash.register_page(__name__, path="/api_manual")
 
 
-
-layout = dbc.Container([
+layout = dbc.Container(
+    [
         libs_navbar,
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         dcc.Markdown(
-    """
+            """
 ### REST API Manual
 
 This REST API is built using Flask and provides access to the EXFOR nuclear reaction database. The API endpoints are designed to retrieve specific information related to nuclear reactions such as experimental conditions, data tables, bibliography, etc. The API provides access to various dictionaries such as facility, method, detector, and institute. The API allows users to retrieve information related to an EXFOR entry or subentry by specifying the entry number and subentry number.
@@ -152,8 +152,9 @@ GET `/api/exfor/subentry/10300/001`
     }
 
 
-"""),
-    # html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-
-    footer,
-])
+"""
+        ),
+        # html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+        footer,
+    ]
+)

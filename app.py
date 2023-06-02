@@ -17,6 +17,7 @@ import dash_bootstrap_components as dbc
 
 from config import DEVENV
 
+
 # Style selection [CERULEAN, COSMO, CYBORG, DARKLY, FLATLY, JOURNAL, LITERA, LUMEN, LUX, MATERIA, MINTY, PULSE, SANDSTONE, SIMPLEX, SKETCHY, SLATE, SOLAR, SPACELAB, SUPERHERO, UNITED, YETI, ZEPHYR]
 if DEVENV:
     app = dash.Dash(

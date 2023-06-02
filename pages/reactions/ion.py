@@ -16,16 +16,24 @@ from collections import OrderedDict
 from operator import getitem
 from dash.exceptions import PreventUpdate
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+)
+from libraries.datahandle.list import (
     PARTICLE,
     elemtoz_nz,
     read_mass_range,
 )
-from sql.models import Exfor_Bib, Exfor_Data, Exfor_Reactions
+from exforparser.sql.models import Exfor_Bib, Exfor_Data, Exfor_Reactions
 from config import session, session_lib, engines, BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from libraries2023.datahandle.figs import default_chart, default_axis
+from libraries.datahandle.tabs import create_tabs
+from libraries.datahandle.figs import default_chart, default_axis
 
 
 ## Registration of page
@@ -33,14 +41,21 @@ from libraries2023.datahandle.figs import default_chart, default_axis
 
 
 def get_projectile():
-    return [p.projectile for p in session().query(Exfor_Reactions.projectile).distinct()]
+    return [
+        p.projectile for p in session().query(Exfor_Reactions.projectile).distinct()
+    ]
+
+
 projectile = get_projectile()
 
 
 def get_reactions():
     # return {r.process.split(",")[0]: r.process.split(",")[1] for r in session().query(Exfor_Reactions.process).distinct() if len(r.process.split(",")[0]) != 1}
-    return [r.process for r in session().query(Exfor_Reactions.process).distinct() if len(r.process.split(",")[0]) != 1]
-
+    return [
+        r.process
+        for r in session().query(Exfor_Reactions.process).distinct()
+        if len(r.process.split(",")[0]) != 1
+    ]
 
 
 def input_lib(**query_strings):
@@ -61,8 +76,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "Au",
+            if query_strings.get("target_elem")
+            else "Au",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -71,8 +86,8 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "197",
+            if query_strings.get("target_mass")
+            else "197",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
@@ -82,7 +97,9 @@ def input_lib(**query_strings):
             placeholder="Reaction e.g. (n,g)",
             persistence=True,
             persistence_type="memory",
-            value=query_strings["reaction"] if query_strings.get("reaction") else "6-C-12",
+            value=query_strings["reaction"]
+            if query_strings.get("reaction")
+            else "6-C-12",
             style={"font-size": "small", "width": "100%"},
         ),
         # dcc.Dropdown(
@@ -123,7 +140,6 @@ def input_lib(**query_strings):
     ]
 
 
-
 main_fig_ion = dcc.Graph(
     id="main_fig_lib",
     config={
@@ -141,7 +157,6 @@ main_fig_ion = dcc.Graph(
 )
 
 
-
 right_layout_ion = [
     libs_navbar,
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
@@ -153,7 +168,9 @@ right_layout_ion = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -165,7 +182,9 @@ right_layout_ion = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -234,4 +253,3 @@ def layout(**query_strings):
         ],
         style={"height": "100vh"},
     )
-

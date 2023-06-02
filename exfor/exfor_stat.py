@@ -17,25 +17,20 @@ stat_right_layout = dbc.Container(
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         html.Label("EXFOR Taxonomy"),
         dbc.Row(cyto_layout),
-        
         # year counts
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         html.Label("Entries by publication year"),
         dbc.Row(dcc.Graph(figure=year_fig)),
-
         # geo
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         html.Label("Nuclear Reaction Experimental Facilities (From EXFOR BIB)"),
         dbc.Row(dcc.Graph(id="geo_map", figure=geo_fig)),
-
         # counts
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         html.Label("Reaction Indexes (From EXFOR SUBENT)"),
         dbc.Row(aggrid_layout),
         footer,
-
         html.Div(id="test"),
     ],
     fluid=True,
 )
-

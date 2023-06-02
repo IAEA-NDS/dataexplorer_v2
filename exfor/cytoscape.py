@@ -10,8 +10,7 @@ import dash_cytoscape as cyto
 from config import engines
 from exfor.utils_phylogeny import *
 from exfor.datahandle.list import MAPPING
-from libraries2023.datahandle.list import PARTICLE
-
+from libraries.datahandle.list import PARTICLE
 
 
 def _load_reactions():
@@ -53,7 +52,6 @@ df["key"] = df["sf6"].map(_get_key)
 df["top_category"] = df["key"].map(_get_top_category)
 
 
-
 def make_nodes(breadcrumb):
     # print(breadcrumb)
 
@@ -69,7 +67,6 @@ def make_nodes(breadcrumb):
 
         return str(tuple(top)) + "EXFOR"
 
-
     elif breadcrumb["top_category"] and not breadcrumb["sf6"]:
         for c in df["top_category"].unique():
             if c == breadcrumb["top_category"]:
@@ -84,7 +81,6 @@ def make_nodes(breadcrumb):
                 nodes.append(c)
 
         return "(" + ",".join(nodes) + ")EXFOR"
-
 
     elif breadcrumb["sf6"] and not breadcrumb["projectile"]:
         for c in df["top_category"].unique():
@@ -114,7 +110,6 @@ def make_nodes(breadcrumb):
                 nodes.append(c)
 
         return "(" + ",".join(nodes) + ")EXFOR"
-
 
     elif breadcrumb["projectile"] and not breadcrumb["element"]:
         for c in df["top_category"].unique():
@@ -298,7 +293,6 @@ def check_node_parent(node_data, elements):
     return breadcrumb
 
 
-
 @callback(
     Output("cytoscape-phylogeny", "elements"),
     Input("cytoscape-phylogeny", "tapNode"),
@@ -306,7 +300,6 @@ def check_node_parent(node_data, elements):
 )
 def displayTapNodeData(node_data, elements):
     if node_data:
-
         breadcrumb = check_node_parent(node_data["data"], elements)
         print(breadcrumb)
 
@@ -317,8 +310,6 @@ def displayTapNodeData(node_data, elements):
     # if breadcrumb.get("element"):
 
     return elements
-
-
 
 
 # @callback(
@@ -378,8 +369,6 @@ def displayTapNodeData(node_data, elements):
 
 #     else:
 #         return elements, None, None, None, None, None
-
-
 
 
 # if __name__ == "__main__":

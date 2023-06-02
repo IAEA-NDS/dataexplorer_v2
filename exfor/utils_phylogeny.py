@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
 
-from exfor_dictionary.exfor_dictionary import Diction
+from exfor_dictionary import Diction
 
 D = Diction()
 

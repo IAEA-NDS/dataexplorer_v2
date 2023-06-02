@@ -16,11 +16,18 @@ from dash.dash_table.Format import Format, Scheme
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
-from libraries2023.datahandle.list import (
+from libraries.datahandle.list import (
     PARTICLE,
     elemtoz_nz,
 )
-from common import sidehead, page_urls, exfor_navbar, footer, input_check, energy_range_conversion
+from common import (
+    sidehead,
+    page_urls,
+    exfor_navbar,
+    footer,
+    input_check,
+    energy_range_conversion,
+)
 from config import session, engines, BASE_URL
 from exfor.exfor_stat import stat_right_layout
 from sql.models import Exfor_Reactions, Exfor_Bib
@@ -39,7 +46,10 @@ def input_ex(**query_strings):
         html.Label("Reaction search"),
         dcc.Dropdown(
             id="reaction_category_ex",
-            options=[{"label": j, "value": i} for i, j in sorted(MAPPING["top_category"].items())],
+            options=[
+                {"label": j, "value": i}
+                for i, j in sorted(MAPPING["top_category"].items())
+            ],
             placeholder="Reaction Category",
             persistence=True,
             persistence_type="memory",
@@ -70,9 +80,14 @@ def input_ex(**query_strings):
         dcc.Dropdown(
             id="reaction_ex",
             options=[
-                {"label": f"{proj.lower()},{reac.lower()}", "value": f"{proj.lower()},{reac.lower()}"}
-                for proj in PARTICLE for reac in reaction_list.keys() 
-            ]+[{"label": "Other", "value": "other"}],
+                {
+                    "label": f"{proj.lower()},{reac.lower()}",
+                    "value": f"{proj.lower()},{reac.lower()}",
+                }
+                for proj in PARTICLE
+                for reac in reaction_list.keys()
+            ]
+            + [{"label": "Other", "value": "other"}],
             placeholder="Reaction e.g. (n,g)",
             persistence=True,
             persistence_type="memory",
@@ -87,53 +102,65 @@ def input_ex(**query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("More search options"),
-        dbc.Accordion([
-            dbc.AccordionItem([
-                dcc.Input(
-                    id="authors",
-                    placeholder="one of the authors",
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
+        dbc.Accordion(
+            [
+                dbc.AccordionItem(
+                    [
+                        dcc.Input(
+                            id="authors",
+                            placeholder="one of the authors",
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                        ),
+                        dcc.Input(
+                            id="sf4",
+                            placeholder="exfor sf4",
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                        ),
+                        dcc.Dropdown(
+                            placeholder="Measureed at",
+                            options=[
+                                {
+                                    "label": inst + ":" + desc["description"],
+                                    "value": inst,
+                                }
+                                for inst, desc in get_institutes().items()
+                            ],
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                            multi=True,
+                        ),
+                        dcc.Input(
+                            id="sf5",
+                            placeholder="exfor sf5",
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                        ),
+                        dcc.Input(
+                            id="sf7",
+                            placeholder="exfor sf7",
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                        ),
+                        dcc.Input(
+                            id="sf8",
+                            placeholder="exfor sf8",
+                            persistence=True,
+                            persistence_type="memory",
+                            style={"font-size": "small", "width": "100%"},
+                        ),
+                    ],
+                    title="More options",
                 ),
-                dcc.Input(
-                    id="sf4",
-                    placeholder="exfor sf4",
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
-                ),
-                dcc.Dropdown(
-                    placeholder="Measureed at",
-                    options=[{"label": inst + ":" + desc["description"], "value": inst} for inst, desc in get_institutes().items() ],
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
-                    multi=True,
-                ),
-                dcc.Input(
-                    id="sf5",
-                    placeholder="exfor sf5",
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
-                ),  
-                dcc.Input(
-                    id="sf7",
-                    placeholder="exfor sf7",
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
-                ),  
-                dcc.Input(
-                    id="sf8",
-                    placeholder="exfor sf8",
-                    persistence=True,
-                    persistence_type="memory",
-                    style={"font-size": "small", "width": "100%"},
-                ),  
-            ], title="More options"),
-        ],start_collapsed=True),
+            ],
+            start_collapsed=True,
+        ),
         html.Br(),
         html.Label("Energy Range"),
         dcc.RangeSlider(
@@ -165,10 +192,16 @@ def input_ex(**query_strings):
 serch_result_layout = [
     exfor_navbar,
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    dbc.Row([
-        dbc.Col(html.Div(id="search_result_count"), width="auto"),
-        dbc.Col(dcc.Link(html.Label("Plot in Dataexplorer"), id="dataeplorer_link", href="")),     
-        ]),
+    dbc.Row(
+        [
+            dbc.Col(html.Div(id="search_result_count"), width="auto"),
+            dbc.Col(
+                dcc.Link(
+                    html.Label("Plot in Dataexplorer"), id="dataeplorer_link", href=""
+                )
+            ),
+        ]
+    ),
     # Main content
     html.Div(
         [
@@ -221,7 +254,6 @@ serch_result_layout = [
 
 ## EXFOR page layout
 def layout(**query_strings):
-
     if not query_strings:
         right_layout = stat_right_layout
     else:
@@ -277,8 +309,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -289,7 +319,6 @@ def layout(**query_strings):
 )
 def redirect_to_pages(dataset):
     return page_urls[dataset]
-
 
 
 @callback(
@@ -316,10 +345,7 @@ def update_url_ex(type, elem, mass, reaction):
     if reaction:
         url += "&reaction=" + reaction
 
-
     return url
-
-
 
 
 @callback(
@@ -330,21 +356,17 @@ def update_url_ex(type, elem, mass, reaction):
     Input("reaction_ex", "value"),
 )
 def update_branch_list(reaction):
-
     if reaction:
         if reaction.split(",")[1] == "inl":
-            return [{"label": "L"+str(n), "value": n} for n in range(0,40)], 1
+            return [{"label": "L" + str(n), "value": n} for n in range(0, 40)], 1
         else:
             return [{"label": "Partial", "value": "PAR"}], None
     else:
         return [{"label": "Partial", "value": "PAR"}], None
 
 
-
-
-
 @callback(
-        Output("dataeplorer_link", "href"),
+    Output("dataeplorer_link", "href"),
     [
         Input("reaction_category_ex", "value"),
         Input("target_elem_ex", "value"),
@@ -353,22 +375,20 @@ def update_branch_list(reaction):
     ],
 )
 def update_url_ex(type, elem, mass, reaction):
-
     input_check(type, elem, mass, reaction)
     if type == "SIG":
         type = "xs"
-        
-    plot_link = BASE_URL + f"/reactions/{type.lower()}?target_elem={elem}&target_mass={mass}&reaction={reaction}"
-    
+
+    plot_link = (
+        BASE_URL
+        + f"/reactions/{type.lower()}?target_elem={elem}&target_mass={mass}&reaction={reaction}"
+    )
+
     return plot_link
 
 
-
-
 @callback(
-    [
-        Output("search_result_count", "children"), 
-        Output("stored-data", "data")],
+    [Output("search_result_count", "children"), Output("stored-data", "data")],
     [
         Input("reaction_category_ex", "value"),
         Input("target_elem_ex", "value"),
@@ -386,10 +406,11 @@ def search_exfor_record_by_reaction(type, elem, mass, reaction, branch):
         "[" + df["entry_id"] + "](" + BASE_URL + "/exfor/entry/" + df["entry_id"] + ")"
     )
 
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(df.index)}"
+    search_result = (
+        f"Search results for {type} {elem}-{mass}({reaction}): {len(df.index)}"
+    )
 
     return search_result, df.to_dict("records")
-
 
 
 @callback(
@@ -398,7 +419,6 @@ def search_exfor_record_by_reaction(type, elem, mass, reaction, branch):
 )
 def search_exfor_record_by_reaction(df_dict):
     return df_dict
-
 
 
 @callback(
@@ -443,5 +463,3 @@ def update_graphs(df_dict, rows, derived_virtual_selected_rows):
         ]
         if column in dff
     ]
-
-

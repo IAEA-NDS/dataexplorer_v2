@@ -17,8 +17,17 @@ import plotly.graph_objects as go
 from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 
-from common import sidehead, footer, libs_navbar, page_urls, lib_selections, lib_page_urls, input_check, energy_range_conversion
-from libraries2023.datahandle.list import (
+from common import (
+    sidehead,
+    footer,
+    libs_navbar,
+    page_urls,
+    lib_selections,
+    lib_page_urls,
+    input_check,
+    energy_range_conversion,
+)
+from libraries.datahandle.list import (
     PARTICLE,
     read_mt_json,
     elemtoz_nz,
@@ -26,12 +35,18 @@ from libraries2023.datahandle.list import (
 )
 
 from config import BASE_URL
-from libraries2023.datahandle.tabs import create_tabs
-from libraries2023.datahandle.figs import default_chart, default_axis
-from sql.queries import reaction_query, get_entry_bib, data_query, lib_query, lib_xs_data_query
+from libraries.datahandle.tabs import create_tabs
+from libraries.datahandle.figs import default_chart, default_axis
+from exforparser.sql.queries import (
+    reaction_query,
+    get_entry_bib,
+    data_query,
+    lib_query,
+    lib_xs_data_query,
+)
 
 ## Registration of page
-dash.register_page(__name__, path="/reactions/agtest", image='iaea.png')
+dash.register_page(__name__, path="/reactions/agtest", image="iaea.png")
 
 
 ## Initialize common data
@@ -58,8 +73,8 @@ def input_ag(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_elem"]
-                if query_strings.get("target_elem")
-                else "Ag",
+            if query_strings.get("target_elem")
+            else "Ag",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Input(
@@ -68,15 +83,19 @@ def input_ag(**query_strings):
             persistence=True,
             persistence_type="memory",
             value=query_strings["target_mass"]
-                if query_strings.get("target_mass")
-                else "109",
+            if query_strings.get("target_mass")
+            else "109",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
             id="reaction_ag",
             options=[
-                {"label": f"{proj.lower()},{reac.lower()}", "value": f"{proj.lower()},{reac.lower()}"}
-                for proj in PARTICLE for reac in reaction_list.keys() 
+                {
+                    "label": f"{proj.lower()},{reac.lower()}",
+                    "value": f"{proj.lower()},{reac.lower()}",
+                }
+                for proj in PARTICLE
+                for reac in reaction_list.keys()
             ],
             placeholder="Reaction e.g. (n,g)",
             persistence=True,
@@ -85,6 +104,7 @@ def input_ag(**query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
     ]
+
 
 ## main figure
 main_fig = dcc.Graph(
@@ -103,8 +123,10 @@ main_fig = dcc.Graph(
     },
 )
 
+
 def return_html(entid):
     return f"<a href=http://127.0.0.1:8050/dataexplorer/exfor/entry/{entid}>{entid}</a>"
+
 
 columnDefs = [
     {
@@ -150,7 +172,7 @@ defaultColDef = {
     "floatingFilter": True,
     # make columns resizable
     "resizable": True,
-    'sortable': True,    
+    "sortable": True,
 }
 
 
@@ -161,12 +183,12 @@ grid = dag.AgGrid(
     rowData=[],
     columnSize="sizeToFit",
     defaultColDef=defaultColDef,
-    rowMultiSelectWithClick=True,
-    dashGridOptions={"undoRedoCellEditing": True, 
-                     "rowSelection": "multiple",
-                     },
+    # rowMultiSelectWithClick=True,
+    dashGridOptions={
+        "undoRedoCellEditing": True,
+        "rowSelection": "multiple",
+    },
     # selectedRows={}
-    
 )
 
 
@@ -182,7 +204,9 @@ right_layout_ag = [
             dbc.Col(
                 dcc.RadioItems(
                     id="xaxis_type_ag",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -194,7 +218,9 @@ right_layout_ag = [
             dbc.Col(
                 dcc.RadioItems(
                     id="yaxis_type_ag",
-                    options=[{"label": i, "value": i.lower()} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
+                    ],
                     value="log",
                     persistence=True,
                     persistence_type="memory",
@@ -268,8 +294,6 @@ def layout(**query_strings):
     )
 
 
-
-
 ###------------------------------------------------------------------------------------
 ### App Callback
 ###------------------------------------------------------------------------------------
@@ -282,7 +306,6 @@ def redirect_to_pages_ag(dataset):
     return page_urls[dataset]
 
 
-
 @callback(
     Output("location_ag", "href", allow_duplicate=True),
     Input("reaction_category", "value"),
@@ -292,20 +315,16 @@ def redirect_to_subpages_ag(type):
     return lib_page_urls[type]
 
 
-
-
 @callback(
-    Output("location_ag", "href", allow_duplicate=True), 
+    Output("location_ag", "href", allow_duplicate=True),
     Input("grid-test", "cellClicked"),
     prevent_initial_call=True,
 )
 def display_cell_clicked_on(cell):
     if cell is None:
         return "Click on a cell"
-    if cell['colId'] == "entry_id":
-        return "http://127.0.0.1:8050/dataexplorer/exfor/entry/" + cell['value']
-
-
+    if cell["colId"] == "entry_id":
+        return "http://127.0.0.1:8050/dataexplorer/exfor/entry/" + cell["value"]
 
 
 @callback(
@@ -321,8 +340,7 @@ def display_cell_clicked_on(cell):
 def update_url_ag(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
-    if type=="SIG" and (elem and mass and reaction):
-
+    if type == "SIG" and (elem and mass and reaction):
         url = BASE_URL + "/reactions/xs"
 
         if elem:
@@ -332,10 +350,9 @@ def update_url_ag(type, elem, mass, reaction):
         if reaction:
             url += "&reaction=" + reaction
         return url
-    
+
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -361,13 +378,13 @@ def update_fig_ag(type, elem, mass, reaction):
 
     mt = reaction_list[reaction.split(",")[1].upper()]["mt"].zfill(3)
     xaxis_type, yaxis_type = default_axis(mt)
-    fig =  default_chart(xaxis_type, yaxis_type, reaction, mt)
-
+    fig = default_chart(xaxis_type, yaxis_type, reaction, mt)
 
     entids, entries = reaction_query(type, elem, mass, reaction, branch=None)
     libs = lib_query(type, elem, mass, reaction, mt)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)}"
-
+    search_result = (
+        f"Search results for {type} {elem}-{mass}({reaction}): {len(entids)}"
+    )
 
     if not entids and not libs:
         return search_result, fig, df.to_dict("records")

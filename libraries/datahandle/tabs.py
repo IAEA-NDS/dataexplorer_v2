@@ -1,4 +1,3 @@
-
 ####################################################################
 #
 # This file is part of libraries-2021 dataexplorer, https://nds.iaea.org/dataexplorer/.
@@ -11,55 +10,112 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc, dash_table
 from dash.dash_table.Format import Format, Scheme
+import dash_ag_grid as dag
+
+
+def index_table(pageparam):
+    return dash_table.DataTable(
+        id="index_table" + "_" + pageparam.lower(),
+        columns=[
+            {"name": "Author", "id": "author"},
+            {"name": "Year", "id": "year"},
+            {
+                "name": "#Entry",
+                "id": "entry_id",
+                "presentation": "markdown",
+            },
+            {"name": "Points", "id": "points"},
+            {
+                "name": "E_min[MeV]",
+                "id": "e_inc_min",
+                "type": "numeric",
+                "format": Format(precision=3, scheme=Scheme.exponent),
+            },
+            {
+                "name": "E_max[MeV]",
+                "id": "e_inc_max",
+                "type": "numeric",
+                "format": Format(precision=3, scheme=Scheme.exponent),
+            },
+            # {"name": "sf5", "id": "sf5"},
+            # {"name": "sf8", "id": "sf8"},
+            {"name": "x4_code", "id": "x4_code"},
+        ],
+        filter_action="native",
+        sort_action="native",
+        sort_mode="single",
+        page_action="native",
+        page_current=0,
+        page_size=20,
+        style_table={"overflowY": "auto"},
+        markdown_options={"html": True},  # fill_width=False
+    )
+
+
+def data_table(pageparam):
+    return dash_table.DataTable(
+        id="".join(["exfor_table_", pageparam.lower()]),
+        columns=[
+            {"name": "Author", "id": "author"},
+            {"name": "Year", "id": "year"},
+            {
+                "name": "#Entry",
+                "id": "entry_id",
+                "presentation": "markdown",
+            },
+            {
+                "name": "Energy[MeV]",
+                "id": "en_inc",
+                "type": "numeric",
+                "format": Format(precision=4, scheme=Scheme.exponent),
+            },
+            {
+                "name": "dEnergy[MeV]",
+                "id": "den_inc",
+                "type": "numeric",
+                "format": Format(precision=4, scheme=Scheme.exponent),
+            },
+            {
+                "name": "Data",
+                "id": "data",
+                "type": "numeric",
+                "format": Format(precision=4, scheme=Scheme.exponent),
+            },
+            {
+                "name": "dData",
+                "id": "ddata",
+                "type": "numeric",
+                "format": Format(precision=2, scheme=Scheme.exponent),
+            },
+        ],
+        filter_action="native",
+        sort_action="native",
+        sort_mode="single",
+        page_action="native",
+        page_current=0,
+        page_size=20,
+        style_table={"overflowY": "auto"},
+        markdown_options={"html": True},
+    )
 
 
 def create_tabs(pageparam):
     tabs = dbc.Tabs(
-        id="".join(["tabs-", pageparam.lower()]),
-        active_tab="".join(["ds-", pageparam.lower()]),
+        id="".join(["tabs-", pageparam]),
+        active_tab="".join(["ds-", pageparam]),
         children=[
             # first tab
             dbc.Tab(
                 label="Dataset List",
-                tab_id="".join(["ds-", pageparam.lower()]),
+                tab_id="".join(["ds-", pageparam]),
                 children=[
                     html.Br(),
                     html.P(
                         "Add more data to the chart by selecting dataset from the following table. Use filter function, e.g. >2000 in Year field. "
                     ),
                     # Index Table
-                    dash_table.DataTable(
-                        id="index_table"+"_"+pageparam.lower(),
-                        columns=[
-                            {"name": "Author", "id": "author"},
-                            {"name": "Year", "id": "year"},
-                            {"name": "#Entry", "id": "entry_id", "presentation": "markdown"},
-                            {"name": "Points", "id": "points"},
-                            {
-                                "name": "E_min[MeV]",
-                                "id": "e_inc_min",
-                                "type": "numeric",
-                                "format": Format(precision=3, scheme=Scheme.exponent),
-                            },
-                            {
-                                "name": "E_max[MeV]",
-                                "id": "e_inc_max",
-                                "type": "numeric",
-                                "format": Format(precision=3, scheme=Scheme.exponent),
-                            },
-                            # {"name": "sf5", "id": "sf5"},
-                            # {"name": "sf8", "id": "sf8"},
-                            {"name": "x4_code", "id": "x4_code"},
-                        ],
-                        filter_action="native",
-                        sort_action="native",
-                        sort_mode="single",
-                        page_action="native",
-                        page_current=0,
-                        page_size=20,
-                        style_table={"overflowY": "auto"},
-                        markdown_options={"html": True},                        # fill_width=False
-                    ),
+                    # index_table(pageparam)
+                    index_table_ag(pageparam),
                 ],  # end of first tab children
             ),  # end of first tab
             # start second tab
@@ -70,46 +126,8 @@ def create_tabs(pageparam):
                     html.Br(),
                     html.P("Selected experimental data in the chart."),
                     html.P("Use filter function e.g. '>0.1' in Energy. "),
-                    dash_table.DataTable(
-                        id="".join(["exfor_table_", pageparam.lower()]),
-                        columns=[
-                            {"name": "Author", "id": "author"},
-                            {"name": "Year", "id": "year"},
-                            {"name": "#Entry", "id": "entry_id", "presentation": "markdown"},
-                            {
-                                "name": "Energy[MeV]",
-                                "id": "en_inc",
-                                "type": "numeric",
-                                "format": Format(precision=4, scheme=Scheme.exponent),
-                            },
-                            {
-                                "name": "dEnergy[MeV]",
-                                "id": "den_inc",
-                                "type": "numeric",
-                                "format": Format(precision=4, scheme=Scheme.exponent),
-                            },
-                            {
-                                "name": "Data",
-                                "id": "data",
-                                "type": "numeric",
-                                "format": Format(precision=4, scheme=Scheme.exponent),
-                            },
-                            {
-                                "name": "dData",
-                                "id": "ddata",
-                                "type": "numeric",
-                                "format": Format(precision=2, scheme=Scheme.exponent),
-                            },
-                        ],
-                        filter_action="native",
-                        sort_action="native",
-                        sort_mode="single",
-                        page_action="native",
-                        page_current=0,
-                        page_size=20,
-                        style_table={"overflowY": "auto"},
-                        markdown_options={"html": True},  
-                    ),
+                    # data table
+                    data_table(pageparam),
                 ],  # end of second tab children
             ),  # end of second tab
             dbc.Tab(
@@ -119,12 +137,10 @@ def create_tabs(pageparam):
                     # html.Div(
                     #     id="".join(["file_list_", pageparam.lower()]),
                     # )
-    
                     html.Br(),
-                    html.P(
-                        "Download all experimental datasets as a CSV file:"
-                    ),
-                    dcc.Download(id="".join(["csv-link-", pageparam.lower()]),
+                    html.P("Download all experimental datasets as a CSV file:"),
+                    dcc.Download(
+                        id="".join(["csv-link-", pageparam.lower()]),
                     ),
                     html.Br(),
                     html.Br(),
@@ -138,14 +154,12 @@ def create_tabs(pageparam):
                     html.Br(),
                     html.P("Files in ENDFTABLES:"),
                     # html.Div(children=libflinks),
-        
                 ],
             ),
         ],
     )
     # ])
     return tabs
-
 
 
 def create_tabs_fy():
@@ -169,7 +183,11 @@ def create_tabs_fy():
                         columns=[
                             {"name": "Author", "id": "author"},
                             {"name": "Year", "id": "year"},
-                            {"name": "#Entry", "id": "entry_id", "presentation": "markdown"},
+                            {
+                                "name": "#Entry",
+                                "id": "entry_id",
+                                "presentation": "markdown",
+                            },
                             {"name": "Points", "id": "points"},
                             {
                                 "name": "E_inc[MeV]",
@@ -178,7 +196,6 @@ def create_tabs_fy():
                                 "format": Format(precision=4, scheme=Scheme.exponent),
                             },
                             {"name": "x4_code", "id": "x4_code"},
-
                         ],
                         filter_action="native",
                         sort_action="native",
@@ -187,7 +204,7 @@ def create_tabs_fy():
                         page_current=0,
                         page_size=20,
                         style_table={"overflowY": "auto"},
-                        markdown_options={"html": True},    
+                        markdown_options={"html": True},
                     ),
                 ],  # end of first tab children
             ),  # end of first tab
@@ -234,7 +251,7 @@ def create_tabs_fy():
                         page_current=0,
                         page_size=20,
                         style_table={"overflowY": "auto"},
-                        markdown_options={"html": True},    
+                        markdown_options={"html": True},
                     ),
                 ],  # end of second tab children
             ),  # end of second tab
@@ -251,3 +268,112 @@ def create_tabs_fy():
     )
     # ])
     return tabs
+
+
+########### AGGRID tables
+defaultFilterParams = {
+    "filterOptions": ["contains"],
+    "defaultOption": "contains",
+    "trimInput": True,
+    # "debounceMs": 1000,
+}
+
+
+columnDefs = [
+    {
+        "headerName": "Author",
+        "field": "author",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+        "checkboxSelection": True,
+        "headerCheckboxSelection": True,
+    },
+    {
+        "headerName": "Year",
+        "field": "year",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "Entry Id",
+        "field": "entry_id_link",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+        # "cellStyle": {"color": "blue", "text-decoration": "underline"},
+        "cellRenderer": "markdown",
+    },
+    {
+        "headerName": "Points",
+        "field": "points",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "E_min [MeV]",
+        "field": "e_inc_min",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "E_max [MeV]",
+        "field": "e_inc_max",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "EXFOR Reaction Code",
+        "field": "x4_code",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+    },
+    {
+        "headerName": "SF8",
+        "field": "sf8",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+]
+
+defaultColDef = {
+    "flex": 1,
+    "width": 50,
+    # "floatingFilter": True,
+    "resizable": True,
+    "sortable": True,
+    "filter": True,
+}
+
+columnSizeOptions = {
+    "defaultMinWidth": 100,
+    "columnLimits": [
+        {"key": "author", "minWidth": 200},
+        {"key": "entry_id", "minWidth": 100},
+        {"key": "x4_code", "minWidth": 300},
+        {"key": "year", "maxWidth": 80},
+        {"key": "sf8", "maxWidth": 80},
+        {"key": "points", "maxWidth": 80},
+    ],
+}
+
+
+def index_table_ag(pageparam):
+    return dag.AgGrid(
+        id="index_table_" + pageparam,
+        # enableEnterpriseModules=False,
+        columnDefs=columnDefs,
+        # rowData=df.to_dict("records"),.
+        columnSize="sizeToFit",
+        columnSizeOptions=columnSizeOptions,
+        dashGridOptions={
+            "rowSelection": "multiple",
+            "rowMultiSelectWithClick": True,
+            # "pagination": True,
+            # "paginationPageSize": 100
+        },
+        className="ag-theme-balham",  ## Themes: ag-theme-alpine, ag-theme-alpine-dark, ag-theme-balham, ag-theme-balham-dark, ag-theme-material, and ag-bootstrap.
+        persistence=True,
+        persisted_props=["filterModel"]
+    )

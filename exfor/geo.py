@@ -9,14 +9,13 @@ from dash import dcc, html, callback, Input, Output, State, no_update
 from exfor.datahandle.list import country_dict, facilities_dict, institute_df, bib_df
 
 
-
 def geosummary(bib_df):
     bib_df["main_facility_institute"] = bib_df["main_facility_institute"].str.replace(
-        r"\(|\)", ""
-    , regex=True)
+        r"\(|\)", "", regex=True
+    )
     bib_df["main_facility_type"] = bib_df["main_facility_type"].str.replace(
-        r"\(|\)", ""
-    , regex=True)
+        r"\(|\)", "", regex=True
+    )
     bib_df["main_facility_country"] = bib_df["main_facility_institute"].str[0:4]
     bib_df["main_facility_country"] = bib_df["main_facility_country"].map(country_dict)
     bib_df["main_facility_type"] = bib_df["main_facility_type"].map(facilities_dict)
@@ -86,25 +85,14 @@ def geosummary(bib_df):
 geo_fig = geosummary(bib_df)
 
 
-
-
-@callback(
-        Output('test', 'children'),
-        Input('geo_map', 'clickData')
-        )
+@callback(Output("test", "children"), Input("geo_map", "clickData"))
 def select_nodes(selected_data):
     # print('Callback select_nodes: ', selected_data)
 
     if not selected_data:
-        return 'hello'
+        return "hello"
     else:
         return json.dumps(selected_data, indent=2)
-
-
-
-
-
-
 
 
 # if __name__ == "__main__":
