@@ -306,8 +306,8 @@ def redirection_fy(type, elem, mass, reaction):
     [
         Output("result_cont_fis", "children"),
         Output("main_fig_fis", "figure"),
-        Output("index_table_fis", "data"),
-        Output("exfor_table_fis", "data"),
+        Output("index_table_fis", "rowData"),
+        Output("exfor_table_fis", "rowData"),
     ],
     [
         Input("reaction_category", "value"),
@@ -403,7 +403,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id"] = (
+        index_df["entry_id_link"] = (
             "["
             + index_df["entry_id"]
             + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
@@ -413,7 +413,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
         df["bib"] = df["entry_id"].map(legend)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
-        df["entry_id"] = (
+        df["entry_id_link"] = (
             "["
             + df["entry_id"]
             + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"

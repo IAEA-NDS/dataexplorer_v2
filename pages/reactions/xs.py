@@ -9,11 +9,9 @@
 
 import pandas as pd
 import dash
-import re
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 
 from common import (
@@ -26,6 +24,7 @@ from common import (
     input_check,
     energy_range_conversion,
     generate_reactions,
+    remove_query_parameter,
 )
 from config import BASE_URL
 from libraries.datahandle.list import reaction_list, mt50_list
@@ -48,7 +47,7 @@ dash.register_page(__name__, path="/reactions/xs")
 
 ## Input layout
 def input_lib(**query_strings):
-    print(query_strings)
+    print("query_strings:", query_strings)
     return [
         dcc.Dropdown(
             id="reaction_category",
@@ -95,6 +94,7 @@ def input_lib(**query_strings):
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
+            value=query_strings["branch"] if query_strings.get("branch") else None,
             style={"font-size": "small", "width": "100%"},
         ),
         html.Br(),
@@ -249,80 +249,107 @@ def layout(**query_strings):
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
-    Output("location", "href", allow_duplicate=True),
+    [
+        Output("location", "href", allow_duplicate=True),
+        Output("location", "refresh", allow_duplicate=True)
+    ],
     Input("dataset", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_pages(dataset):
+
     if dataset:
-        return page_urls[dataset]
+        return page_urls[dataset], True
+    
     else:
         raise PreventUpdate
 
 
 
 @callback(
-    Output("location", "href", allow_duplicate=True),
+    [
+        Output("location", "href", allow_duplicate=True),
+        Output("location", "refresh", allow_duplicate=True)
+    ],
     Input("reaction_category", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_subpages(type):
+    print(type)
     if type:
-        return lib_page_urls[type]
+        return lib_page_urls[type], True
+    
     else:
         raise PreventUpdate
+
+
+
+@callback(
+    Output("reac_branch", "options"),
+    Input("reaction", "value"),
+)
+def update_branch_list(reaction):
+
+    if not reaction:
+        raise PreventUpdate
+
+    if reaction.split(",")[1] == "inl":
+        return [{"label": "L" + str(n), "value": n} for n in range(0, 40)]
+
+    else:
+        return [{"label": "Partial", "value": "PAR"}]
+
 
 
 
 @callback(
     [
         Output("location", "href", allow_duplicate=True), 
-        Output("location", "refresh")
+        Output("location", "refresh", allow_duplicate=True)
     ],
     [
         Input("reaction_category", "value"),
         Input("target_elem", "value"),
         Input("target_mass", "value"),
         Input("reaction", "value"),
+        Input("reac_branch", "value"),
     ],
     prevent_initial_call=True,
 )
-def update_url(type, elem, mass, reaction):
-    input_check(type, elem, mass, reaction)
-
-    if type == "SIG" and (elem and mass and reaction):
-        url = BASE_URL + "/reactions/xs"
+def update_url(type, elem, mass, reaction, branch):
+    
+    url = BASE_URL + "/reactions/xs"
+    
+    if type == "SIG" and elem and mass and reaction:
+        input_check(type, elem, mass, reaction)
+        print("SIG in url generation:", type, elem, mass, reaction, branch)
 
         if elem:
             url += "?&target_elem=" + elem
+
         if mass:
             url += "&target_mass=" + mass
+
         if reaction:
             url += "&reaction=" + reaction.replace("+","%2B")
-        return url, False
 
+            if reaction.split(",")[1].upper() == "INL":
+                
+                if isinstance(branch, int):
+                    url += "&branch=" + str(branch)
+
+            elif reaction.split(",")[1].upper() != "INL":
+                if branch == "PAR":
+                    url += "&branch=" + str(branch)
+                else:
+                    url = remove_query_parameter(url, "branch")
+
+        return url, False
+    
     else:
+
         raise PreventUpdate
 
-
-
-
-
-@callback(
-    [
-        Output("reac_branch", "options"),
-        Output("reac_branch", "value"),
-    ],
-    Input("reaction", "value"),
-)
-def update_branch_list(reaction):
-    if reaction:
-        if reaction.split(",")[1] == "inl":
-            return [{"label": "L" + str(n), "value": n} for n in range(0, 40)], 1
-        else:
-            return [{"label": "Partial", "value": "PAR"}], None
-    else:
-        return [{"label": "Partial", "value": "PAR"}], None
 
 
 
@@ -332,8 +359,8 @@ def update_branch_list(reaction):
         Output("result_cont", "children"),
         Output("main_fig_xs", "figure"),
         Output("index_table_xs", "rowData"),
-        Output("index_table_xs", "selectedRows"),
-        Output("exfor_table_xs", "data"),
+        # Output("index_table_xs", "selectedRows"),
+        Output("exfor_table_xs", "rowData"),
     ],
     [
         Input("reaction_category", "value"),
@@ -345,18 +372,25 @@ def update_branch_list(reaction):
     # prevent_initial_call=True,
 )
 def update_fig(type, elem, mass, reaction, branch):
-    elem, mass, reaction = input_check(type, elem, mass, reaction)
-    print(type, elem, mass, reaction, branch)
+
+    if type != "SIG":
+        raise PreventUpdate
+    
+    input_check(type, elem, mass, reaction)
+    print("SIG: in data retrieve:", type, elem, mass, reaction, branch)
 
     df = pd.DataFrame()
     index_df = pd.DataFrame()
+    df_lib = pd.DataFrame()
 
     if not branch:
         if (
             reaction.split(",")[0].upper() != "N"
             and reaction.split(",")[1].upper() == "INL"
         ):
-            ## in case if it is not neutron induced reaction then INL (MT=4) is for the production of one neutron which is the sum of the MT=50-90
+            ## in case if it is not neutron induced reaction then 
+            ## INL (MT=4) is for the production of one neutron which 
+            ## is the sum of the MT=50-90
             mt = "004"
 
         else:
@@ -375,12 +409,10 @@ def update_fig(type, elem, mass, reaction, branch):
     libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
     search_result = f"Search results for {type} {elem}-{mass}({reaction}), MT={mt}, Number of EXFOR data: {len(entries)}"
 
-    print(libs)
-
     if not entries and not libs:
-        return search_result, fig, None, None, None
+        return search_result, fig, None, None
 
-    if libs:
+    if libs.keys():
         df_lib = lib_xs_data_query(libs.keys())
 
         for l in libs.keys():
@@ -397,7 +429,7 @@ def update_fig(type, elem, mass, reaction, branch):
                     mode="lines",
                 )
             )
-
+    # print(entries.keys())
     if entries:
         legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
@@ -406,9 +438,8 @@ def update_fig(type, elem, mass, reaction, branch):
             for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entries.keys(), branch)
+        df = data_query(entries.keys())
 
-        print(len(legend), len(entries))
         # assert len(legend) == len(entries)
 
         i = 0
@@ -462,7 +493,7 @@ def update_fig(type, elem, mass, reaction, branch):
         search_result,
         fig,
         index_df.to_dict("records"),
-        index_df.to_dict("records"),
+        # index_df.to_dict("records"),
         df.to_dict("records"),
     )
 

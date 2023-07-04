@@ -9,13 +9,10 @@
 
 import pandas as pd
 import dash
-import json
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
-from collections import OrderedDict
-from operator import getitem
 
 
 from common import (
@@ -34,8 +31,8 @@ from libraries.datahandle.list import (
     read_mass_range,
     MT_LIST_FY,
 )
-from config import session, session_lib, engines, BASE_URL
-from libraries.datahandle.tabs import create_tabs_fy
+from config import BASE_URL
+from libraries.datahandle.tabs import create_tabs
 from exforparser.sql.queries import (
     reaction_query_fy,
     get_entry_bib,
@@ -217,7 +214,7 @@ right_layout_fy = [
         type="circle",
     ),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs_fy(),
+    create_tabs("fy"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
@@ -333,8 +330,8 @@ def redirection_fy(type, elem, mass, reaction):
         Output("result_cont_fy", "children"),
         Output("main_fig_fy", "figure"),
         Output("reac_product_fy", "options"),
-        Output("index_table_fy", "data"),
-        Output("exfor_table_fy", "data"),
+        Output("index_table_fy", "rowData"),
+        Output("exfor_table_fy", "rowData"),
     ],
     [
         Input("reaction_category", "value"),
@@ -375,7 +372,7 @@ def update_fig_fy(
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    print(lower, upper)
+
     entries = reaction_query_fy(
         type, elem, mass, reaction, branch, mesurement_opt_fy, energy_range
     )
@@ -389,18 +386,13 @@ def update_fig_fy(
 
     if libs:
         df_lib = lib_data_query_fy(libs.keys(), lower, upper)
-        print(df_lib)
+
         if plot_opt_fy == "Mass":
             x_ax = "mass"
             dff = df_lib.groupby(["reaction_id", "mass", "en_inc"], as_index=False)[
                 "data"
             ].max(numeric_only=True)
 
-            # for a in df_lib["mass"].unique():
-            #     # df_lib.loc[df_lib['mass'] == a, 'data'].sum()
-
-            #     x_ax = "mass"
-            #     fig.update_layout(dict(xaxis={"title": "Mass number"}))
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
@@ -423,7 +415,7 @@ def update_fig_fy(
             )
 
     if entries:
-        legend = get_entry_bib(entries.keys())
+        legend = get_entry_bib(e[:5] for e in entries.keys())
         legend = {
             t: dict(**i, **v)
             for k, i in legend.items()
@@ -487,20 +479,20 @@ def update_fig_fy(
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id"] = (
+        index_df["entry_id_link"] = (
             "["
             + index_df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + index_df["entry_id"]
             + ")"
         )
         df["bib"] = df["entry_id"].map(legend)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
-        df["entry_id"] = (
+        df["entry_id_link"] = (
             "["
             + df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + df["entry_id"]
             + ")"
         )

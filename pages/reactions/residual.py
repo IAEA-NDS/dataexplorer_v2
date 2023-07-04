@@ -9,11 +9,9 @@
 
 import pandas as pd
 import dash
-import re
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from collections import OrderedDict
 from dash.exceptions import PreventUpdate
 
 from common import (
@@ -266,31 +264,42 @@ def layout(**query_strings):
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
-    Output("location_rp", "href", allow_duplicate=True),
+    [
+        Output("location_rp", "href", allow_duplicate=True),
+        Output("location_rp", "refresh", allow_duplicate=True),
+    ],
     Input("dataset", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_pages_rp(dataset):
     if dataset:
-        return page_urls[dataset]
+        return page_urls[dataset], True
     else:
         raise PreventUpdate
 
 
 @callback(
-    Output("location_rp", "href", allow_duplicate=True),
+    [
+        Output("location_rp", "href", allow_duplicate=True),
+        Output("location_rp", "refresh", allow_duplicate=True),
+    ],
     Input("reaction_category", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_subpages_rp(type):
+    print(type)
     if type:
-        return lib_page_urls[type]
+        return lib_page_urls[type], True
+    
     else:
         raise PreventUpdate
 
 
 @callback(
-    Output("location_rp", "href", allow_duplicate=True),
+    [
+        Output("location_rp", "href", allow_duplicate=True),
+        Output("location_rp", "refresh", allow_duplicate=True)
+    ],
     [
         Input("reaction_category", "value"),
         Input("target_elem_rp", "value"),
@@ -302,26 +311,33 @@ def redirect_to_subpages_rp(type):
     prevent_initial_call=True,
 )
 def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
-    input_check(type, elem, mass, inc_pt)
-    input_check(type, rp_elem, rp_mass, inc_pt)
-    print(type, elem, mass, inc_pt, "-->", rp_elem, rp_mass)
 
-    if type == "Residual" and (elem and mass and inc_pt and rp_elem and rp_mass):
-        url = BASE_URL + "/reactions/residual"
+    url = BASE_URL + "/reactions/residual"
 
+    if type == "Residual" and elem and mass and inc_pt and rp_elem and rp_mass:
+        input_check(type, elem, mass, inc_pt)
+        input_check(type, rp_elem, rp_mass, inc_pt)
+        print("RP in url generation:", type, elem, mass, inc_pt, "-->", rp_elem, rp_mass)
+ 
         if elem:
             url += "?&target_elem=" + elem
+
         if mass:
             url += "&target_mass=" + mass
+
         if inc_pt:
             url += "&inc_pt=" + inc_pt
+
         if rp_elem:
             url += "&rp_elem=" + rp_elem
+
         if rp_mass:
             url += "&rp_mass=" + rp_mass
-        return url
+            
+        return url, False
 
     else:
+
         raise PreventUpdate
 
 
@@ -329,8 +345,8 @@ def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     [
         Output("result_cont_rp", "children"),
         Output("main_fig_rp", "figure"),
-        Output("index_table_rp", "data"),
-        Output("exfor_table_rp", "data"),
+        Output("index_table_rp", "rowData"),
+        Output("exfor_table_rp", "rowData"),
     ],
     [
         Input("reaction_category", "value"),
@@ -343,11 +359,14 @@ def update_url_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     # prevent_initial_call=True,
 )
 def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
-    elem, mass, inc_pt = input_check(type, elem, mass, inc_pt)
-    rp_elem, rp_mass, inc_pt = input_check(type, rp_elem, rp_mass, inc_pt)
+    input_check(type, elem, mass, inc_pt)
+    input_check(type, rp_elem, rp_mass, inc_pt)
+    print("RP in data retrieve:", type, elem, mass, inc_pt, "-->", rp_elem, rp_mass)
 
     df = pd.DataFrame()
     index_df = pd.DataFrame()
+    df_lib = pd.DataFrame()
+
     fig = default_chart(
         xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None
     )
@@ -395,7 +414,7 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
             for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entries.keys(), branch=None)
+        df = data_query(entries.keys())
 
         i = 0
         for e in legend.keys():
@@ -420,7 +439,7 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id"] = (
+        index_df["entry_id_link"] = (
             "["
             + index_df["entry_id"]
             + "](../exfor/entry/"
@@ -431,7 +450,7 @@ def update_fig_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
         df["bib"] = df["entry_id"].map(legend)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
-        df["entry_id"] = (
+        df["entry_id_link"] = (
             "["
             + df["entry_id"]
             + "](../exfor/entry/"

@@ -301,8 +301,8 @@ def update_url_da(type, elem, mass, reaction):
     [
         Output("result_cont_da", "children"),
         Output("main_fig_da", "figure"),
-        Output("index_table_da", "data"),
-        Output("exfor_table_da", "data"),
+        Output("index_table_da", "rowData"),
+        Output("exfor_table_da", "rowData"),
     ],
     [
         Input("reaction_category", "value"),
@@ -358,7 +358,7 @@ def update_fig_da(type, elem, mass, reaction):
             for t, v in entries.items()
             if k == t[:5]
         }
-        df = data_query(entries.keys(), branch=None)
+        df = data_query(entries.keys())
 
         i = 0
         for e in legend.keys():
@@ -383,10 +383,10 @@ def update_fig_da(type, elem, mass, reaction):
 
         index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id"] = (
+        index_df["entry_id_link"] = (
             "["
             + index_df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + index_df["entry_id"]
             + ")"
         )
@@ -394,10 +394,10 @@ def update_fig_da(type, elem, mass, reaction):
         df["bib"] = df["entry_id"].map(legend)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
-        df["entry_id"] = (
+        df["entry_id_link"] = (
             "["
             + df["entry_id"]
-            + "](http://127.0.0.1:8050/dataexplorer/exfor/entry/"
+            + "](../exfor/entry/"
             + df["entry_id"]
             + ")"
         )

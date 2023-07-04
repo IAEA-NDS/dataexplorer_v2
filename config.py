@@ -3,7 +3,7 @@ import os
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker
 
-DEVENV = True
+DEVENV = False
 
 if DEVENV:
     ## Application file location

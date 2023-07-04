@@ -16,6 +16,8 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 from dash.exceptions import PreventUpdate
+import urllib.parse
+# from urllib.parse import urlencode
 
 # from app import app
 from man import manual
@@ -82,10 +84,6 @@ page_urls = {
 
 
 lib_selections = [
-    # {
-    #     "label": "AGGRID",
-    #     "value": "AGTEST",
-    # },
     {
         "label": "Cross Section (XS)",
         "value": "SIG",
@@ -101,22 +99,16 @@ lib_selections = [
         "label": "Fission observables",
         "value": "FIS",
     },
-    # {
-    #     "label": "Ion Induced Reactions",
-    #     "value": "ION",
-    # },
 ]
 
 
 lib_page_urls = {
-    "AGTEST": "/dataexplorer/reactions/agtest",
     "SIG": "/dataexplorer/reactions/xs",
     "Residual": "/dataexplorer/reactions/residual",
     "FY": "/dataexplorer/reactions/fy",
     "DA": "/dataexplorer/reactions/da",
     "DE": "/dataexplorer/reactions/de",
     "FIS": "/dataexplorer/reactions/fission",
-    # "ION": "/dataexplorer/reactions/ion",
 }
 
 
@@ -290,3 +282,12 @@ def get_number_from_string(str):
 
 def get_str_from_string(str):
     return re.sub(r"\d+", "", str)
+
+
+def remove_query_parameter(url, param):
+    # クエリ文字列から指定されたパラメータを削除するユーティリティ関数
+    url_parts = urllib.parse.urlparse(url)
+    query_params = urllib.parse.parse_qs(url_parts.query)
+    query_params.pop(param, None)
+    updated_query = urllib.parse.urlencode(query_params, doseq=True)
+    return url_parts._replace(query=updated_query).geturl()

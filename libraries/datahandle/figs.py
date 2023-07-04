@@ -79,10 +79,14 @@ def default_chart(xaxis_type, yaxis_type, reaction, mt):
     # Expornential format
     if xaxis_type == "log":
         fig.update_xaxes(exponentformat="power")
+
     if yaxis_type == "log":
         fig.update_yaxes(exponentformat="power")
 
     return fig
+
+
+
 
     # elif (
     #     mt
