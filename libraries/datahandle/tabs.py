@@ -16,6 +16,7 @@ from libraries.datahandle.data_table import data_table_ag
 
 
 def create_tabs(pageparam):
+    pageparam = pageparam.lower()
     tabs = dbc.Tabs(
         id="".join(["tabs-", pageparam]),
         active_tab="".join(["ds-", pageparam]),
@@ -26,9 +27,6 @@ def create_tabs(pageparam):
                 tab_id="".join(["ds-", pageparam]),
                 children=[
                     html.Br(),
-                    html.P(
-                        "Add more data to the chart by selecting dataset from the following table. Use filter function, e.g. >2000 in Year field. "
-                    ),
                     # Index Table
                     index_table_ag(pageparam),
                 ],  # end of first tab children
@@ -39,7 +37,6 @@ def create_tabs(pageparam):
                 tab_id="".join(["datatable-", pageparam.lower()]),
                 children=[
                     html.Br(),
-                    html.P("Selected experimental data in the chart."),
                     html.P("Use filter function e.g. '>0.1' in Energy. "),
                     # data table
                     data_table_ag(pageparam),
@@ -49,17 +46,16 @@ def create_tabs(pageparam):
                 label="Download Data Files",
                 tab_id="".join(["dl-", pageparam.lower()]),
                 children=[
-                    # html.Div(
-                    #     id="".join(["file_list_", pageparam.lower()]),
-                    # )
                     html.Br(),
-                    html.P("Download all experimental datasets as a CSV file:"),
-                    dcc.Download(
-                        id="".join(["csv-link-", pageparam.lower()]),
+                    html.P("Download all experimental data as a CSV file:"),
+                    html.Button(
+                        "Download CSV",
+                        id="".join(["csv-button_", pageparam.lower()]),
+                        n_clicks=0,
                     ),
                     html.Br(),
                     html.Br(),
-                    html.P("Files in EXFORTABLES:"),
+                    html.P("Files in EXFORTABLES (Python version 2023):"),
                     # html.Div(
                     #     [html.Button("Download zip", id="btn_zip1"), Download(id="zip1")]
                     # ),
@@ -185,10 +181,6 @@ def create_tabs(pageparam):
 #     return tabs
 
 
-
-
-
-
 # def index_table(pageparam):
 #     return dash_table.DataTable(
 #         id="index_table" + "_" + pageparam.lower(),
@@ -273,4 +265,3 @@ def create_tabs(pageparam):
 #         style_table={"overflowY": "auto"},
 #         markdown_options={"html": True},
 #     )
-

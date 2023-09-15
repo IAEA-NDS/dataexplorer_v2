@@ -45,32 +45,34 @@ def default_axis(mt):
     ]:  # and not nuclide.endswith("000")
         xaxis_type = "log"
         yaxis_type = "log"
+
     else:
         xaxis_type = "linear"
         yaxis_type = "linear"
-    return xaxis_type, yaxis_type
 
+    return xaxis_type, yaxis_type
 
 def default_chart(xaxis_type, yaxis_type, reaction, mt):
     reaction = reaction.split(",")
 
     fig = go.Figure(
-        layout=go.Layout(
+        layout = go.Layout(
             # template="plotly_white",
             xaxis={
                 "title": "Incident energy [MeV]",
                 "type": xaxis_type,
                 "autorange": True,
                 "rangeslider": {
-                    # "bgcolor": "White",
+                    "bgcolor": "White",
                     "visible": True,
                     "autorange": True,
-                    "thickness": 0.1,
+                    "thickness": 0.2,
                 },
             },
             yaxis={
                 "title": "Cross section [barn]",
                 "type": yaxis_type,
+                "fixedrange": False,
             },
             margin={"l": 40, "b": 40, "t": 30, "r": 0},
         )
@@ -84,9 +86,6 @@ def default_chart(xaxis_type, yaxis_type, reaction, mt):
         fig.update_yaxes(exponentformat="power")
 
     return fig
-
-
-
 
     # elif (
     #     mt

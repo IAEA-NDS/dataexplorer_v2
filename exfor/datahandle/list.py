@@ -2,32 +2,19 @@ import json
 import os
 import pandas as pd
 
-from exfor_dictionary import Diction
-from config import engines, MAPPING_FILE, MODULES_DIR, EXFOR_PARSER
-from libraries.datahandle.list import read_mt_json
+from exfor_dictionary.exfor_dictionary import Diction
+from config import MAPPING_FILE, EXFOR_DICTIONARY
+
 
 with open(MAPPING_FILE) as map_file:
     MAPPING = json.load(map_file)
 
 
-connection = engines["exfor"].connect()
-
-
-def _load_instloc():
+def get_institute_df():
     institute_df = pd.read_pickle(
-        os.path.join(MODULES_DIR, EXFOR_PARSER, "pickles/institute.pickle")
+        os.path.join(EXFOR_DICTIONARY, "pickles/institute.pickle")
     )
     return institute_df
-
-
-def _load_bib():
-    df = pd.read_sql_table("exfor_bib", connection)
-    return df
-
-
-def _load_reactions():
-    df = pd.read_sql_table("exfor_reactions", connection)
-    return df
 
 
 def dict3_to_country():
@@ -64,8 +51,6 @@ def get_facility_type():
     return facilities_dict
 
 
-country_dict = dict3_to_country()
-facilities_dict = get_facility_type()
-institute_df = _load_instloc()
-bib_df = _load_bib()
-reaction_list = read_mt_json()
+
+
+

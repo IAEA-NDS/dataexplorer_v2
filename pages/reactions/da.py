@@ -17,37 +17,37 @@ from operator import getitem
 from dash.exceptions import PreventUpdate
 
 from common import (
+    PARTICLE,
     sidehead,
     footer,
     libs_navbar,
+    url_basename,
     page_urls,
     lib_selections,
     lib_page_urls,
     input_check,
     energy_range_conversion,
 )
-from libraries.datahandle.list import (
-    PARTICLE,
-    read_mt_json,
-    read_mass_range,
-)
-from config import BASE_URL
+
+from submodules.utilities.elem import elemtoz_nz
+from submodules.utilities.mass import mass_range
+
+from libraries.datahandle.list import reaction_list
 from libraries.datahandle.tabs import create_tabs
-from exforparser.sql.queries import (
+from libraries.datahandle.figs import default_chart, default_axis
+from libraries.datahandle.queries import (
+    lib_query,
+    lib_xs_data_query,
+)
+from exfor.datahandle.queries import (
     reaction_query,
     get_entry_bib,
     data_query,
-    lib_query,
-    lib_xs_data_query,
 )
 
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/da")
-
-## Initialize common data
-reaction_list = read_mt_json()
-mass_range = read_mass_range()
 
 
 def input_lib(**query_strings):
@@ -283,14 +283,17 @@ def update_url_da(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
     if type == "DA" and (elem and mass and reaction):
-        url = BASE_URL + "/reactions/da"
+        url = url_basename + "reactions/da"
 
         if elem:
             url += "?&target_elem=" + elem
+
         if mass:
             url += "&target_mass=" + mass
+
         if reaction:
             url += "&reaction=" + reaction
+
         return url
 
     else:
@@ -332,7 +335,7 @@ def update_fig_da(type, elem, mass, reaction):
                 },
             },
             yaxis={
-                "title": "Anglura distribution",
+                "title": "Angular distribution [mb/sr]",
                 "type": "linear",
                 "fixedrange": False,
             },
@@ -363,7 +366,7 @@ def update_fig_da(type, elem, mass, reaction):
         i = 0
         for e in legend.keys():
             fig.add_trace(
-                go.Scattergl(
+                go.Scatter(
                     x=df[df["entry_id"] == e]["angle"],
                     y=df[df["entry_id"] == e]["data"],
                     error_x=dict(type="data", array=df[df["entry_id"] == e]["dangle"]),
@@ -395,11 +398,7 @@ def update_fig_da(type, elem, mass, reaction):
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id_link"] = (
-            "["
-            + df["entry_id"]
-            + "](../exfor/entry/"
-            + df["entry_id"]
-            + ")"
+            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
         )
 
     return (
@@ -474,3 +473,14 @@ def fileter_by_range_lib(energy_range, year_range, fig):
                 records.update({"visible": "true"})
 
     return fig, filter
+
+
+@callback(
+    Output("exfor_table_da", "exportDataAsCsv"),
+    Input("csv-button_da", "n_clicks"),
+)
+def export_data_as_cs_da(n_clicks):
+    if n_clicks:
+        return True
+
+    return False

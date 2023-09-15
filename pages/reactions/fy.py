@@ -16,38 +16,37 @@ import plotly.graph_objects as go
 
 
 from common import (
+    PARTICLE_FY,
     sidehead,
     footer,
     libs_navbar,
+    url_basename,
     page_urls,
     lib_selections,
     lib_page_urls,
     input_check,
     energy_range_conversion,
 )
-from libraries.datahandle.list import (
-    PARTICLE_FY,
-    read_mt_json,
-    read_mass_range,
-    MT_LIST_FY,
-)
-from config import BASE_URL
+
+from submodules.utilities.elem import elemtoz_nz
+from submodules.utilities.mass import mass_range
+
+from libraries.datahandle.list import MT_LIST_FY, reaction_list, mt50_list
 from libraries.datahandle.tabs import create_tabs
-from exforparser.sql.queries import (
-    reaction_query_fy,
-    get_entry_bib,
-    data_query,
+from libraries.datahandle.figs import default_chart, default_axis
+from libraries.datahandle.queries import (
     lib_query,
     lib_data_query_fy,
 )
+from exfor.datahandle.queries import (
+    reaction_query_fy,
+    get_entry_bib,
+    data_query,
+)
+
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fy")
-
-
-## Initialize common data
-reaction_list = read_mt_json()
-mass_range = read_mass_range()
 
 
 ## Input layout
@@ -310,7 +309,7 @@ def redirection_fy(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
     if type == "FY" and (elem and mass and reaction):
-        url = BASE_URL + "/reactions/fy"
+        url = url_basename + "reactions/fy"
 
         if elem:
             url += "?&target_elem=" + elem
@@ -392,7 +391,6 @@ def update_fig_fy(
             dff = df_lib.groupby(["reaction_id", "mass", "en_inc"], as_index=False)[
                 "data"
             ].max(numeric_only=True)
-
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
@@ -490,11 +488,7 @@ def update_fig_fy(
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id_link"] = (
-            "["
-            + df["entry_id"]
-            + "](../exfor/entry/"
-            + df["entry_id"]
-            + ")"
+            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
         )
 
     return (
@@ -547,3 +541,14 @@ def fileter_by_range_fy(year_range, fig):
             records.update({"visible": "true"})
 
     return fig, filter
+
+
+@callback(
+    Output("exfor_table_fy", "exportDataAsCsv"),
+    Input("csv-button_fy", "n_clicks"),
+)
+def export_data_as_csv_fy(n_clicks):
+    if n_clicks:
+        return True
+
+    return False

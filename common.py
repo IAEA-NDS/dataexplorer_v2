@@ -14,20 +14,38 @@
 import re
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, dcc
+from dash import html
 from dash.exceptions import PreventUpdate
 import urllib.parse
-# from urllib.parse import urlencode
 
-# from app import app
+
 from man import manual
-from libraries.datahandle.list import (
-    PARTICLE,
-    ELEMS,
-    reaction_list,
-    elemtoz_nz,
-    read_mass_range,
-)
+from submodules.utilities.elem import ELEMS, elemtoz_nz
+from submodules.utilities.mass import mass_range
+from libraries.datahandle.list import reaction_list
+
+
+# ------------------------------------------------------------------------------
+# Incident particles
+# ------------------------------------------------------------------------------
+
+PARTICLE = ["N", "P", "D", "T", "A", "H", "G"]
+PARTICLE_FY = ["N", "0", "P", "D", "T", "A", "H", "G"]
+
+
+# ------------------------------------------------------------------------------
+# Isomeric state
+# ------------------------------------------------------------------------------
+
+ISOMERIC = ["", "g", "m", "m2"]
+
+
+# ------------------------------------------------------------------------------
+# Name of libraries used in each app
+# ------------------------------------------------------------------------------
+
+url_basename = dash.get_relative_path("/")
+
 
 toast = html.Div(
     [
@@ -63,7 +81,7 @@ sidehead = dbc.Row(
         dbc.Col(
             html.A(
                 [
-                    html.Img(src=dash.get_asset_url("logo.png"), height="40px"),
+                    html.Img(src=dash.get_asset_url("logo.png"), height="30px"),
                 ],
                 href="https://nds.iaea.org",
             )
@@ -77,16 +95,15 @@ sidehead = dbc.Row(
 
 
 page_urls = {
-    # "Libraries-2022": "/dataexplorer/",
-    "Libraries-2023": "/dataexplorer/reactions/xs",
-    "EXFOR": "/dataexplorer/exfor",
+    "Libraries-2023": url_basename + "reactions/xs",
+    "EXFOR": url_basename + "exfor",
 }
 
 
 lib_selections = [
     {
         "label": "Cross Section (XS)",
-        "value": "SIG",
+        "value": "XS",
     },
     {
         "label": "Residual Production XS",
@@ -103,12 +120,12 @@ lib_selections = [
 
 
 lib_page_urls = {
-    "SIG": "/dataexplorer/reactions/xs",
-    "Residual": "/dataexplorer/reactions/residual",
-    "FY": "/dataexplorer/reactions/fy",
-    "DA": "/dataexplorer/reactions/da",
-    "DE": "/dataexplorer/reactions/de",
-    "FIS": "/dataexplorer/reactions/fission",
+    "XS": url_basename + "reactions/xs",
+    "Residual": url_basename + "reactions/residual",
+    "FY": url_basename + "reactions/fy",
+    "DA": url_basename + "reactions/da",
+    "DE": url_basename + "reactions/de",
+    "FIS": url_basename + "reactions/fission",
 }
 
 
@@ -130,10 +147,51 @@ navbar = html.Div(
 libs_navbar = html.Div(
     [
         html.H5(html.B("IAEA Nuclear Data Explorer")),
-        html.P("Libraries 2023", style={"font-size": "medium"}),
-        html.P(
-            "Data have been renewed using a new exfor_parse",
-            style={"font-size": "smaller", "color": "gray"},
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.Div(
+                        [
+                            html.A(
+                                [
+                                    html.Img(
+                                        src=dash.get_asset_url("logo.png"),
+                                        height="20px",
+                                    ),
+                                ],
+                                href="https://nds.iaea.org",
+                            ),
+                            " Libraries 2023",
+                        ],
+                    ),
+                    width=2,
+                    style={"font-size": "medium"},
+                ),
+                dbc.Col(
+                    html.Div(
+                        [
+                            "Buildt with ",
+                            html.A(
+                                "endftables",
+                                href="https://nds.iaea.org/talys/",
+                                # className="text-dark",
+                            ),
+                            " and ",
+                            html.A(
+                                "exforparser",
+                                href="https://github.com/shinokumura/exforparser",
+                                # className="text-dark",
+                            ),
+                            ".",
+                        ],
+                        style={
+                            "font-size": "smaller",
+                            "color": "gray",
+                            "text-align": "left",
+                        },
+                    ),
+                ),
+            ]
         ),
     ]
 )
@@ -180,47 +238,6 @@ footer = html.Div(
     style={"text-align": "center"},
     className="text-dark",
 )
-
-
-def dict_merge(dicts_list):
-    d = {**dicts_list[0]}
-    for entry in dicts_list[1:]:
-        # print("entry:", entry)
-        for k, v in entry.items():
-            d[k] = (
-                [d[k], v]
-                if k in d and type(d[k]) != list
-                else [*d[k] + v]
-                if k in d
-                else v
-            )
-    return d
-
-
-def data_length_unify(data_dict):
-    data_len = []
-    new_list = []
-    data_list = data_dict["data"]
-
-    for i in data_list:
-        data_len += [len(i)]
-
-    for l in range(len(data_len)):
-        if data_len[l] < max(data_len):
-            data_list[l] = data_list[l] * max(data_len)
-
-    ## Check if list length are all same
-    it = iter(data_list)
-    the_next = len(next(it))
-    assert all(len(l) == the_next for l in it)
-
-    ## overwrite the "data" block by extended list
-    data_dict["data"] = data_list
-
-    return data_dict
-
-
-mass_range = read_mass_range()
 
 
 def input_check(type, elem, mass, reaction):
@@ -291,3 +308,20 @@ def remove_query_parameter(url, param):
     query_params.pop(param, None)
     updated_query = urllib.parse.urlencode(query_params, doseq=True)
     return url_parts._replace(query=updated_query).geturl()
+
+
+def limit_number_of_datapoints(points, df):
+    if points <= 100:
+        return df
+
+    elif 100 < points <= 1000:
+        nskip = int(points / 100)
+
+        return df.iloc[::nskip, :]
+
+    elif points > 1000:
+        nskip = int(points / 1000)
+        return df.iloc[::nskip, :]
+
+    else:
+        return df

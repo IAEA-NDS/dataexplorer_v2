@@ -11,28 +11,28 @@ import pandas as pd
 import datetime
 
 import dash
-from dash import html, dcc, callback, Input, dash_table, Output
+from dash import html, dcc, callback, Input, dash_table, Output, State
 from dash.dash_table.Format import Format, Scheme
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
-from libraries.datahandle.list import (
-    PARTICLE,
-    elemtoz_nz,
-)
+## from dataexplorer modules
 from common import (
+    PARTICLE,
+    PARTICLE_FY,
     sidehead,
+    url_basename,
     page_urls,
     exfor_navbar,
     footer,
     input_check,
     energy_range_conversion,
 )
-from config import session, engines, BASE_URL
+
 from exfor.exfor_stat import stat_right_layout
-from sql.models import Exfor_Reactions, Exfor_Bib
-from sql.queries import reaction_query_simple
-from exfor.datahandle.list import reaction_list, get_institutes, MAPPING
+from exfor.datahandle.queries import reaction_query_simple, join_index_bib
+from exfor.datahandle.list import get_institutes, MAPPING
+from libraries.datahandle.list import reaction_list
 
 ## Registory of the page
 dash.register_page(__name__, path="/exfor/search")
@@ -121,6 +121,7 @@ def input_ex(**query_strings):
                             style={"font-size": "small", "width": "100%"},
                         ),
                         dcc.Dropdown(
+                            id="facility",
                             placeholder="Measureed at",
                             options=[
                                 {
@@ -155,12 +156,14 @@ def input_ex(**query_strings):
                             persistence_type="memory",
                             style={"font-size": "small", "width": "100%"},
                         ),
+                        html.Button('Apply', id='apply_btn', n_clicks=0),
                     ],
                     title="More options",
                 ),
             ],
             start_collapsed=True,
         ),
+        dcc.Store(id="input_store_ex"),
         html.Br(),
         html.Label("Energy Range"),
         dcc.RangeSlider(
@@ -185,21 +188,31 @@ def input_ex(**query_strings):
             vertical=False,
         ),
         html.Br(),
-        dcc.Link(html.Label("Entry search"), href=BASE_URL + "/exfor"),
+
+        html.Label("Entry search"),
+        dcc.Input(
+            id="entid_ex",
+            type="text",
+            placeholder="Entry number",
+            persistence=True,
+            persistence_type="memory",
+            # size="md",
+            style={"font-size": "small", "width": "95%", "margin-left": "6px"},
+        ),
+
+        html.Br(),
+        # dcc.Link(html.Label("Entry search"), href=url_basename + "exfor"),
+        dcc.Link(html.Label("Geo search"), href=url_basename + "exfor/geo"),
     ]
 
 
-serch_result_layout = [
+search_result_layout = [
     exfor_navbar,
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     dbc.Row(
         [
             dbc.Col(html.Div(id="search_result_count"), width="auto"),
-            dbc.Col(
-                dcc.Link(
-                    html.Label("Plot in Dataexplorer"), id="dataeplorer_link", href=""
-                )
-            ),
+            dbc.Col(dcc.Link(id="dataeplorer_link", href="")),
         ]
     ),
     # Main content
@@ -254,10 +267,6 @@ serch_result_layout = [
 
 ## EXFOR page layout
 def layout(**query_strings):
-    if not query_strings:
-        right_layout = stat_right_layout
-    else:
-        right_layout = serch_result_layout
 
     return html.Div(
         [
@@ -294,8 +303,7 @@ def layout(**query_strings):
                     dbc.Col(
                         [
                             html.Div(
-                                id="right_layout",
-                                children=right_layout,
+                                children=search_result_layout if query_strings else stat_right_layout,
                                 style={"margin-right": "20px"},
                             ),
                             html.P("test", id="ppp"),
@@ -318,55 +326,176 @@ def layout(**query_strings):
     prevent_initial_call=True,
 )
 def redirect_to_pages(dataset):
-    return page_urls[dataset]
+    if dataset:
+        return page_urls[dataset]
+
+    else:
+        raise PreventUpdate
 
 
 @callback(
     Output("location_sch", "href", allow_duplicate=True),
-    [
-        Input("reaction_category_ex", "value"),
-        Input("target_elem_ex", "value"),
-        Input("target_mass_ex", "value"),
-        Input("reaction_ex", "value"),
-    ],
+    Input("entid_ex", "value"),
     prevent_initial_call=True,
 )
-def update_url_ex(type, elem, mass, reaction):
-    print(type, elem, mass, reaction)
-    input_check(type, elem, mass, reaction)
-
-    url = BASE_URL + "/exfor/search?"
-    if type:
-        url += "&type=" + type
-    if elem:
-        url += "&target_elem=" + elem
-    if mass:
-        url += "&target_mass=" + mass
-    if reaction:
-        url += "&reaction=" + reaction
-
+def redirect_to_entry(entry_id):
+    url = url_basename + "exfor/entry/"
+    if not entry_id:
+        raise PreventUpdate
+    elif len(entry_id) != 5 and len(entry_id) != 11:
+        raise PreventUpdate
+    else:
+        url += entry_id
     return url
 
 
+
 @callback(
     [
+        Output("reaction_ex", "options"),
         Output("reac_branch_ex", "options"),
         Output("reac_branch_ex", "value"),
     ],
-    Input("reaction_ex", "value"),
+    [
+        Input("reaction_category_ex", "value"),
+        Input("reaction_ex", "value"),
+    ]
 )
-def update_branch_list(reaction):
-    if reaction:
-        if reaction.split(",")[1] == "inl":
-            return [{"label": "L" + str(n), "value": n} for n in range(0, 40)], 1
-        else:
-            return [{"label": "Partial", "value": "PAR"}], None
+def update_branch_list_ex(type, reaction):
+    print("update_branch_list")
+    if not reaction or not type:
+        raise PreventUpdate
+
+    if type == "FY":
+        reactions = [f"{pt.lower()},f" for pt in PARTICLE_FY]
+        
+        return reactions, [{"label": "Independent", "value": "IND"}, {"label": "Cumulative", "value": "CUM"}, {"label": "Primary", "value": "PRE"}], None
+
     else:
-        return [{"label": "Partial", "value": "PAR"}], None
+        reactions = [
+                {
+                    "label": f"{proj.lower()},{reac.lower()}",
+                    "value": f"{proj.lower()},{reac.lower()}",
+                }
+                for proj in PARTICLE
+                for reac in reaction_list.keys()
+            ] + [{"label": "Other", "value": "other"}]
+
+        if reaction.split(",")[1].upper() == "INL":
+            return reactions, [{"label": "L" + str(n), "value": n} for n in range(0, 40)], None
+
+        else:
+            return reactions, [{"label": "Partial", "value": "PAR"}], None
+
+
+        
+@callback(
+    Output("input_store_ex", "data"),
+    [
+        Input("reaction_category_ex", "value"),
+        Input("target_elem_ex", "value"),
+        Input("target_mass_ex", "value"),
+        Input("reaction_ex", "value"),
+        Input("reac_branch_ex", "value"),
+        State("authors", "value"),
+        State("sf4", "value"),
+        State("facility", "value"),
+        State("sf5", "value"),
+        State("sf7", "value"),
+        State("sf8", "value"),
+        Input("apply_btn","n_clicks"),
+    ],
+    prevent_initial_call=True,
+)
+def input_store_ex(type, elem, mass, reaction, branch, authors, sf4, facility, sf5, sf7, sf8, apply_btn):
+    input_check(type, elem, mass, reaction)
+    print("#### search for ", type, elem, mass, reaction, branch)
+
+    if apply_btn:
+        return {
+                "type": type,
+                "elem": elem,
+                "mass": mass,
+                "reaction": reaction,
+                "branch": branch,
+                "authors": authors,
+                "sf4": sf4,
+                "sf5": sf5,
+                "sf7": sf7,
+                "sf8": sf8,
+                "facility": facility,
+            }
+    else:
+        return {
+                "type": type,
+                "elem": elem,
+                "mass": mass,
+                "reaction": reaction,
+                "branch": branch,
+                "authors": None,
+                "sf4": None,
+                "sf5": None,
+                "sf7": None,
+                "sf8": None,
+                "facility": None,
+            }
+
+
 
 
 @callback(
-    Output("dataeplorer_link", "href"),
+    [
+        Output("location_sch", "href", allow_duplicate=True),
+        Output("location_sch", "refresh", allow_duplicate=True),
+    ],
+    Input("input_store_ex", "data"),
+    prevent_initial_call=True,
+)
+def update_url_ex(input_store):
+    if input_store:
+            type = input_store.get("type")
+            elem = input_store.get("elem")
+            mass = input_store.get("mass")
+            reaction = input_store.get("reaction")
+            branch = input_store.get("branch")
+            authors = input_store.get("authors")
+            sf4 = input_store.get("sf4")
+            sf5 = input_store.get("sf5")
+            sf7 = input_store.get("sf7")
+            sf8 = input_store.get("sf8")
+            facility = input_store.get("facility")
+
+    else:
+        raise PreventUpdate
+    
+    url = url_basename + "exfor/search?"
+
+    if type:
+        url += "&type=" + type
+
+    if elem:
+        url += "&target_elem=" + elem
+
+    if mass:
+        url += "&target_mass=" + mass
+
+    if reaction:
+        url += "&reaction=" + reaction
+    
+    if branch:
+        url += "&branch=" + str(branch)
+
+    return url, False
+
+
+
+
+
+@callback(
+    [
+        Output("dataeplorer_link", "children"),
+        Output("dataeplorer_link", "href"),
+    ],
     [
         Input("reaction_category_ex", "value"),
         Input("target_elem_ex", "value"),
@@ -376,19 +505,26 @@ def update_branch_list(reaction):
 )
 def update_url_ex(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
-    if type == "SIG":
-        type = "xs"
 
-    plot_link = (
-        BASE_URL
-        + f"/reactions/{type.lower()}?target_elem={elem}&target_mass={mass}&reaction={reaction}"
-    )
+    if any(type == t for t in ["DA", "FY", "SIG", "DE", "FIS"]):
+        if type == "SIG":
+            type = "xs"
+        plot_link = f"{url_basename}reactions/{type.lower()}?target_elem={elem}&target_mass={mass}&reaction={reaction}"
 
-    return plot_link
+        return "Data plot", plot_link
+    
+    else:
+        return "", ""
+
+
+
+
 
 
 @callback(
-    [Output("search_result_count", "children"), Output("stored-data", "data")],
+    [
+        Output("search_result_count", "children"), 
+        Output("search_result_table", "data")],
     [
         Input("reaction_category_ex", "value"),
         Input("target_elem_ex", "value"),
@@ -403,7 +539,7 @@ def search_exfor_record_by_reaction(type, elem, mass, reaction, branch):
 
     df = reaction_query_simple(type, elem, mass, reaction, branch)
     df["entry_id"] = (
-        "[" + df["entry_id"] + "](" + BASE_URL + "/exfor/entry/" + df["entry_id"] + ")"
+        "[" + df["entry_id"] + "](" + url_basename + "exfor/entry/" + df["entry_id"] + ")"
     )
 
     search_result = (
@@ -413,25 +549,21 @@ def search_exfor_record_by_reaction(type, elem, mass, reaction, branch):
     return search_result, df.to_dict("records")
 
 
-@callback(
-    Output("search_result_table", "data"),
-    Input("stored-data", "data"),
-)
-def search_exfor_record_by_reaction(df_dict):
-    return df_dict
+
 
 
 @callback(
     Output("datatable-interactivity-container", "children"),
     [
-        Input("stored-data", "data"),
+        Input("search_result_table", "data"),
         Input("search_result_table", "derived_virtual_data"),
         Input("search_result_table", "derived_virtual_selected_rows"),
     ],
 )
-def update_graphs(df_dict, rows, derived_virtual_selected_rows):
+def update_graphs_ex(df_dict, rows, derived_virtual_selected_rows):
     df = pd.DataFrame.from_dict(df_dict)
     dff = df if rows is None else pd.DataFrame(rows)
+
     if derived_virtual_selected_rows is None:
         derived_virtual_selected_rows = []
 
@@ -463,3 +595,18 @@ def update_graphs(df_dict, rows, derived_virtual_selected_rows):
         ]
         if column in dff
     ]
+
+
+
+@callback(
+    Output("index-all", "rowData"),
+    Input("target_elem_ex", "value"),
+)
+def aggrid_data_add(target_elem_ex):
+    if not target_elem_ex:
+        df = join_index_bib()
+        return df.to_dict("records")
+    
+    else:
+        return pd.DataFrame()
+

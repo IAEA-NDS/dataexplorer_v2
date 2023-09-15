@@ -16,18 +16,19 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 
-# from app import app
-from config import BASE_URL, API_BASE_URL, MASTER_GIT_REPO_URL
+from exfor_dictionary.exfor_dictionary import Diction
+from submodules.utilities.util import dict_merge
+from exforparser.tabulated.data_process import data_length_unify
+
+from config import MASTER_GIT_REPO_URL
 from common import (
     sidehead,
+    url_basename,
     page_urls,
     exfor_navbar,
     footer,
-    dict_merge,
-    data_length_unify,
 )
 from exfor.exfor_record import get_record, get_git_history_api
-from exfor_dictionary import Diction
 from exfor.exfor_stat import stat_right_layout
 
 
@@ -50,7 +51,7 @@ def input_ex(entry_id=None):
                 style={"font-size": "small", "width": "95%", "margin-left": "6px"},
                 value=entry_id,
             ),
-            dcc.Link(html.Label("Reaction search"), href=BASE_URL + "/exfor/search"),
+            dcc.Link(html.Label("Reaction search"), href= url_basename + "exfor/search"),
         ]
     )
 
@@ -167,9 +168,11 @@ def generate_fig(df):
         yanchor="top",
     )
     fig = go.Figure(
-        go.Scatter(
-            x=pd.Series(dtype=object), y=pd.Series(dtype=object), mode="lines+markers"
-        )
+            go.Scatter(
+                x=pd.Series(dtype=object), 
+                y=pd.Series(dtype=object), 
+                mode="lines+markers"
+            )
     )
     fig.update_layout(
         updatemenus=[button_x_dict, button_y_dict],
@@ -324,7 +327,7 @@ def show_entry_links(entnum, entry_json):
                     "  ",
                     html.A(
                         "Compilation history",
-                        href=f"{API_BASE_URL}exfor/entry/{entnum}/histories",
+                        href=f"{url_basename}exfor/entry/{entnum}/histories",
                         id="exfor_compile_history",
                     ),
                     tooltip,
@@ -343,7 +346,7 @@ def show_entry_links(entnum, entry_json):
                     ),
                     dbc.Badge(
                         "JSON",
-                        href=f"{API_BASE_URL}exfor/entry/{entnum}",
+                        href=f"{url_basename}exfor/entry/{entnum}",
                         color="success",
                         className="me-1",
                     ),
@@ -661,7 +664,7 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_url(entry_id):
-    url = BASE_URL + "/exfor/entry/"
+    url = url_basename + "exfor/entry/"
     if not entry_id:
         raise PreventUpdate
     elif len(entry_id) != 5 and len(entry_id) != 11:

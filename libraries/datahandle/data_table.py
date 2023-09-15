@@ -8,8 +8,7 @@ defaultFilterParams = {
     # "debounceMs": 1000,
 }
 
-
-columnDefs = [
+columnDefsDefault = [
     {
         "headerName": "Author",
         "field": "author",
@@ -32,6 +31,20 @@ columnDefs = [
         # "cellStyle": {"color": "blue", "text-decoration": "underline"},
         "cellRenderer": "markdown",
     },
+    {
+        "headerName": "#Entry",
+        "field": "entry_id",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+        # "cellStyle": {"color": "blue", "text-decoration": "underline"},
+        "cellRenderer": "markdown",
+        "hide": True,
+    },
+]
+
+
+columnDefs_xs = [
     {
         "headerName": "Energy [MeV]",
         "field": "en_inc",
@@ -62,30 +75,95 @@ columnDefs = [
 ]
 
 
-
-columnDefsFY = [
+columnDefs_de = [
     {
-        "headerName": "Author",
-        "field": "author",
-        "type": "rightAligned",
-        "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
-    },
-    {
-        "headerName": "Year",
-        "field": "year",
+        "headerName": "Energy [MeV]",
+        "field": "en_inc",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
     },
     {
-        "headerName": "Entry Id",
-        "field": "entry_id_link",
+        "headerName": "dEnergy [MeV]",
+        "field": "den_inc",
         "type": "rightAligned",
-        "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
-        # "cellStyle": {"color": "blue", "text-decoration": "underline"},
-        "cellRenderer": "markdown",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
+    {
+        "headerName": "dSig/dE [MeV]",
+        "field": "e_out",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "dS/dE [MeV]",
+        "field": "de_out",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "Data",
+        "field": "data",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "dData",
+        "field": "ddata",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+]
+
+
+columnDefs_da = [
+    {
+        "headerName": "Energy [MeV]",
+        "field": "en_inc",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "dEnergy [MeV]",
+        "field": "den_inc",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "Angle [Degree]",
+        "field": "angle",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "dAngle [Degree]",
+        "field": "dangle",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "Data",
+        "field": "data",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "dData",
+        "field": "ddata",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+]
+
+
+columnDefs_fy = [
     {
         "headerName": "A",
         "field": "mass",
@@ -134,7 +212,6 @@ columnDefsFY = [
 ]
 
 
-
 defaultColDef = {
     "flex": 1,
     "width": 30,
@@ -158,11 +235,15 @@ columnSizeOptions = {
 def data_table_ag(pageparam):
     return dag.AgGrid(
         id="exfor_table_" + pageparam,
-        # enableEnterpriseModules=False,
-        columnDefs=columnDefs if pageparam !="FY" else columnDefsFY,
+        columnDefs=columnDefsDefault + columnDefs_xs
+                    if pageparam == "xs"
+                        else columnDefsDefault + columnDefs_fy
+                    if pageparam == "fy"
+                        else columnDefsDefault + columnDefs_de
+                    if pageparam == "de"
+                        else columnDefsDefault + columnDefs_da,
         defaultColDef=defaultColDef,
-        # rowData=df.to_dict("records"),.
-        columnSize="sizeToFit",
+        columnSize="responsiveSizeToFit",
         # columnSizeOptions=columnSizeOptions,
         dashGridOptions={
             "rowSelection": "multiple",
@@ -172,8 +253,5 @@ def data_table_ag(pageparam):
         },
         className="ag-theme-balham",  ## Themes: ag-theme-alpine, ag-theme-alpine-dark, ag-theme-balham, ag-theme-balham-dark, ag-theme-material, and ag-bootstrap.
         persistence=True,
-        # persisted_props=["filterModel"]
+        persisted_props=["filterModel"],
     )
-
-
-

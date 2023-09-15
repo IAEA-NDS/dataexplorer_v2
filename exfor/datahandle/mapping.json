@@ -53,6 +53,10 @@
       "description": "Double-diff. by angle (for quadruple-diff cs only)",
       "top_category": "DDX"
     },
+    "DA/DE": {
+      "description": "Double-diff. cross section",
+      "top_category": "DDX"
+    },
     "DE": {
       "description": "Energy Distribution (E)",
       "top_category": "DE"

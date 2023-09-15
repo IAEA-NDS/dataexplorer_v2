@@ -19,31 +19,37 @@ from operator import getitem
 
 
 from common import (
+    PARTICLE,
     sidehead,
     footer,
     libs_navbar,
+    url_basename,
     page_urls,
     lib_selections,
     lib_page_urls,
     input_check,
     energy_range_conversion,
 )
-from libraries.datahandle.list import (
-    PARTICLE_FY,
-    read_mt_json,
-    read_mass_range,
-)
-from config import session, session_lib, engines, BASE_URL
+from submodules.utilities.elem import elemtoz_nz
+from submodules.utilities.mass import mass_range
+
+
+from libraries.datahandle.list import reaction_list
 from libraries.datahandle.tabs import create_tabs
-from exforparser.sql.queries import reaction_query_fission, get_entry_bib, data_query
+from libraries.datahandle.figs import default_chart, default_axis
+from libraries.datahandle.queries import (
+    lib_query,
+    lib_xs_data_query,
+)
+from exfor.datahandle.queries import (
+    reaction_query,
+    get_entry_bib,
+    data_query,
+)
+
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fission")
-
-
-## Initialize common data
-reaction_list = read_mt_json()
-mass_range = read_mass_range()
 
 
 ## Input layout
@@ -287,12 +293,14 @@ def redirection_fy(type, elem, mass, reaction):
     elem, mass, reaction = input_check(type, elem, mass, reaction)
 
     if type == "FIS" and (elem and mass and reaction):
-        url = BASE_URL + "/reactions/fission"
+        url = url_basename + "reactions/fission"
 
         if elem:
             url += "?&target_elem=" + elem
+
         if mass:
             url += "&target_mass=" + mass
+            
         if reaction:
             url += "&reaction=" + reaction
 
@@ -338,9 +346,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    entries = reaction_query_fission(
-        type, elem, mass, reaction, branch, energy_range
-    )
+    entries = reaction_query_fission(type, elem, mass, reaction, branch, energy_range)
     search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV "
     print(search_result)
 
@@ -470,3 +476,14 @@ def fileter_by_range_fy(year_range, fig):
             records.update({"visible": "true"})
 
     return fig, filter
+
+
+@callback(
+    Output("exfor_table_fis", "exportDataAsCsv"),
+    Input("csv-button_fis", "n_clicks"),
+)
+def export_data_as_csv_fis(n_clicks):
+    if n_clicks:
+        return True
+
+    return False

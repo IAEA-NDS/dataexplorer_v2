@@ -167,3 +167,4 @@ requirements_old.txt
 exfor_dictionary/
 endflib_sql/
 sql/
+uninstall.txt

@@ -1,5 +1,5 @@
 #!/usr/bin/python
 
-from index import app
+from app import app
 
 application = app.server

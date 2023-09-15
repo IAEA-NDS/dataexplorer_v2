@@ -17,39 +17,37 @@ from operator import getitem
 from dash.exceptions import PreventUpdate
 
 from common import (
+    PARTICLE,
     sidehead,
     footer,
     libs_navbar,
+    url_basename,
     page_urls,
     lib_selections,
     lib_page_urls,
     input_check,
     energy_range_conversion,
 )
-from libraries.datahandle.list import (
-    PARTICLE,
-    read_mt_json,
-    elemtoz_nz,
-    read_mass_range,
-)
-from config import BASE_URL
+
+from submodules.utilities.elem import elemtoz_nz
+from submodules.utilities.mass import mass_range
+
+from libraries.datahandle.list import reaction_list
 from libraries.datahandle.tabs import create_tabs
 from libraries.datahandle.figs import default_chart, default_axis
-from exforparser.sql.queries import (
+from libraries.datahandle.queries import (
+    lib_query,
+    lib_xs_data_query,
+)
+from exfor.datahandle.queries import (
     reaction_query,
     get_entry_bib,
     data_query,
-    lib_query,
-    lib_xs_data_query,
 )
 
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/de")
-
-## Initialize common data
-reaction_list = read_mt_json()
-mass_range = read_mass_range()
 
 
 def input_lib(**query_strings):
@@ -285,7 +283,7 @@ def update_url_de(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
     if type == "DE" and (elem and mass and reaction):
-        url = BASE_URL + "/reactions/de"
+        url = url_basename + "reactions/de"
 
         if elem:
             url += "?&target_elem=" + elem
@@ -325,16 +323,17 @@ def update_fig_de(type, elem, mass, reaction):
     fig = go.Figure(
         layout=go.Layout(
             xaxis={
-                "title": "Outgoing particle energy [MeV]",
+                "title": "Emission Energy [eV]",
                 "type": "linear",
                 "rangeslider": {
                     "bgcolor": "White",
+                    "visible": True,
                     "autorange": True,
                     "thickness": 0.15,
                 },
             },
             yaxis={
-                "title": "Cross section [barn]",
+                "title": "Energy distribution [b/eV]",
                 "type": "linear",
                 "fixedrange": False,
             },
@@ -365,7 +364,7 @@ def update_fig_de(type, elem, mass, reaction):
         i = 0
         for e in legend.keys():
             fig.add_trace(
-                go.Scattergl(
+                go.Scatter(
                     x=df[df["entry_id"] == e]["e_out"],
                     y=df[df["entry_id"] == e]["data"],
                     error_x=dict(type="data", array=df[df["entry_id"] == e]["de_out"]),
@@ -396,11 +395,7 @@ def update_fig_de(type, elem, mass, reaction):
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
         df["entry_id_link"] = (
-            "["
-            + df["entry_id"]
-            + "](../exfor/entry/"
-            + df["entry_id"]
-            + ")"
+            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
         )
     return (
         search_result,
@@ -474,3 +469,29 @@ def fileter_by_range_lib(energy_range, year_range, fig):
                 records.update({"visible": "true"})
 
     return fig, filter
+
+
+@callback(
+    [
+        Output("exfor_table_de", "exportDataAsCsv"),
+        Output("exfor_table_de", "csvExportParams"),
+    ],
+    Input("csv-button_de", "n_clicks"),
+)
+def export_data_as_csv_de(n_clicks):
+    if n_clicks:
+        return True, {
+            "fileName": "ag_grid_all_cols_test.csv",
+            "columnKeys": [
+                "author",
+                "year",
+                "entry_id",
+                "en_inc",
+                "den_inc",
+                "data",
+                "ddata",
+            ],
+        }
+
+    else:
+        return False, {}

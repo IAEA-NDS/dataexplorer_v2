@@ -1,4 +1,5 @@
 import dash_ag_grid as dag
+
 ########### AGGRID tables
 defaultFilterParams = {
     "filterOptions": ["contains"],
@@ -15,8 +16,8 @@ columnDefs = [
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
         "filterParams": defaultFilterParams,
-        "checkboxSelection": True,
-        "headerCheckboxSelection": True,
+        # "checkboxSelection": True,
+        # "headerCheckboxSelection": True,
     },
     {
         "headerName": "Year",
@@ -68,11 +69,13 @@ columnDefs = [
     },
 ]
 
+
 defaultColDef = {
     "resizable": True,
     "sortable": True,
     "filter": True,
 }
+
 
 columnSizeOptions = {
     "defaultMinWidth": 100,
@@ -100,9 +103,10 @@ def index_table_ag(pageparam):
             "rowSelection": "multiple",
             "rowMultiSelectWithClick": True,
             # "pagination": True,
-            # "paginationPageSize": 100
+            # "paginationPageSize": 100,
+            # "paginationAutoPageSize": True,
         },
         className="ag-theme-balham",  ## Themes: ag-theme-alpine, ag-theme-alpine-dark, ag-theme-balham, ag-theme-balham-dark, ag-theme-material, and ag-bootstrap.
         persistence=True,
-        persisted_props=["filterModel"]
+        persisted_props=["filterModel"],
     )
