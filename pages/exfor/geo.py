@@ -25,14 +25,13 @@ from common import (
 )
 from exfor.datahandle.queries import index_query_by_bib
 from exfor.datahandle.list import MAPPING, get_facility_type
-from exfor.geo import get_reactions_geo, geo_fig
+from exfor.geo import reactions_df, geo_fig
 from exfor.aggrid import aggrid_layout_bib, aggrid_layout
 
 
 dash.register_page(__name__, path="/exfor/geo")
 
-reactions_df = get_reactions_geo()
-# print(reactions_df)
+
 
 def input_ge(**query_strings):
     return dbc.Row(

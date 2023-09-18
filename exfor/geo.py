@@ -45,6 +45,8 @@ def get_reactions_geo():
 
     return reactions_df
 
+reactions_df = get_reactions_geo()
+
 
 def geo_fig(grouping, reactions_df):
     # reactions_df = get_exfor_bib_table()

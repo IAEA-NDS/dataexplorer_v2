@@ -306,7 +306,6 @@ def layout(**query_strings):
                                 children=search_result_layout if query_strings else stat_right_layout,
                                 style={"margin-right": "20px"},
                             ),
-                            html.P("test", id="ppp"),
                         ],
                         width=10,
                     ),

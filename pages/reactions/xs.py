@@ -410,7 +410,7 @@ def input_store(type, elem, mass, reaction, branch):
 
 @callback(
     [
-        Output("location", "search", allow_duplicate=True),
+        Output("location", "search"),
         Output("location", "refresh", allow_duplicate=True),
     ],
         Input("input_store", "data"),
@@ -420,7 +420,10 @@ def update_url(input_store):
     print("update_url")
 
     if input_store:
-        type, elem, mass, reaction, branch, mt = input_store.values()
+        try:
+            type, elem, mass, reaction, branch, mt = input_store.values()
+        except:
+            raise PreventUpdate
     else:
         raise PreventUpdate
     
@@ -470,8 +473,11 @@ def update_url(input_store):
 def initial_data_xs(input_store):
     print("initial_data_xs")
     if input_store:
-        type, elem, mass, reaction, branch, mt = input_store.values()
-
+        try:
+            type, elem, mass, reaction, branch, mt = input_store.values()
+        except:
+            raise PreventUpdate
+        
         if type != "XS":
             raise PreventUpdate
 
@@ -508,7 +514,11 @@ def initial_data_xs(input_store):
         index_df = pd.DataFrame.from_dict(legends, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
         index_df["entry_id_link"] = (
-            "[" + index_df["entry_id"] + "](../exfor/entry/" + index_df["entry_id"] + ")"
+            "[" 
+            + index_df["entry_id"] 
+            + "](../exfor/entry/" 
+            + index_df["entry_id"] 
+            + ")"
         )
         legends["total_points"] = total_points
     
@@ -540,7 +550,11 @@ def initial_data_xs(input_store):
 def create_fig(input_store, legends, libs, endf_selct, switcher):
     # print("create_fig")
     if input_store:
-        type, elem, mass, reaction, branch, mt = input_store.values()
+        try:
+            type, elem, mass, reaction, branch, mt = input_store.values()
+
+        except:
+            raise PreventUpdate
 
     else:
         raise PreventUpdate
@@ -564,16 +578,15 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
             # new_col = next(line_color)
             # new_col = color_libs(l)
 
-            lib_df2 = lib_df[lib_df["reaction_id"] == int(l)]
+            # lib_df2 = lib_df[lib_df["reaction_id"] == int(l)]
             # lib_df2 = lib_df[lib_df["lib"] == l]
             fig.add_trace(
                 go.Scatter(
-                    x=lib_df2["en_inc"].astype(float),
-                    y=lib_df2["data"].astype(float),
+                    x=lib_df[lib_df["reaction_id"] == int(l)]["en_inc"].astype(float),
+                    y=lib_df[lib_df["reaction_id"] == int(l)]["data"].astype(float),
                     showlegend=True,
                     # line_color=new_col,
                     name=str(libs[l]),
-                    # name=l,
                     mode="lines",
                 )
             )
@@ -648,10 +661,7 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
 
             if i > 30:
                 i = 1
-                # break
 
-
-    # print(df)
     return fig, df.to_dict("records")
 
 
@@ -772,14 +782,11 @@ def fileter_by_year_range_lib(year_range, fig):
 
 @callback(
     Output("main_fig_xs", "figure", allow_duplicate=True),
-    [
-        Input("index_table_xs", "selectedRows"),
-        Input("exfor_table_xs", "rowData"),
-    ],
+    Input("index_table_xs", "selectedRows"),
     State("main_fig_xs", "figure"),
     prevent_initial_call=True,
 )
-def highlight_data(selected, exfor_data, fig):
+def highlight_data(selected, fig):
     # print("highlight_data")
     
     if not fig or not selected:

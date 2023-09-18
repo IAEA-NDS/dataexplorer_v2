@@ -145,7 +145,7 @@ def input_lib(**query_strings):
             persistence=True,
             persistence_type="memory",
             multi=True,
-            value=["endfb8.0", "tendl.2021"],
+            value=["endfb8.0", "tendl.2021", "jendl5.0"],
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("Groupwise data"),
@@ -317,8 +317,6 @@ def redirect_to_subpages_rp(type):
 
 
 
-
-
 @callback(
     Output("input_store_rp", "data"),
     [
@@ -334,23 +332,26 @@ def redirect_to_subpages_rp(type):
 def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
     input_check(type, elem, mass, inc_pt)
     input_check(type, rp_elem, rp_mass, inc_pt)
-
-    return dict(
-        {
-            "type": type,
-            "elem": elem,
-            "mass": mass,
-            "inc_pt": inc_pt,
-            "rp_elem": rp_elem,
-            "rp_mass": rp_mass,
-        }
-    )
+    if type != "Residual":
+        return dict({"type": type})
+    
+    else:
+        return dict(
+            {
+                "type": type,
+                "elem": elem,
+                "mass": mass,
+                "inc_pt": inc_pt,
+                "rp_elem": rp_elem,
+                "rp_mass": rp_mass,
+            }
+        )
 
 
 
 @callback(
     [
-        Output("location_rp", "search", allow_duplicate=True),
+        Output("location_rp", "search"),
         Output("location_rp", "refresh", allow_duplicate=True),
     ],
     Input("input_store_rp", "data"),
@@ -359,7 +360,10 @@ def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass):
 def update_url_rp(input_store):
     print("update_url_rp")
     if input_store:
-        type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
+        try:
+            type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
+        except:
+            raise PreventUpdate
 
     else:
         raise PreventUpdate
@@ -404,8 +408,11 @@ def update_url_rp(input_store):
 def initial_data_rp(input_store):
     print("initial_data_rp", input_store)
     if input_store:
-        type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
-
+        try:
+            type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
+        except:
+            raise PreventUpdate
+        
         if type != "Residual":
             raise PreventUpdate
 
@@ -482,31 +489,41 @@ def initial_data_rp(input_store):
     prevent_initial_call=True,
 )
 def create_fig_rp(input_store, legends, libs, endf_selct):
-    print("create_fig_rp", input_store)
+    print("create_fig_rp", input_store, libs)
     if input_store:
-        type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
+        try:
+            type, elem, mass, inc_pt, rp_elem, rp_mass = input_store.values() 
+        except:
+            raise PreventUpdate
+        
+        if type != "Residual":
+            raise PreventUpdate
 
     else:
         raise PreventUpdate
 
-    xaxis_type, yaxis_type = ["linear", "linear'"]
     fig = default_chart(
         xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None
     )
 
     lib_df = pd.DataFrame()
     if libs:
-        lib_df = lib_residual_data_query(inc_pt, libs.keys())
-        print(lib_df)
-        for l in libs.keys():
+        if endf_selct:
+            libs_select = [ k for k, l in libs.items() if l in endf_selct ]
+        else:
+            libs_select = libs.keys()
+
+        lib_df = lib_residual_data_query(inc_pt, libs_select)
+
+        for l in libs_select:
             # line_color = color_libs(l)
             # new_col = next(line_color)
             # new_col = color_libs(l)
             # lib_df2 = lib_df[lib_df["reaction_id"] == l]
             fig.add_trace(
-                go.Scattergl(
-                    x=lib_df[lib_df["reaction_id"] == l]["en_inc"].astype(float),
-                    y=lib_df[lib_df["reaction_id"] == l]["data"].astype(float),
+                go.Scatter(
+                    x=lib_df[lib_df["reaction_id"] == int(l)]["en_inc"].astype(float),
+                    y=lib_df[lib_df["reaction_id"] == int(l)]["data"].astype(float),
                     showlegend=True,
                     # line_color=new_col,
                     name=str(libs[l]),
@@ -577,7 +594,7 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
         Output("main_fig_rp", "figure", allow_duplicate=True),
         Output("index_table_rp", "filterModel", allow_duplicate=True),
     ],
-    Input("energy_range", "value"),
+    Input("energy_range_rp", "value"),
     State("main_fig_rp", "figure"),
     prevent_initial_call=True,
 )
@@ -621,7 +638,7 @@ def fileter_by_en_range_rp(energy_range, fig):
         Output("main_fig_rp", "figure", allow_duplicate=True),
         Output("index_table_rp", "filterModel", allow_duplicate=True),
     ],
-    Input("year_range", "value"),
+    Input("year_range_rp", "value"),
     State("main_fig_rp", "figure"),
     prevent_initial_call=True,
 )
@@ -668,14 +685,11 @@ def fileter_by_year_range_rp(year_range, fig):
 
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
-    [
-        Input("index_table_rp", "selectedRows"),
-        Input("exfor_table_rp", "rowData"),
-    ],
+    Input("index_table_rp", "selectedRows"),
     State("main_fig_rp", "figure"),
     prevent_initial_call=True,
 )
-def highlight_data_rp(selected, exfor_data, fig):
+def highlight_data_rp(selected, fig):
     # print("highlight_data")
     
     if not fig or not selected:
@@ -717,8 +731,8 @@ def highlight_data_rp(selected, exfor_data, fig):
 )
 def export_data_as_csv(n_clicks, input_store):
     if n_clicks and input_store:
-        type, elem, mass, _, _, mt = input_store.values()
-        filename = f"{elem}{mass}-MT{mt}-exfortables-{type}.csv"
+        type, elem, mass, inc_pt, rp_elem, rp_mass= input_store.values()
+        filename = f"{elem}{mass}-{inc_pt}X-{rp_elem}{rp_mass}-exfortables-{type}.csv"
         return True, {"columnKeys": ["author", "year", "entry_id", "en_inc", "den_inc", "data", "ddata"], "fileName": filename}
 
     return False, None

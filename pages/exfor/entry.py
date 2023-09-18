@@ -51,7 +51,8 @@ def input_ex(entry_id=None):
                 style={"font-size": "small", "width": "95%", "margin-left": "6px"},
                 value=entry_id,
             ),
-            dcc.Link(html.Label("Reaction search"), href= url_basename + "exfor/search"),
+            dcc.Link(html.Label("Reaction Search"), href= url_basename + "exfor/search"),
+            dcc.Link(html.Label("Geo Search"), href= url_basename + "exfor/geo"),
         ]
     )
 
@@ -278,7 +279,6 @@ def layout(entry_id=None):
                                 children=right_layout,
                                 style={"margin-right": "20px"},
                             ),
-                            html.P("test", id="ppp"),
                         ],
                         width=10,
                     ),
