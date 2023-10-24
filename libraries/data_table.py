@@ -1,3 +1,12 @@
+####################################################################
+#
+# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+#
+# Contact:    nds.contact-point@iaea.org
+#
+####################################################################
+
 import dash_ag_grid as dag
 
 ########### AGGRID tables
@@ -50,6 +59,7 @@ columnDefs_xs = [
         "field": "en_inc",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dEnergy [MeV]",
@@ -75,12 +85,59 @@ columnDefs_xs = [
 ]
 
 
+columnDefs_residual = [
+    {
+        "headerName": "Energy [MeV]",
+        "field": "en_inc",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "dEnergy [MeV]",
+        "field": "den_inc",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "Residual",
+        "field": "residual",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+    },
+    {
+        "headerName": "Level Number",
+        "field": "level_num",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(d')(params.value)"},
+    },
+    {
+        "headerName": "Data",
+        "field": "data",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
+        "headerName": "dData",
+        "field": "ddata",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+]
+
+
 columnDefs_de = [
     {
         "headerName": "Energy [MeV]",
         "field": "en_inc",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dEnergy [MeV]",
@@ -94,6 +151,7 @@ columnDefs_de = [
         "field": "e_out",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dS/dE [MeV]",
@@ -125,6 +183,7 @@ columnDefs_da = [
         "field": "en_inc",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dEnergy [MeV]",
@@ -138,6 +197,7 @@ columnDefs_da = [
         "field": "angle",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dAngle [Degree]",
@@ -169,24 +229,28 @@ columnDefs_fy = [
         "field": "mass",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.2f')(params.value)"},
     },
     {
         "headerName": "Z",
         "field": "charge",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.2f')(params.value)"},
     },
     {
         "headerName": "Isomer",
         "field": "isomer",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.2f')(params.value)"},
     },
     {
         "headerName": "Energy [MeV]",
         "field": "en_inc",
         "type": "rightAligned",
         "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
     },
     {
         "headerName": "dEnergy [MeV]",
@@ -236,12 +300,16 @@ def data_table_ag(pageparam):
     return dag.AgGrid(
         id="exfor_table_" + pageparam,
         columnDefs=columnDefsDefault + columnDefs_xs
-                    if pageparam == "xs"
-                        else columnDefsDefault + columnDefs_fy
-                    if pageparam == "fy"
-                        else columnDefsDefault + columnDefs_de
-                    if pageparam == "de"
-                        else columnDefsDefault + columnDefs_da,
+        if pageparam == "xs"
+        else columnDefsDefault + columnDefs_fy
+        if pageparam == "fy"
+        else columnDefsDefault + columnDefs_de
+        if pageparam == "de"
+        else columnDefsDefault + columnDefs_da
+        if pageparam == "da"
+        else columnDefsDefault + columnDefs_residual
+        if pageparam == "rp"
+        else columnDefsDefault,
         defaultColDef=defaultColDef,
         columnSize="responsiveSizeToFit",
         # columnSizeOptions=columnSizeOptions,

@@ -23,7 +23,7 @@ from common import (
     sidehead,
     footer,
     libs_navbar,
-    url_basename,
+    URL_PATH,
     page_urls,
     lib_selections,
     lib_page_urls,
@@ -34,15 +34,15 @@ from submodules.utilities.elem import elemtoz_nz
 from submodules.utilities.mass import mass_range
 
 
-from libraries.datahandle.list import reaction_list
-from libraries.datahandle.tabs import create_tabs
-from libraries.datahandle.figs import default_chart, default_axis
-from libraries.datahandle.queries import (
+from libraries.list import reaction_list
+from libraries.tabs import create_tabs
+from libraries.figs import default_chart, default_axis
+from submodules.libraries.queries import (
     lib_query,
     lib_xs_data_query,
 )
-from exfor.datahandle.queries import (
-    reaction_query,
+from submodules.exfor.queries import (
+    index_query,
     get_entry_bib,
     data_query,
 )
@@ -53,8 +53,9 @@ dash.register_page(__name__, path="/reactions/fission")
 
 
 ## Input layout
-def input_fy(**query_strings):
+def input_fis(**query_strings):
     return [
+        html.Label("Observable"),
         dcc.Dropdown(
             id="reaction_category",
             options=lib_selections,
@@ -224,7 +225,7 @@ def layout(**query_strings):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
-                                    html.Div(input_fy(**query_strings)),
+                                    html.Div(input_fis(**query_strings)),
                                 ],
                                 style={"margin-left": "10px"},
                             ),
@@ -293,14 +294,14 @@ def redirection_fy(type, elem, mass, reaction):
     elem, mass, reaction = input_check(type, elem, mass, reaction)
 
     if type == "FIS" and (elem and mass and reaction):
-        url = url_basename + "reactions/fission"
+        url = URL_PATH + "reactions/fission"
 
         if elem:
             url += "?&target_elem=" + elem
 
         if mass:
             url += "&target_mass=" + mass
-            
+
         if reaction:
             url += "&reaction=" + reaction
 
@@ -346,7 +347,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    entries = reaction_query_fission(type, elem, mass, reaction, branch, energy_range)
+    entries = index_query_fission(type, elem, mass, reaction, branch, energy_range)
     search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV "
     print(search_result)
 

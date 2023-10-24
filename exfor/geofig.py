@@ -1,23 +1,21 @@
-import json
-import pandas as pd
-import geopandas as gpd
-import plotly.express as px
-import plotly.graph_objects as go
-from dash import dcc, html, callback, Input, Output, State, no_update
+####################################################################
+#
+# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+#
+# Contact:    nds.contact-point@iaea.org
+#
+####################################################################
 
-# from dash import Dash
-from exfor.datahandle.list import dict3_to_country, get_facility_type, get_institute_df
-from exfor.datahandle.queries import (
-    get_exfor_bib_table,
-    get_exfor_indexes_table,
-    join_index_bib,
-    join_reaction_bib,
-)
+import pandas as pd
+import plotly.express as px
+
+from exfor.list import dict3_to_country, get_facility_type, get_institute_df
+from submodules.exfor.queries import join_reaction_bib
 
 
 def get_reactions_geo():
     reactions_df = join_reaction_bib()
-    # reactions_df = join_index_bib()
     institute_df = get_institute_df()
 
     reactions_df["main_facility_institute"] = reactions_df[
@@ -45,12 +43,12 @@ def get_reactions_geo():
 
     return reactions_df
 
+
 reactions_df = get_reactions_geo()
 
 
 def geo_fig(grouping, reactions_df):
     # reactions_df = get_exfor_bib_table()
-
     # get entries per facility/type
     entries = reactions_df.groupby(["main_facility_institute", "main_facility_type"])[
         "entry"
@@ -122,7 +120,9 @@ def geo_fig(grouping, reactions_df):
                 "main_facility_type",
                 "main_facility_type_desc",
             ],  # "entries"
-            color="main_facility_country" if grouping == "Country" else "main_facility_type",
+            color="main_facility_country"
+            if grouping == "Country"
+            else "main_facility_type_desc",
             size="count",
             size_max=50,
             opacity=0.5,
@@ -162,6 +162,6 @@ def geo_fig(grouping, reactions_df):
         #         dict(text="Group by:", showarrow=False,
         #         x=0, y=1.085, yref="paper", align="left")
         #         ]
-        )
+    )
 
     return fig

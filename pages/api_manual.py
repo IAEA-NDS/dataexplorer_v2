@@ -154,7 +154,6 @@ GET `/api/exfor/subentry/10300/001`
 
 """
         ),
-        # html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         footer,
     ]
 )

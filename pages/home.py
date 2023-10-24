@@ -27,35 +27,44 @@ nav = dbc.NavbarSimple(
     [
         # dbc.NavItem(dbc.NavLink("IAEA NDS", active=True, href="nds.iaea.org")),
         dbc.DropdownMenu(
-            [dbc.DropdownMenuItem(dbc.NavLink("Cross Section", href="reactions/xs")), 
-             dbc.DropdownMenuItem(dbc.NavLink("Residual Prouction Cross Section", href="reactions/residual")),
-             dbc.DropdownMenuItem(dbc.NavLink("Fission Yield", href="reactions/fy")),
+            [
+                dbc.DropdownMenuItem(dbc.NavLink("Cross Section", href="reactions/xs")),
+                dbc.DropdownMenuItem(
+                    dbc.NavLink(
+                        "Residual Prouction Cross Section", href="reactions/residual"
+                    )
+                ),
+                dbc.DropdownMenuItem(dbc.NavLink("Fission Yield", href="reactions/fy")),
             ],
             label="Dataexplorer",
             nav=True,
         ),
         dbc.DropdownMenu(
-            [dbc.DropdownMenuItem(dbc.NavLink("EXFOR Entry Search", href="exfor")), 
-             dbc.DropdownMenuItem(dbc.NavLink("EXFOR Reaction Search", href="exfor/search")), 
-             dbc.DropdownMenuItem(dbc.NavLink("Geo", href="exfor/geo")),
+            [
+                dbc.DropdownMenuItem(dbc.NavLink("EXFOR Entry Search", href="exfor")),
+                dbc.DropdownMenuItem(
+                    dbc.NavLink("EXFOR Reaction Search", href="exfor/search")
+                ),
+                dbc.DropdownMenuItem(dbc.NavLink("Geo", href="exfor/geo")),
             ],
             label="EXFOR Viewer",
             nav=True,
         ),
         dbc.DropdownMenu(
-            [dbc.DropdownMenuItem(dbc.NavLink("Dataexplorer API", href="api/ripl3")), 
-             dbc.DropdownMenuItem(dbc.NavLink("EXFOR API", href="api/exfor")), 
-             dbc.DropdownMenuItem(dbc.NavLink("RIPLE-3 API", href="api/ripl3")),
+            [
+                dbc.DropdownMenuItem(dbc.NavLink("Dataexplorer API", href="api/ripl3")),
+                dbc.DropdownMenuItem(dbc.NavLink("EXFOR API", href="api/exfor")),
+                dbc.DropdownMenuItem(dbc.NavLink("RIPLE-3 API", href="api/ripl3")),
             ],
             label="APIs",
             nav=True,
         ),
     ],
-    brand = "IAEA NDS",
+    brand="IAEA NDS",
     brand_href="nds.iaea.org",
     color="primary",
     dark=True,
-    className="bi bi-list mobile-nav-toggle"
+    className="bi bi-list mobile-nav-toggle",
 )
 
 
@@ -65,9 +74,16 @@ layout = dbc.Container(
         dbc.Row(
             dbc.Col(
                 [
-                    html.H2("IAEA Nuclear Dataexplorer/EXFOR Viewer", className="text-center"),
-                    html.P("Data Viewer for LIBRARIES made for TALYS development and Data Repository for Experimental Nuclear Reaction data", className="text-center"),
-                 ]),
+                    html.H2(
+                        "IAEA Nuclear Dataexplorer/EXFOR Viewer",
+                        className="text-center",
+                    ),
+                    html.P(
+                        "Data Viewer for LIBRARIES made for TALYS development and Data Repository for Experimental Nuclear Reaction data",
+                        className="text-center",
+                    ),
+                ]
+            ),
             # className="row justify-content-center",
             align="center",
             style={"height": "250px"},
@@ -92,7 +108,9 @@ layout = dbc.Container(
                                     className="card-text",
                                 ),
                                 dbc.Button(
-                                    "View Data", href="reactions/xs?target_elem=Al&target_mass=27&reaction=n%2Cp", color="primary"
+                                    "View Data",
+                                    href="reactions/xs?target_elem=Al&target_mass=27&reaction=n%2Cp",
+                                    color="primary",
                                 ),
                             ],
                         ),
@@ -118,7 +136,7 @@ layout = dbc.Container(
                                 ),
                                 dbc.Button(
                                     "View Data",
-                                    href="exfor/",
+                                    href="exfor/search",
                                     color="primary",
                                 ),
                             ],

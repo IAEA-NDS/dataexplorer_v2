@@ -1,3 +1,12 @@
+####################################################################
+#
+# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+#
+# Contact:    nds.contact-point@iaea.org
+#
+####################################################################
+
 import dash_ag_grid as dag
 
 ########### AGGRID tables
@@ -10,6 +19,15 @@ defaultFilterParams = {
 
 
 columnDefs = [
+    # {
+    #     "headerName": "",
+    #     "cellRenderer": "DeleteButton",
+    #     "lockPosition":'left',
+    #     "maxWidth":35,
+    #     "filter": False,
+    #     'cellStyle': {'paddingRight': 0, 'paddingLeft': 0},
+    # },
+    
     {
         "headerName": "Author",
         "field": "author",
@@ -33,6 +51,16 @@ columnDefs = [
         "filterParams": defaultFilterParams,
         # "cellStyle": {"color": "blue", "text-decoration": "underline"},
         "cellRenderer": "markdown",
+    },
+    {
+        "headerName": "#Entry",
+        "field": "entry_id",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+        # "cellStyle": {"color": "blue", "text-decoration": "underline"},
+        "cellRenderer": "markdown",
+        "hide": True,
     },
     {
         "headerName": "Points",
@@ -61,11 +89,18 @@ columnDefs = [
         "filter": "agTextColumnFilter",
         "filterParams": defaultFilterParams,
     },
+    # {
+    #     "headerName": "SF8",
+    #     "field": "sf8",
+    #     "type": "rightAligned",
+    #     "filter": "agTextColumnFilter",
+    # },
     {
-        "headerName": "SF8",
-        "field": "sf8",
+        "headerName": "Wanna scale data?",
+        "field": "scale",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
+        "editable": True,
     },
 ]
 
@@ -84,7 +119,7 @@ columnSizeOptions = {
         {"key": "entry_id", "minWidth": 100},
         {"key": "x4_code", "minWidth": 300},
         {"key": "year", "maxWidth": 80},
-        {"key": "sf8", "maxWidth": 80},
+        # {"key": "sf8", "maxWidth": 80},
         {"key": "points", "maxWidth": 80},
     ],
 }
@@ -107,6 +142,7 @@ def index_table_ag(pageparam):
             # "paginationAutoPageSize": True,
         },
         className="ag-theme-balham",  ## Themes: ag-theme-alpine, ag-theme-alpine-dark, ag-theme-balham, ag-theme-balham-dark, ag-theme-material, and ag-bootstrap.
-        persistence=True,
-        persisted_props=["filterModel"],
+        persistence=False,
+        getRowId="params.data.entry_id",
+        # persisted_props=["filterModel"],
     )

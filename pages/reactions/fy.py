@@ -9,7 +9,7 @@
 
 import pandas as pd
 import dash
-from dash import html, dcc, callback, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
@@ -20,67 +20,54 @@ from common import (
     sidehead,
     footer,
     libs_navbar,
-    url_basename,
     page_urls,
-    lib_selections,
     lib_page_urls,
+    main_fig,
     input_check,
-    energy_range_conversion,
+    input_target,
+    input_general,
+    excl_mxw_switch,
+    generate_reactions,
+    get_mt,
+    remove_query_parameter,
+    limit_number_of_datapoints,
+    exfor_filter_opt,
+    libs_filter_opt,
+    get_indexes,
+    scale_data,
+    del_rows_fig,
+    highlight_data,
+    filter_by_year_range,
+    fileter_by_en_range,
+    export_index,
+    export_data,
+    generate_exfortables_file_path,
+    generate_endftables_file_path,
 )
 
-from submodules.utilities.elem import elemtoz_nz
-from submodules.utilities.mass import mass_range
-
-from libraries.datahandle.list import MT_LIST_FY, reaction_list, mt50_list
-from libraries.datahandle.tabs import create_tabs
-from libraries.datahandle.figs import default_chart, default_axis
-from libraries.datahandle.queries import (
+from libraries.list import MT_BRANCH_LIST_FY, color_libs
+from libraries.figs import default_chart, default_axis
+from libraries.tabs import create_tabs
+from submodules.libraries.queries import (
     lib_query,
     lib_data_query_fy,
 )
-from exfor.datahandle.queries import (
-    reaction_query_fy,
+from submodules.exfor.queries import (
+    # index_query_fy,
     get_entry_bib,
     data_query,
 )
 
 
 ## Registration of page
-dash.register_page(__name__, path="/reactions/fy")
-
+dash.register_page(__name__, path="/reactions/fy", redirect_from=["/fy"])
+pageparam = "fy"
 
 ## Input layout
 def input_fy(**query_strings):
     return [
-        dcc.Dropdown(
-            id="reaction_category",
-            options=lib_selections,
-            placeholder="Select reaction",
-            persistence=True,
-            persistence_type="memory",
-            value="FY",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_elem_fy",
-            placeholder="Target element: C, c, Pd, pd, PD",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_elem"]
-            if query_strings.get("target_elem")
-            else "U",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_mass_fy",
-            placeholder="Target mass: 0:natural, m:metastable",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_mass"]
-            if query_strings.get("target_mass")
-            else "233",
-            style={"font-size": "small", "width": "100%"},
-        ),
+        html.Div(children=input_target(pageparam, **query_strings)),
+        html.Label("Reaction"),
         dcc.Dropdown(
             id="reaction_fy",
             options=[f"{pt.lower()},f" for pt in PARTICLE_FY],
@@ -90,30 +77,32 @@ def input_fy(**query_strings):
             value=query_strings["reaction"] if query_strings.get("reaction") else "n,f",
             style={"font-size": "small", "width": "100%"},
         ),
+        html.Div(children=exfor_filter_opt(pageparam)),
+        html.Br(),
+        html.Div(children=excl_mxw_switch(pageparam)),
+        html.Br(),
+        html.Label("Measured for"),
         dcc.Dropdown(
             id="reac_branch_fy",
             options=[
-                {"label": "Primary", "value": "PRE"},
-                {"label": "Independent", "value": "IND"},
-                {"label": "Cumulative", "value": "CUM"},
+                {"label": l, "value": l} for l, i in MT_BRANCH_LIST_FY.items() 
             ],
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
-            value="CUM",
+            value=query_strings["fy_type"].capitalize() if query_strings.get("fy_type") else "Cumulative",
             style={"font-size": "small", "width": "100%"},
         ),
-        html.Label("Measured for"),
         dcc.RadioItems(
             id="mesurement_opt_fy",
             options=[
-                {"label": "Mass", "value": "A"},
-                {"label": "Element", "value": "Z"},
-                {"label": "Product", "value": "Product"},
+                {"label": "Mass [MASS]", "value": "A"},
+                {"label": "Element [ELEM]", "value": "Z"},
+                {"label": "Product [ELEM/MASS]", "value": "Product"},
             ],
             value="A",
         ),
-        html.Label("Filter by"),
+        html.Label("Product", style={"font-size": "small"}),
         dcc.Dropdown(
             id="reac_product_fy",
             options=[],
@@ -122,59 +111,26 @@ def input_fy(**query_strings):
             persistence_type="memory",
             style={"font-size": "small", "width": "100%"},
         ),
-        html.Label("Plot by"),
-        dcc.RadioItems(["Mass", "Charge", "Energy"], "Mass", id="plot_opt_fy"),
         html.Br(),
-        html.P("Fileter EXFOR records by"),
-        html.Label("Energy Range"),
-        dcc.RangeSlider(
-            id="energy_range_fy",
-            min=0,
-            max=9,
-            marks={0: "eV", 3: "keV", 6: "MeV", 9: "GeV"},
-            value=[0, 9],
-            vertical=False,
-        ),
         html.Br(),
-        html.Label("Year Range"),
-        dcc.RangeSlider(
-            id="year_range_fy",
-            min=1930,
-            max=2023,
-            step=1,
-            marks={
-                i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
-            },
-            value=[1930, 2023],
-            tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
+        html.Div(children=libs_filter_opt(pageparam)),
+        dcc.Store(id="input_store_fy"),
     ]
 
-
-## Default figure
-main_fig_fy = dcc.Graph(
-    id="main_fig_fy",
-    config={
-        "displayModeBar": True,
-        "scrollZoom": True,
-        "modeBarButtonsToAdd": ["drawline", "drawopenpath", "eraseshape"],
-        "modeBarButtonsToRemove": ["lasso2d"],
-    },
-    figure={
-        "layout": {
-            "title": "Please select target and reaction.",
-            "height": 600,
-        }
-    },
-)
 
 
 ## Layout of right panel
 right_layout_fy = [
     libs_navbar,
-    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    html.Div(id="result_cont_fy"),
+    html.Hr(
+        style={
+            "border": "3px",
+            "border-top": "1px solid",
+            "margin-top": "5px",
+            "margin-bottom": "5px",
+        }
+    ),
+    html.Div(id="search_result_txt_fy"),
     # Log/Linear switch
     dbc.Row(
         [
@@ -206,14 +162,25 @@ right_layout_fy = [
                 ),
                 width="auto",
             ),
+        ]),
+        dbc.Row([
+            dbc.Col( html.Label("Plot by"), width="auto"),
+            dbc.Col( 
+                dcc.RadioItems(
+                    id="plot_opt_fy",
+                    options=["Mass", "Charge", "Energy"], 
+                    value="Mass", 
+                    labelStyle={"display": "inline-block"},
+                ),
+                width="auto",
+            )
         ]
     ),
-    dcc.Loading(
-        children=main_fig_fy,
-        type="circle",
-    ),
+    main_fig(pageparam),
+    dcc.Store(id="entries_store_fy"),
+    dcc.Store(id="libs_store_fy"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("fy"),
+    create_tabs(pageparam),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
@@ -272,178 +239,205 @@ def layout(**query_strings):
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
-    Output("location_fy", "href", allow_duplicate=True),
+    [
+        Output("location_fy", "href", allow_duplicate=True),
+        Output("location_fy", "refresh", allow_duplicate=True),
+    ],
     Input("dataset", "value"),
     prevent_initial_call=True,
 )
-def redirect_to_pages(dataset):
+def redirect_to_pages_fy(dataset):
     if dataset:
-        return page_urls[dataset]
+        return page_urls[dataset], True
+
     else:
         raise PreventUpdate
 
 
+
 @callback(
-    Output("location_fy", "href", allow_duplicate=True),
-    Input("reaction_category", "value"),
+    [
+        Output("location_fy", "href", allow_duplicate=True),
+        Output("location_fy", "refresh", allow_duplicate=True),
+    ],    
+    Input("observable_fy", "value"),
     prevent_initial_call=True,
 )
-def redirect_to_subpages(type):
+def redirect_to_subpages_fy(type):
+    print("redirect_to_subpages")
     if type:
-        return lib_page_urls[type]
-    else:
-        raise PreventUpdate
-
-
-@callback(
-    Output("location_fy", "href", allow_duplicate=True),
-    [
-        Input("reaction_category", "value"),
-        Input("target_elem_fy", "value"),
-        Input("target_mass_fy", "value"),
-        Input("reaction_fy", "value"),
-    ],
-    prevent_initial_call=True,
-)
-def redirection_fy(type, elem, mass, reaction):
-    input_check(type, elem, mass, reaction)
-
-    if type == "FY" and (elem and mass and reaction):
-        url = url_basename + "reactions/fy"
-
-        if elem:
-            url += "?&target_elem=" + elem
-        if mass:
-            url += "&target_mass=" + mass
-        if reaction:
-            url += "&reaction=" + reaction
-
-        return url
+        return lib_page_urls[type], True  # , dict({"type": type})
 
     else:
         raise PreventUpdate
 
 
+
 @callback(
+    Output("input_store_fy", "data"),
     [
-        Output("result_cont_fy", "children"),
-        Output("main_fig_fy", "figure"),
-        Output("reac_product_fy", "options"),
-        Output("index_table_fy", "rowData"),
-        Output("exfor_table_fy", "rowData"),
-    ],
-    [
-        Input("reaction_category", "value"),
+        Input("observable_fy", "value"),
         Input("target_elem_fy", "value"),
         Input("target_mass_fy", "value"),
         Input("reaction_fy", "value"),
         Input("reac_branch_fy", "value"),
         Input("mesurement_opt_fy", "value"),
         Input("reac_product_fy", "value"),
-        Input("plot_opt_fy", "value"),
-        Input("energy_range_fy", "value"),
+        Input("exclude_mxw_switch_fy", "value"),
     ],
+    # prevent_initial_call=True,
 )
-def update_fig_fy(
-    type,
-    elem,
-    mass,
-    reaction,
-    branch,
-    mesurement_opt_fy,
-    reac_product_fy,
-    plot_opt_fy,
-    energy_range,
-):
+def input_store_fy(type, elem, mass, reaction, fy_type, mesurement_opt_fy, reac_product_fy, excl_junk_switch):
+    print("input_store_fy", type)
+    if type != "FY":
+        return dict({"type": type})
+
     elem, mass, reaction = input_check(type, elem, mass, reaction)
-    print(type, elem, mass, reaction, branch)
 
-    df = pd.DataFrame()
-    index_df = pd.DataFrame()
-    reac_products = []
-
-    fig = go.Figure(
-        layout=go.Layout(
-            xaxis={"title": "Mass number", "type": "linear"},
-            yaxis={"title": "Fission yields [/fission]", "type": "linear"},
-            margin={"l": 40, "b": 40, "t": 30, "r": 0},
-        )
+    return dict(
+        {
+            "type": type,
+            "target_elem": elem,
+            "target_mass": mass,
+            "reaction": reaction,
+            "fy_type": fy_type,
+            "branch": MT_BRANCH_LIST_FY[fy_type]["branch"] if MT_BRANCH_LIST_FY.get(fy_type) else None, # fy_type in query string
+            "mt": MT_BRANCH_LIST_FY[fy_type]["mt"] if MT_BRANCH_LIST_FY.get(fy_type) else None,
+            "mesurement_opt_fy": mesurement_opt_fy,
+            "reac_product_fy": reac_product_fy,
+            "excl_junk_switch": excl_junk_switch,
+        }
     )
 
-    lower, upper = energy_range_conversion(energy_range)
 
-    entries = reaction_query_fy(
-        type, elem, mass, reaction, branch, mesurement_opt_fy, energy_range
-    )
 
-    mt = MT_LIST_FY[branch]
-    libs = lib_query(type, elem, mass, reaction, mt, rp_elem=None, rp_mass=None)
-    search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV for {reac_product_fy}"
+@callback(
+    [
+        Output("location_fy", "search"),
+        Output("location_fy", "refresh", allow_duplicate=True),
+    ],
+    Input("input_store_fy", "data"),
+    prevent_initial_call=True,
+)
+def update_url_fy(input_store):
+    print("update_url", input_store)
 
-    if not entries and not libs:
-        return search_result, fig, [], None, None
+    if input_store:
+        type = input_store.get("type").upper()
+        elem = input_store.get("target_elem")
+        mass = input_store.get("target_mass")
+        reaction = input_store.get("reaction")
+        # branch = input_store.get("branch")
+        fy_type = input_store.get("fy_type")
 
+    else:
+        raise PreventUpdate
+    
+    if type == "FY" and (elem and mass and reaction):
+        query_string = ""
+        if elem:
+            query_string += "?&target_elem=" + elem
+        if mass:
+            query_string += "&target_mass=" + mass
+        if reaction:
+            query_string += "&reaction=" + reaction
+        if fy_type:
+            query_string += "&fy_type=" + fy_type
+        # if branch:
+        #     query_string += "&branch=" + branch
+
+
+        return query_string, False
+
+    else:
+        return no_update, False
+
+
+@callback(
+    [
+        Output("search_result_txt_fy", "children"),
+        Output("index_table_fy", "rowData"),
+        Output("entries_store_fy", "data"),
+        Output("libs_store_fy", "data"),
+    ],
+    [
+        Input("input_store_fy", "data"),
+        Input("rest_btn_fy", "n_clicks"),
+    ],
+    prevent_initial_call=True,
+)
+def initial_data_fy(input_store, r_click):
+    print("initial_data_fy")
+    if input_store:
+        if ctx.triggered_id != "rest_btn_fy":
+            no_update
+        return get_indexes(input_store)
+
+    else:
+        raise PreventUpdate
+    
+    
+
+
+@callback(
+    [
+        Output("main_fig_fy", "figure", allow_duplicate=True),
+        Output("reac_product_fy", "options"),
+        Output("exfor_table_fy", "rowData"),
+    ],
+    [
+        Input("input_store_fy", "data"),
+        Input("entries_store_fy", "data"),
+        Input("libs_store_fy", "data"),
+        Input("endf_selct_fy", "value"),
+        Input("plot_opt_fy", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
+    print("create_fig")
+    if input_store:
+        reaction = input_store.get("reaction")
+        mt = input_store.get("mt")
+        mesurement_opt_fy = input_store.get("mesurement_opt_fy")
+        reac_product_fy = input_store.get("reac_product_fy")
+
+    else:
+        raise PreventUpdate
+    
+    xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
+    fig = default_chart(xaxis_type, yaxis_type, reaction, str(mt).zfill(3))
+
+
+    lib_df = pd.DataFrame()
     if libs:
-        df_lib = lib_data_query_fy(libs.keys(), lower, upper)
+        if endf_selct:
+            libs_select = [k for k, l in libs.items() if l in endf_selct]
+        else:
+            libs_select = libs.keys()
+
+        lib_df = lib_data_query_fy(libs_select)
 
         if plot_opt_fy == "Mass":
             x_ax = "mass"
-            dff = df_lib.groupby(["reaction_id", "mass", "en_inc"], as_index=False)[
+            dff = lib_df.groupby(["reaction_id", "mass", "en_inc"], as_index=False)[
                 "data"
             ].max(numeric_only=True)
 
-        elif plot_opt_fy == "Charge":
-            x_ax = "charge"
-            fig.update_layout(dict(xaxis={"title": "Charge number"}))
+            for l in libs_select:
+                line_color = color_libs(libs[l])
+                new_col = next(line_color)
 
-        elif plot_opt_fy == "Energy":
-            x_ax = "en_inc"
-            fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
-
-        for l in libs.keys():
-            fig.add_trace(
-                go.Scattergl(
-                    x=dff[dff["reaction_id"] == l]["mass"].astype(float),
-                    y=dff[dff["reaction_id"] == l]["data"].astype(float),
-                    showlegend=True,
-                    # line_color=new_col,
-                    name=str(libs[l]),
-                    mode="lines",
+                fig.add_trace(
+                    go.Scatter(
+                        x=dff[dff["reaction_id"] == l]["mass"].astype(float),
+                        y=dff[dff["reaction_id"] == l]["data"].astype(float),
+                        showlegend=True,
+                        line_color=new_col,
+                        name=str(libs[l]),
+                        mode="lines",
+                    )
                 )
-            )
-
-    if entries:
-        legend = get_entry_bib(e[:5] for e in entries.keys())
-        legend = {
-            t: dict(**i, **v)
-            for k, i in legend.items()
-            for t, v in entries.items()
-            if k == t[:5]
-        }
-
-        ## All data
-        df = data_query(entries.keys())
-        ## Some case like 41084-007-0 contains None in residual
-        reac_products = sorted([i for i in df["residual"].unique() if i is not None])
-
-        df2 = df.copy()
-
-        ## Filtered by reaction product
-        if reac_product_fy:
-            df2 = df2[df2["residual"] == reac_product_fy]
-
-        if mesurement_opt_fy == "A":
-            x_ax = "mass"
-
-        elif mesurement_opt_fy == "Z":
-            x_ax = "charge"
-
-        else:
-            x_ax = "mass"
-
-        if plot_opt_fy == "Mass":
-            x_ax = "mass"
-            fig.update_layout(dict(xaxis={"title": "Mass number"}))
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
@@ -453,18 +447,70 @@ def update_fig_fy(
             x_ax = "en_inc"
             fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
 
+
+    reac_products = []
+    df = pd.DataFrame()
+
+    if legends:
+        df = data_query(input_store, legends.keys())
+        df["bib"] = df["entry_id"].map(legends)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
+        df = df.drop(columns=["bib"])
+
+        df["entry_id_link"] = (
+            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
+        )
+        print(df)
+        reac_products = sorted( [i for i in df["residual"].unique() if i is not None] )
+        print(df["residual"].unique())
         i = 0
-        # ------
-        for e in legend.keys():
+        for e in list(legends.keys()):
+            if e == "total_points":
+                continue
+
+            df2 = df[df["entry_id"] == e]
+
+            # Filtered by reaction product
+            if reac_product_fy:
+                df2 = df2[df2["residual"] == reac_product_fy]
+
+            if mesurement_opt_fy == "A":
+                x_ax = "mass"
+
+            elif mesurement_opt_fy == "Z":
+                x_ax = "charge"
+
+            else:
+                x_ax = "mass"
+
+            if plot_opt_fy == "Mass":
+                x_ax = "mass"
+                fig.update_layout(dict(xaxis={"title": "Mass number"}))
+
+            elif plot_opt_fy == "Charge":
+                x_ax = "charge"
+                fig.update_layout(dict(xaxis={"title": "Charge number"}))
+
+            elif plot_opt_fy == "Energy":
+                x_ax = "en_inc"
+                fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
+
+            i = 0
+            # ------
+
             fig.add_trace(
                 go.Scattergl(
                     x=df2[df2["entry_id"] == e][x_ax],
                     y=df2[df2["entry_id"] == e]["data"],
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
-                    name=f"{legend[e]['author']}, {legend[e]['year']}"
-                    if legend[e].get("year")
-                    else legend[e]["author"],
+                    name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
+                        if legends.get(e)
+                        and legends[e].get("author")
+                        and legends[e].get("year")
+                        else f"{legends[e]['author']}, 1900 [{e}]"
+                        if legends.get(e)
+                        else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -475,29 +521,7 @@ def update_fig_fy(
                 i = 1
         # ------
 
-        index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
-        index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id_link"] = (
-            "["
-            + index_df["entry_id"]
-            + "](../exfor/entry/"
-            + index_df["entry_id"]
-            + ")"
-        )
-        df["bib"] = df["entry_id"].map(legend)
-        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
-        df = df.drop(columns=["bib"])
-        df["entry_id_link"] = (
-            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
-        )
-
-    return (
-        search_result,
-        fig,
-        reac_products,
-        index_df.to_dict("records"),
-        df.to_dict("records"),
-    )
+    return fig, reac_products, df.to_dict("records")
 
 
 @callback(
@@ -517,38 +541,168 @@ def update_axis_fy(xaxis_type, yaxis_type, fig):
     return fig
 
 
+
+
+
+
 @callback(
     [
         Output("main_fig_fy", "figure", allow_duplicate=True),
-        Output("index_table_fy", "filter_query"),
+        Output("index_table_fy", "filterModel", allow_duplicate=True),
+    ],
+    Input("energy_range_fy", "value"),
+    State("main_fig_fy", "figure"),
+    prevent_initial_call=True,
+)
+def fileter_by_en_range_fy(energy_range, fig):
+    return fileter_by_en_range(energy_range, fig)
+
+
+
+@callback(
+    [
+        Output("main_fig_fy", "figure", allow_duplicate=True),
+        Output("index_table_fy", "filterModel", allow_duplicate=True),
     ],
     Input("year_range_fy", "value"),
     State("main_fig_fy", "figure"),
     prevent_initial_call=True,
 )
-def fileter_by_range_fy(year_range, fig):
-    # print(json.dumps(fig, indent=1))
-
-    filter = "{year} ge " + str(year_range[0]) + " && {year} le " + str(year_range[1])
-
-    for records in fig.get("data"):
-        author, year = records.get("name").split(",")
-
-        if not year_range[0] < int(year) < year_range[1]:
-            records.update({"visible": "legendonly"})
-
-        if year_range[0] < int(year) < year_range[1]:
-            records.update({"visible": "true"})
-
-    return fig, filter
+def fileter_by_year_range_fy(year_range, fig):
+    return filter_by_year_range(year_range, fig)
 
 
 @callback(
-    Output("exfor_table_fy", "exportDataAsCsv"),
-    Input("csv-button_fy", "n_clicks"),
+    Output("main_fig_fy", "figure", allow_duplicate=True),
+    Input("index_table_fy", "selectedRows"),
+    State("main_fig_fy", "figure"),
+    prevent_initial_call=True,
 )
-def export_data_as_csv_fy(n_clicks):
-    if n_clicks:
-        return True
+def highlight_data_fy(selected, fig):
+    return highlight_data(selected, fig)
 
-    return False
+
+
+
+@callback(
+    Output("main_fig_fy", "figure", allow_duplicate=True),
+    Input("index_table_fy", "cellValueChanged"),
+    State("main_fig_fy", "figure"),
+    prevent_initial_call=True,
+)
+def scale_data_fy(selected, fig):
+    return scale_data(selected, fig)
+
+
+
+@callback(
+    [
+        Output("main_fig_fy", "figure", allow_duplicate=True),
+        Output("index_table_fy", "rowTransaction"),
+    ],
+    Input("del_btn_fy", "n_clicks"),
+    [
+        State("main_fig_fy", "figure"),
+        State("index_table_fy", "selectedRows"),
+    ],
+    prevent_initial_call=True,
+)
+def del_rows_fy(n1, fig, selected):
+    if n1:
+        if selected is None:
+            return no_update, no_update
+        return del_rows_fig(selected, fig)
+
+
+
+
+@callback(
+    [
+        Output("index_table_fy", "exportDataAsCsv"),
+        Output("index_table_fy", "csvExportParams"),
+    ],
+    [
+        Input("btn_csv_index_fy", "n_clicks"),
+        Input("btn_csv_index_selct_fy", "n_clicks"),
+        Input("input_store_fy", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def export_index_fy(n1, n2, input_store):
+    # return export_index(n_clicks_all, n_clicks_slctd, input_store)
+    if not input_store:
+        raise PreventUpdate
+    
+    if ctx.triggered_id == "btn_csv_index_fy":
+        return export_index(False, input_store)
+    
+    elif ctx.triggered_id == "btn_csv_index_selct_fy":
+        return export_index(True, input_store)
+    
+    else:
+        return no_update, no_update
+
+
+
+
+@callback(
+    [
+        Output("exfor_table_fy", "exportDataAsCsv"),
+        Output("exfor_table_fy", "csvExportParams"),
+    ],
+    [
+        Input("btn_csv_exfor_fy", "n_clicks"),
+        Input("btn_csv_exfor_selct_fy", "n_clicks"),
+        Input("input_store_fy", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def export_data_fy(n1, n2, input_store):
+    # return export_data(n_clicks_all, n_clicks_slctd, input_store)
+    if not input_store:
+        raise PreventUpdate
+
+    if ctx.triggered_id == "btn_csv_exfor_fy":
+        return export_data(False, input_store)
+    
+    elif ctx.triggered_id == "btn_csv_exfor_selct_fy":
+        return export_data(True, input_store)
+    
+    else:
+        return no_update, no_update
+
+
+
+
+@callback(
+    [
+        Output("btn_api_fy", "href"),
+        Output("btn_api_data_fy", "href"),
+    ],
+    Input("location", "search"),
+)
+def generate_api_links_fy(search_str):
+    if search_str:
+        return f"/api/reactions/{pageparam}{search_str}", f"/api/reactions/{pageparam}{search_str}&data=True"
+    else:
+        return no_update, no_update
+
+
+
+@callback(
+    [
+        Output("exfiles_link_fy", "children"),
+        Output("libfiles_link_fy", "children"),
+    ],
+    Input("input_store_fy", "data"),
+)
+def generate_file_links_fy(input_store):
+    if not input_store:
+        raise PreventUpdate
+
+    return generate_exfortables_file_path(
+        input_store
+    ), generate_endftables_file_path(input_store)
+
+
+

@@ -24,6 +24,8 @@ if DEVENV:
         __name__,
         external_stylesheets=[dbc.themes.CERULEAN],
         url_base_pathname="/dataexplorer2/",
+        # routes_pathname_prefix="/",  # if Prod
+        # requests_pathname_prefix="/dataexplorer2/",  # if Prod
         suppress_callback_exceptions=True,
         meta_tags=[
             {
@@ -39,7 +41,8 @@ if DEVENV:
 else:
     app = dash.Dash(
         __name__,
-        external_stylesheets=[dbc.themes.JOURNAL],
+        external_stylesheets=[dbc.themes.CERULEAN],
+        # url_base_pathname="/dataexplorer2/",
         routes_pathname_prefix="/",  # if Prod
         requests_pathname_prefix="/dataexplorer2/",  # if Prod
         suppress_callback_exceptions=True,
@@ -54,12 +57,11 @@ else:
         use_pages=True,
     )
     server = app.server  # for PROD/INT env
-    app.title = "LIBRARIES-2022 Data Explorer"
+    app.title = "LIBRARIES-2023 Data Explorer"
 
 # print(app.config["url_base_pathname"])
 
 app.layout = html.Div([dash.page_container])
-
 
 if __name__ == "__main__":
     app.run_server(debug=True, dev_tools_prune_errors=False, use_reloader=True)

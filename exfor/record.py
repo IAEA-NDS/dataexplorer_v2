@@ -1,45 +1,65 @@
-import requests
+####################################################################
+#
+# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+#
+# Contact:    nds.contact-point@iaea.org
+#
+####################################################################
+
+import os
 import git
+import requests
 
-import sys
 
-sys.path.append("../")
-from config import MASTER_GIT_REPO_PATH, owner, repo, api_token, API_BASE_URL, HEADERS
+from config import (
+    MASTER_GIT_REPO_PATH,
+    EXFOR_JSON_GIT_REPO_PATH,
+    owner,
+    repo,
+    api_token,
+)
+from common import open_json
 
 
 # --------------------------------------------------------------- #
 #             Record
 # --------------------------------------------------------------- #
 def get_record(entnum):
-    url = API_BASE_URL + "exfor/entry/" + entnum
+    # url = BASE_URL + URL_PATH + "api/exfor/entry/" + entnum
+    # r = requests.get("https://int-nds.iaea.org/dataexplorer/api/exfor/entry/11112", timeout=3, verify=False)
+    # return r.json()
 
-    try:
-        r = requests.get(url, headers=HEADERS, verify=False)
-        return r.json()
+    ## Going to noSQL in the future and this is a temporal solution
+    file = os.path.join(EXFOR_JSON_GIT_REPO_PATH, "json", entnum[:3], entnum + ".json")
 
-    except:
-        raise Exception
+    if os.path.exists(file):
+        return open_json(file)
+
+    else:
+        return {}
 
 
 def get_git_history(entnum):
     # Create a GitPython Repo object for the repository
     repo = git.Repo(MASTER_GIT_REPO_PATH)
-    filepath = f"exforall/{entnum[0:3]}/{entnum}.x4"
+    file = f"exforall/{entnum[0:3]}/{entnum}.x4"
 
     # Run the git log -p command for the file and capture the output
-    output = repo.git.execute(["git", "log", "-p", "--", filepath])
+    output = repo.git.execute(["git", "log", "-p", "--", file])
 
     return output
 
 
 def get_git_history_api(entnum):
     ## Get commit history from Github REST API
-    path = f"exforall/{entnum[0:3]}/{entnum}.x4"
+    file = f"exforall/{entnum[0:3]}/{entnum}.x4"
     commits = []
     page = 1
+
     while True:
         # e.g. https://api.github.com/repos/shinokumura/exfor_master/commits?path=exforall/224/22449.x4&page=1
-        url = f"https://api.github.com/repos/{owner}/{repo}/commits?path={path}&page={page}"
+        url = f"https://api.github.com/repos/{owner}/{repo}/commits?path={file}&page={page}"
         response = requests.get(url, headers={"Authorization": f"Token {api_token}"})
         if response.status_code != 200:
             print(f"Error: {response.status_code} {response.reason}")
@@ -72,7 +92,7 @@ def compare_commits_api(entnum, commits):
     # 1 2006-06-16 0dda483cd04058da0c0dbcd4b72a7b07a42c7f56
     # Error: File not found in diff
     # 0 2006-07-20 5c5a62f3fe62dccc6542c2618557e77e468885ff
-    path = f"exforall/{entnum[0:3]}/{entnum}.x4"
+    file = f"exforall/{entnum[0:3]}/{entnum}.x4"
 
     if len(commits) == 1:
         print(f"Error: File does not have at least 2 commits")
@@ -88,10 +108,11 @@ def compare_commits_api(entnum, commits):
         if response.status_code != 200:
             print(f"Error: {response.status_code} {response.reason}")
             exit()
+
         diff = response.json()
 
         for file_diff in diff["files"]:
-            if file_diff["filename"] == path:
+            if file_diff["filename"] == file:
                 return file_diff["patch"]
         else:
             ## Since earlier Commits contains most of the EXFOR entry and the Github REST API returns only top 300 files

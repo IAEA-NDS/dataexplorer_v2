@@ -21,26 +21,28 @@ from common import (
     sidehead,
     footer,
     libs_navbar,
-    url_basename,
+    URL_PATH,
     page_urls,
     lib_selections,
     lib_page_urls,
     input_check,
+    input_general,
+    exfor_filter_opt,
     energy_range_conversion,
 )
 
 from submodules.utilities.elem import elemtoz_nz
 from submodules.utilities.mass import mass_range
 
-from libraries.datahandle.list import reaction_list
-from libraries.datahandle.tabs import create_tabs
-from libraries.datahandle.figs import default_chart, default_axis
-from libraries.datahandle.queries import (
+from libraries.list import reaction_list
+from libraries.tabs import create_tabs
+from libraries.figs import default_chart, default_axis
+from submodules.libraries.queries import (
     lib_query,
     lib_xs_data_query,
 )
-from exfor.datahandle.queries import (
-    reaction_query,
+from submodules.exfor.queries import (
+    index_query,
     get_entry_bib,
     data_query,
 )
@@ -48,82 +50,15 @@ from exfor.datahandle.queries import (
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/de")
+pageparam = "de"
 
 
-def input_lib(**query_strings):
+def input(**query_strings):
     return [
-        dcc.Dropdown(
-            id="reaction_category",
-            # options=[{"label": j, "value": i} for i, j in sorted(WEB_CATEGORY.items())],
-            options=lib_selections,
-            placeholder="Select reaction",
-            persistence=True,
-            persistence_type="memory",
-            value="DE",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_elem_de",
-            placeholder="Target element: C, c, Pd, pd, PD",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_elem"]
-            if query_strings.get("target_elem")
-            else "Fe",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_mass_de",
-            placeholder="Target mass: 0:natural, m:metastable",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_mass"]
-            if query_strings.get("target_mass")
-            else "56",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Dropdown(
-            id="reaction_de",
-            options=[
-                {
-                    "label": f"{proj.lower()},{reac.lower()}",
-                    "value": f"{proj.lower()},{reac.lower()}",
-                }
-                for proj in PARTICLE
-                for reac in reaction_list.keys()
-            ],
-            placeholder="Reaction e.g. (n,g)",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["reaction"] if query_strings.get("reaction") else "n,x",
-            style={"font-size": "small", "width": "100%"},
-        ),
+        html.Div(children=input_general(pageparam, **query_strings)),
         html.Br(),
+        html.Div(children=exfor_filter_opt(pageparam)),
         html.Br(),
-        html.P("Fileter EXFOR records by"),
-        html.Label("Energy Range"),
-        dcc.RangeSlider(
-            id="energy_range_de",
-            min=0,
-            max=9,
-            marks={0: "eV", 3: "keV", 6: "MeV", 9: "GeV"},
-            value=[0, 9],
-            # tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
-        html.Br(),
-        html.Label("Year Range"),
-        dcc.RangeSlider(
-            id="year_range_de",
-            min=1930,
-            max=2023,
-            marks={
-                i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
-            },
-            value=[1930, 2023],
-            tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
     ]
 
 
@@ -214,7 +149,7 @@ def layout(**query_strings):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
-                                    html.Div(input_lib(**query_strings)),
+                                    html.Div(input(**query_strings)),
                                 ],
                                 style={"margin-left": "10px"},
                             ),
@@ -259,7 +194,7 @@ def redirect_to_pages_de(dataset):
 
 @callback(
     Output("location_de", "href", allow_duplicate=True),
-    Input("reaction_category", "value"),
+    Input("observable_de", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_subpages_de(type):
@@ -272,7 +207,7 @@ def redirect_to_subpages_de(type):
 @callback(
     Output("location_de", "href", allow_duplicate=True),
     [
-        Input("reaction_category", "value"),
+        Input("observable_de", "value"),
         Input("target_elem_de", "value"),
         Input("target_mass_de", "value"),
         Input("reaction_de", "value"),
@@ -283,7 +218,7 @@ def update_url_de(type, elem, mass, reaction):
     input_check(type, elem, mass, reaction)
 
     if type == "DE" and (elem and mass and reaction):
-        url = url_basename + "reactions/de"
+        url = URL_PATH + "reactions/de"
 
         if elem:
             url += "?&target_elem=" + elem
@@ -305,7 +240,7 @@ def update_url_de(type, elem, mass, reaction):
         Output("exfor_table_de", "rowData"),
     ],
     [
-        Input("reaction_category", "value"),
+        Input("observable_de", "value"),
         Input("target_elem_de", "value"),
         Input("target_mass_de", "value"),
         Input("reaction_de", "value"),
@@ -341,7 +276,7 @@ def update_fig_de(type, elem, mass, reaction):
         )
     )
 
-    entries = reaction_query(
+    entries = index_query(
         type, elem, mass, reaction, branch=None, rp_elem=None, rp_mass=None
     )
     search_result = (

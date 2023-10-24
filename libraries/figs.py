@@ -1,6 +1,6 @@
 ####################################################################
 #
-# This file is part of libraries-2021 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
 # Copyright (C) 2022 International Atomic Energy Agency (IAEA)
 #
 # Contact:    nds.contact-point@iaea.org
@@ -52,11 +52,12 @@ def default_axis(mt):
 
     return xaxis_type, yaxis_type
 
+
 def default_chart(xaxis_type, yaxis_type, reaction, mt):
     reaction = reaction.split(",")
 
     fig = go.Figure(
-        layout = go.Layout(
+        layout=go.Layout(
             # template="plotly_white",
             xaxis={
                 "title": "Incident energy [MeV]",

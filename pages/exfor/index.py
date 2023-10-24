@@ -1,11 +1,11 @@
 import pandas as pd
 
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output, State
+import dash
+from dash import html, dcc, callback, Input, dash_table, Output, State
 import dash_pivottable
 from config import engines
 
-app = Dash(__name__)
+dash.register_page(__name__, path="/exfor/index")
 
 
 def _load_bib():
@@ -15,10 +15,10 @@ def _load_bib():
 
 
 df = _load_bib()
-print(df[20:100].values.tolist())
 
 
-app.layout = html.Div(
+## dash pivot version
+layout = html.Div(
     [
         html.P("pivot"),
         dash_pivottable.PivotTable(
@@ -29,7 +29,3 @@ app.layout = html.Div(
         ),
     ]
 )
-
-
-if __name__ == "__main__":
-    app.run_server(debug=True)

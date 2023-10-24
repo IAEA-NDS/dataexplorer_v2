@@ -9,9 +9,8 @@
 
 import re
 import pandas as pd
-
 import dash
-from dash import html, dcc, callback, Input, dash_table, Output, State
+from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
@@ -23,13 +22,14 @@ from exforparser.tabulated.data_process import data_length_unify
 from config import MASTER_GIT_REPO_URL
 from common import (
     sidehead,
-    url_basename,
+    URL_PATH,
     page_urls,
     exfor_navbar,
     footer,
 )
-from exfor.exfor_record import get_record, get_git_history_api
-from exfor.exfor_stat import stat_right_layout
+from exfor.record import get_record, get_git_history_api
+from exfor.stat import stat_right_layout
+from exfor.aggrid import aggrid_layout_dynamic
 
 
 dash.register_page(__name__, path="/exfor", path_template="/exfor/entry/<entry_id>")
@@ -51,8 +51,8 @@ def input_ex(entry_id=None):
                 style={"font-size": "small", "width": "95%", "margin-left": "6px"},
                 value=entry_id,
             ),
-            dcc.Link(html.Label("Reaction Search"), href= url_basename + "exfor/search"),
-            dcc.Link(html.Label("Geo Search"), href= url_basename + "exfor/geo"),
+            dcc.Link(html.Label("Reaction Search"), href=URL_PATH + "exfor/search"),
+            dcc.Link(html.Label("Geo Search"), href=URL_PATH + "exfor/geo"),
         ]
     )
 
@@ -169,11 +169,9 @@ def generate_fig(df):
         yanchor="top",
     )
     fig = go.Figure(
-            go.Scatter(
-                x=pd.Series(dtype=object), 
-                y=pd.Series(dtype=object), 
-                mode="lines+markers"
-            )
+        go.Scatter(
+            x=pd.Series(dtype=object), y=pd.Series(dtype=object), mode="lines+markers"
+        )
     )
     fig.update_layout(
         updatemenus=[button_x_dict, button_y_dict],
@@ -202,15 +200,25 @@ record_right_layout = [
                         children=[
                             dbc.Badge(
                                 "Download CSV",
-                                id="btn_csv",
+                                id="btn_csv_all",
                                 href="#",
                                 color="secondary",
                             ),
-                            dcc.Download(id="download-dataframe-csv"),
+                            "  ",
+                            dbc.Badge(
+                                "Download CSV (selected)",
+                                id="btn_csv_selct",
+                                href="#",
+                                color="white",
+                                text_color="dark",
+                                className="border me-1",
+                            ),
+                            # dcc.Download(id="download-dataframe-csv"),
                         ],
                         style={"textAlign": "right", "margin-bottom": "10px"},
                     ),
-                    html.Div(id="data-table"),
+                    # html.Div(id="data-table"),
+                    html.Div(id="aggrid_entry"),
                 ]
             ),
             dbc.Col(main_fig),
@@ -252,7 +260,7 @@ def layout(entry_id=None):
                                     dcc.Dropdown(
                                         id="dataset",
                                         options=list(page_urls.keys()),
-                                        value="EXFOR",
+                                        value="EXFOR Viewer",
                                         style={"font-size": "small"},
                                         persistence=True,
                                         persistence_type="memory",
@@ -327,7 +335,7 @@ def show_entry_links(entnum, entry_json):
                     "  ",
                     html.A(
                         "Compilation history",
-                        href=f"{url_basename}exfor/entry/{entnum}/histories",
+                        href=f"{URL_PATH}exfor/entry/{entnum}/histories",
                         id="exfor_compile_history",
                     ),
                     tooltip,
@@ -346,7 +354,7 @@ def show_entry_links(entnum, entry_json):
                     ),
                     dbc.Badge(
                         "JSON",
-                        href=f"{url_basename}exfor/entry/{entnum}",
+                        href=f"{URL_PATH}exfor/entry/{entnum}",
                         color="success",
                         className="me-1",
                     ),
@@ -664,7 +672,7 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_url(entry_id):
-    url = url_basename + "exfor/entry/"
+    url = URL_PATH + "exfor/entry/"
     if not entry_id:
         raise PreventUpdate
     elif len(entry_id) != 5 and len(entry_id) != 11:
@@ -682,6 +690,7 @@ def entry_store(entry_id):
 
     elif len(entry_id) != 5 and len(entry_id) != 11:
         raise PreventUpdate
+
     else:
         return get_record(entry_id[0:5])
 
@@ -752,9 +761,9 @@ def get_entry_exp(selected_id, entry_json):
         raise PreventUpdate
 
 
-# Get table and update data
+## Get table and update data
 @callback(
-    [Output("data-table", "children"), Output("main_graph_ex", "figure")],
+    [Output("aggrid_entry", "children"), Output("main_graph_ex", "figure")],
     [Input("selected_reaction", "value"), Input("entry_store", "data")],
 )
 def update_fig_data(selected_id, entry_json):
@@ -767,21 +776,21 @@ def update_fig_data(selected_id, entry_json):
     df = generate_data_table(selected_id, entry_json)
     fig = generate_fig(df)
 
-    table = (
-        dash_table.DataTable(
-            id="data-column",
-            data=df.to_dict("records"),
-            columns=[{"id": c, "name": c} for c in df.columns],
-            sort_action="native",
-            sort_mode="single",
-            row_selectable="multi",
-            # column_selectable="single",
-            page_action="native",
-            page_current=0,
-            page_size=20,
-            filter_action="native",
-        ),
-    )
+    # table = (
+    #     dash_table.DataTable(
+    #         id="data-column",
+    #         data=df.to_dict("records"),
+    #         columns=[{"id": c, "name": c} for c in df.columns],
+    #         sort_action="native",
+    #         sort_mode="single",
+    #         row_selectable="multi",
+    #         # column_selectable="single",
+    #         page_action="native",
+    #         page_current=0,
+    #         page_size=20,
+    #         filter_action="native",
+    #     ),
+    # )
 
     if len(df.index) == 0:
         return None, fig
@@ -808,20 +817,44 @@ def update_fig_data(selected_id, entry_json):
         )
         fig.update_layout(xaxis={"title": ang_col[0]}, yaxis={"title": data_col[0]})
 
-    return table, fig
+    return aggrid_layout_dynamic("entry", df), fig
+
+
+# @callback(
+#     Output("download-dataframe-csv", "data"),
+#     Input("btn_csv_all", "n_clicks"),
+#     State("data-column", "data"),
+#     prevent_initial_call=True,
+# )
+# def func(n_clicks, data):
+#     df = pd.DataFrame.from_dict(data)
+#     return dcc.send_data_frame(df.to_csv, "data.csv")
 
 
 @callback(
-    Output("download-dataframe-csv", "data"),
-    Input("btn_csv", "n_clicks"),
-    State("data-column", "data"),
+    [
+        Output("aggrid_entry", "exportDataAsCsv"),
+        Output("aggrid_entry", "csvExportParams"),
+    ],
+    [
+        Input("selected_reaction", "value"),
+        Input("btn_csv_all", "n_clicks"),
+        Input("btn_csv_selct", "n_clicks"),
+    ],
     prevent_initial_call=True,
 )
-def func(n_clicks, data):
-    df = pd.DataFrame.from_dict(data)
-    return dcc.send_data_frame(df.to_csv, "data.csv")
+def export_data_as_csv_all(selected_id, n_clicks_all, n_clicks_slctd):
+    if selected_id and n_clicks_all:
+        filename = f"{selected_id}-exfor.csv"
+        return True, {"fileName": filename}
 
+    elif selected_id and n_clicks_slctd:
+        filename = f"{selected_id}-exfor.csv"
+        return True, {
+            "fileName": filename,
+            "onlySelected": True,
+            "onlySelectedAllPages": True,
+        }
 
-# if __name__ == "__main__":
-#     app.run_server(use_reloader=True)
-#     # app.run_server(debug=True, use_reloader=True)
+    else:
+        raise PreventUpdate

@@ -15,30 +15,25 @@ from dash.exceptions import PreventUpdate
 import plotly.express as px
 
 from common import (
+    PARTICLE,
     sidehead,
-    url_basename,
     page_urls,
     exfor_navbar,
     footer,
-    lib_selections,
-    generate_reactions
+    generate_reactions,
 )
-from exfor.datahandle.queries import index_query_by_bib
-from exfor.datahandle.list import MAPPING, get_facility_type
-from exfor.geo import reactions_df, geo_fig
+from submodules.exfor.queries import index_query_by_id
+from exfor.list import MAPPING, get_facility_type
+from exfor.geofig import reactions_df, geo_fig
 from exfor.aggrid import aggrid_layout_bib, aggrid_layout
 
 
 dash.register_page(__name__, path="/exfor/geo")
 
 
-
 def input_ge(**query_strings):
-    return dbc.Row(
-        [
+    return [
         html.Label("Geological search"),
-        # dcc.Link(html.Label("Reaction search"), href= url_basename + "exfor/geo"),
-        html.Br(),
         html.Label("Observables"),
         dcc.Dropdown(
             id="reaction_category_geo",
@@ -54,6 +49,14 @@ def input_ge(**query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("Reaction"),
+        # dcc.RadioItems(
+        #     id="incident_particle_geo",
+        #     options=[{"label": f"{pt.lower()}", "value": pt} for pt in PARTICLE],
+        #     value=query_strings["reaction"][0].upper() if query_strings.get("reaction") else "N",
+        #     persistence=True,
+        #     persistence_type="memory",
+        #     labelStyle={"display": "inline-block", "margin":"5px"},
+        # ),
         dcc.Dropdown(
             id="reaction_geo",
             options=generate_reactions(),
@@ -101,46 +104,45 @@ def input_ge(**query_strings):
             vertical=False,
         ),
         dcc.Store(id="input_store_geo"),
-        ],
-    )
-
+    ]
 
 
 geo_right_layout = [
-        exfor_navbar,
-        # taxonomy
-        # html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-        # html.Label("EXFOR Taxonomy"),
-        # dbc.Row(cyto_layout),
-        # geo
-        html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-        html.Label(
-            "Nuclear Reaction Experimental Facilities (Based on EXFOR FACILITY)"
-        ),
-        dbc.Row([
+    exfor_navbar,
+    ## taxonomy
+    # html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    # html.Label("EXFOR Taxonomy"),
+    # dbc.Row(cyto_layout),
+    ## geo
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Label("Nuclear Reaction Experimental Facilities (Based on EXFOR FACILITY)"),
+    dbc.Row(
+        [
             dbc.Col(html.Label("Color by "), width="auto"),
             dbc.Col(
                 dcc.RadioItems(
                     id="grouping",
-                    options=['Country', 'Facility Type'], 
-                    value = 'Country', 
-                    labelStyle={"display": "inline-block"}
+                    options=["Country", "Facility Type"],
+                    value="Country",
+                    labelStyle={"display": "inline-block"},
                 ),
                 width="auto",
-            )
-        ]),
-        dcc.Loading(
-            children=dbc.Row(dcc.Graph(id="geo_map")),
-            type="circle",
-        ),
-        html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-        html.Label("EXFOR entries from selected facility:", id="result_bib"),
-        dbc.Row(aggrid_layout_bib),
-        html.Label("Reaction indexes"),
-        dbc.Row(aggrid_layout("geo")),
-        html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-        html.Div(id="test"),
-        footer,
+            ),
+        ]
+    ),
+    dcc.Loading(
+        children=dbc.Row(dcc.Graph(id="geo_map")),
+        type="circle",
+    ),
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Label(id="result_bib"),
+    dbc.Row(aggrid_layout_bib),
+    html.Br(),
+    html.Label("Reactions in selected entries"),
+    dbc.Row(aggrid_layout("geo")),
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Div(id="test"),
+    footer,
 ]
 
 
@@ -161,7 +163,7 @@ def layout():
                                     dcc.Dropdown(
                                         id="dataset",
                                         options=list(page_urls.keys()),
-                                        value="EXFOR",
+                                        value="EXFOR Viewer",
                                         style={"font-size": "small"},
                                         persistence=True,
                                         persistence_type="memory",
@@ -182,7 +184,7 @@ def layout():
                         [
                             html.Div(
                                 children=geo_right_layout,
-                                style={"margin-right": "20px"},
+                                style={"margin-right": "20px", "margin-left": "10px"},
                             ),
                             html.P("test", id="ppp"),
                         ],
@@ -195,10 +197,26 @@ def layout():
     )
 
 
+###------------------------------------------------------------------------------------
+### App Callback
+###------------------------------------------------------------------------------------
+@callback(
+    Output("reaction_geo", "options"),
+    Input("incident_particle_geo", "value"),
+)
+def update_reaction_list(proj):
+    print("update_branch_list")
+
+    if not proj:
+        raise PreventUpdate
+
+    else:
+        return generate_reactions(proj)
+
 
 @callback(
     [
-        Output("geo_map", "figure"), 
+        Output("geo_map", "figure"),
         Output("input_store_geo", "data"),
     ],
     [
@@ -208,13 +226,13 @@ def layout():
         Input("reaction_geo", "value"),
         Input("energy_range_geo", "value"),
         Input("year_range_geo", "value"),
-    ]
-    )
+    ],
+)
 def select_geo_node(grouping, facility_type, type, reaction, energy_range, year_range):
     df = reactions_df
 
     if facility_type:
-        df = df[ df["main_facility_type"].isin([r.upper() for r in facility_type]) ]
+        df = df[df["main_facility_type"].isin([r.upper() for r in facility_type])]
 
     if type:
         sf6s = []
@@ -222,108 +240,122 @@ def select_geo_node(grouping, facility_type, type, reaction, energy_range, year_
             if any(t == desc["top_category"] for t in type):
                 sf6s += [sf6]
 
-        df = df[ df["sf6"].isin(sf6s) ]
+        df = df[df["sf6"].isin(sf6s)]
 
     if reaction:
-        df = df[ df["process"].isin([r.upper() for r in reaction]) ]
+        df = df[df["process"].isin([r.upper() for r in reaction])]
 
     if energy_range:
-        df = df[ (df["e_inc_min"] > energy_range[0]) & (df["e_inc_max"] < energy_range[1]) ]
+        df = df[
+            (df["e_inc_min"] > energy_range[0]) & (df["e_inc_max"] < energy_range[1])
+        ]
 
     if year_range:
-        df = df[ (df["year"] > year_range[0]) & (df["year"] < year_range[1]) ]
+        df = df[(df["year"] > year_range[0]) & (df["year"] < year_range[1])]
 
     input_dict = {
-            "type": type,
-            "reaction": reaction,
-            "energy_range": energy_range,
-            "year_range": year_range,
-            }
-    
-    return geo_fig(grouping, df), input_dict
+        "type": type,
+        "reaction": reaction,
+        "energy_range": energy_range,
+        "year_range": year_range,
+    }
 
+    return geo_fig(grouping, df), input_dict
 
 
 @callback(
     [
-        Output("result_bib", "children"), 
-        Output("bib_index", "rowData"), 
+        Output("result_bib", "children"),
+        Output("bib_index", "rowData"),
     ],
-    [
-        Input("input_store_geo", "data"),
-        Input("geo_map", "clickData")
-    ]
-    )
+    [Input("input_store_geo", "data"), Input("geo_map", "clickData")],
+)
 def select_geo_node(input_store, selected_data):
     if input_store:
         type, reaction, energy_range, year_range = input_store.values()
-    
+
     if selected_data:
         ## e.g. {'points': [{'curveNumber': 67, 'pointNumber': 291, 'pointIndex': 291, 'lon': -84.3101161, 'lat': 35.9311679, 'marker.size': 211, 'bbox': {'x0': 499.53913841741746, 'x1': 518.7052499914713, 'y0': 362.7159697002503, 'y1': 381.88208127430414}, 'customdata': ['Oak Ridge National Laboratory, Oak Ridge, TN', '1USAORL', 'SPECC', 'Crystal spectrometer']}]}
-        facility_name, facility_code, facility_type, facility_type_desc = selected_data[ "points"][0]["customdata"]
+        facility_name, facility_code, facility_type, facility_type_desc = selected_data[
+            "points"
+        ][0]["customdata"]
 
-        bib_df = reactions_df[ ( reactions_df["main_facility_institute"] == facility_code ) & ( reactions_df["main_facility_type"] == facility_type )]
+        bib_df = reactions_df[
+            (reactions_df["main_facility_institute"] == facility_code)
+            & (reactions_df["main_facility_type"] == facility_type)
+        ]
 
         if type:
             sf6s = []
             for sf6, desc in MAPPING["SF6"].items():
                 if any(t == desc["top_category"] for t in type):
                     sf6s += [sf6]
-            bib_df = bib_df[ bib_df["sf6"].isin(sf6s) ]
+            bib_df = bib_df[bib_df["sf6"].isin(sf6s)]
 
         if reaction:
-            bib_df = bib_df[ bib_df["process"].isin([r.upper() for r in reaction]) ]
+            bib_df = bib_df[bib_df["process"].isin([r.upper() for r in reaction])]
 
         if energy_range:
-            bib_df = bib_df[ (bib_df["e_inc_min"] > energy_range[0]) & (bib_df["e_inc_max"] < energy_range[1]) ]
+            bib_df = bib_df[
+                (bib_df["e_inc_min"] > energy_range[0])
+                & (bib_df["e_inc_max"] < energy_range[1])
+            ]
 
         if year_range:
-            bib_df = bib_df[ (bib_df["year"] > year_range[0]) & (bib_df["year"] < year_range[1]) ]
+            bib_df = bib_df[
+                (bib_df["year"] > year_range[0]) & (bib_df["year"] < year_range[1])
+            ]
 
-        bib_df = bib_df[["entry", "main_facility_type_desc",  "authors", "title", "main_reference", "year"]].drop_duplicates()
+        bib_df = bib_df[
+            [
+                "entry",
+                "main_facility_type_desc",
+                "authors",
+                "title",
+                "main_reference",
+                "year",
+            ]
+        ].drop_duplicates()
         bib_df["entry_id_link"] = (
             "[" + bib_df["entry"] + "](../exfor/entry/" + bib_df["entry"] + ")"
         )
 
-        return f"EXFOR entries from {facility_type_desc} ({facility_type}) in {facility_name} ({facility_code})", bib_df.to_dict("records")
-    
+        return (
+            f"EXFOR entries from {facility_type_desc} ({facility_type}) in {facility_name} ({facility_code})",
+            bib_df.to_dict("records"),
+        )
+
     else:
-
-        return None, None
-
-
-
+        return f"EXFOR entries from selected facility:", None
 
 
 @callback(
-    Output("index-all-geo", "rowData"), 
+    Output("index-all-geo", "rowData"),
     Input("bib_index", "selectedRows"),
-    )
+)
 def selected_index(selected_rows):
     ## e.g. [{'entry': '33146', 'authors': 'I.Pasha, B.Rudraswamy, S.V.Suryanarayana, H.Naik, S.P.Ram, L.S.Danu, T.Patel, S.Bishnoi, M.P.Karantha', 'title': 'Measurement of neutron induced reaction cross sections of palladium isotopes at the neutron energy of 14.54 +/- 0.24 MeV with covariance analysis', 'main_reference': '(J,JRN,325,175,2020)', 'year': 2020}]
 
     if selected_rows:
-        entries = [s['entry'] for s in selected_rows]
-        df = index_query_by_bib(entries)
-        print(df)
+        entries = [s["entry"] for s in selected_rows]
+        df = index_query_by_id(entries)
+
         df["entry_id_link"] = (
             "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
         )
 
         return df.to_dict("records")
-    
+
     else:
         # raise PreventUpdate
         return None
 
 
-
-
 # @callback(
 #     [
-#         Output("result_bib", "children"), 
-#         Output("bib_index", "rowData"), 
-#         Output("geo_map", "figure"), 
+#         Output("result_bib", "children"),
+#         Output("bib_index", "rowData"),
+#         Output("geo_map", "figure"),
 #     ],
 #     [
 #         Input("geo_map", "clickData"),
@@ -337,6 +369,6 @@ def selected_index(selected_rows):
 #         pd.set_option('display.max_rows', None)
 #         print(df)
 #         return geo_fig(df)
-    
+
 #     else:
 #         return geo_fig(reactions_df)

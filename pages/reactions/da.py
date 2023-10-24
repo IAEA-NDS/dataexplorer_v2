@@ -7,148 +7,80 @@
 #
 ####################################################################
 
+
 import pandas as pd
 import dash
-from dash import html, dcc, callback, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
+import dash_daq as daq
 import plotly.graph_objects as go
-from collections import OrderedDict
-from operator import getitem
 from dash.exceptions import PreventUpdate
 
 from common import (
-    PARTICLE,
     sidehead,
     footer,
     libs_navbar,
-    url_basename,
     page_urls,
-    lib_selections,
     lib_page_urls,
+    main_fig,
     input_check,
-    energy_range_conversion,
+    input_target,
+    input_general,
+    generate_reactions,
+    get_mt,
+    remove_query_parameter,
+    exfor_filter_opt,
+    excl_mxw_switch,
+    get_indexes,
+    scale_data,
+    del_rows_fig,
+    highlight_data,
+    filter_by_year_range,
+    fileter_by_en_range,
+    export_index,
+    export_data,
+    generate_exfortables_file_path,
+    generate_endftables_file_path,
 )
 
-from submodules.utilities.elem import elemtoz_nz
-from submodules.utilities.mass import mass_range
+from libraries.list import color_libs
+from libraries.tabs import create_tabs
 
-from libraries.datahandle.list import reaction_list
-from libraries.datahandle.tabs import create_tabs
-from libraries.datahandle.figs import default_chart, default_axis
-from libraries.datahandle.queries import (
-    lib_query,
-    lib_xs_data_query,
-)
-from exfor.datahandle.queries import (
-    reaction_query,
-    get_entry_bib,
-    data_query,
-)
-
+from submodules.exfor.queries import data_query
+from submodules.libraries.queries import lib_da_data_query
+from submodules.utilities.util import get_number_from_string
 
 ## Registration of page
-dash.register_page(__name__, path="/reactions/da")
+dash.register_page(__name__, path="/reactions/da", redirect_from=["/angle", "/da", "/reactions/angle"])
+
+pageparam = "da"
 
 
-def input_lib(**query_strings):
+def input(**query_strings):
     return [
-        dcc.Dropdown(
-            id="reaction_category",
-            # options=[{"label": j, "value": i} for i, j in sorted(WEB_CATEGORY.items())],
-            options=lib_selections,
-            placeholder="Select reaction",
-            persistence=True,
-            persistence_type="memory",
-            value="DA",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_elem_da",
-            placeholder="Target element: C, c, Pd, pd, PD",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_elem"]
-            if query_strings.get("target_elem")
-            else "Au",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_mass_da",
-            placeholder="Target mass: 0:natural, m:metastable",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_mass"]
-            if query_strings.get("target_mass")
-            else "197",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Dropdown(
-            id="reaction_da",
-            options=[
-                {
-                    "label": f"{proj.lower()},{reac.lower()}",
-                    "value": f"{proj.lower()},{reac.lower()}",
-                }
-                for proj in PARTICLE
-                for reac in reaction_list.keys()
-            ],
-            placeholder="Reaction e.g. (n,g)",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["reaction"] if query_strings.get("reaction") else "n,p",
-            style={"font-size": "small", "width": "100%"},
-        ),
+        html.Div(children=input_target(pageparam, **query_strings)),
+        html.Div(children=input_general(pageparam, **query_strings)),
         html.Br(),
+        html.Div(children=exfor_filter_opt(pageparam)),
         html.Br(),
-        html.P("Fileter EXFOR records by"),
-        html.Label("Energy Range"),
-        dcc.RangeSlider(
-            id="energy_range_da",
-            min=0,
-            max=9,
-            marks={0: "eV", 3: "keV", 6: "MeV", 9: "GeV"},
-            value=[0, 9],
-            # tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
+        html.Div(children=excl_mxw_switch(pageparam)),
         html.Br(),
-        html.Label("Year Range"),
-        dcc.RangeSlider(
-            id="year_range_da",
-            min=1930,
-            max=2023,
-            marks={
-                i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
-            },
-            value=[1930, 2023],
-            tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
+        dcc.Store(id="input_store_da"),
     ]
 
-
-## main figure
-main_fig_de = dcc.Graph(
-    id="main_fig_da",
-    config={
-        "displayModeBar": True,
-        "scrollZoom": True,
-        "modeBarButtonsToAdd": ["drawline", "drawopenpath", "eraseshape"],
-        "modeBarButtonsToRemove": ["lasso2d"],
-    },
-    figure={
-        "layout": {
-            "title": "Please select target and reaction.",
-            "height": 600,
-        }
-    },
-)
 
 
 right_layout_de = [
     libs_navbar,
-    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    html.Div(id="result_cont_da"),
+    html.Hr(
+        style={
+            "border": "3px",
+            "border-top": "1px solid",
+            "margin-top": "5px",
+            "margin-bottom": "5px",
+        }
+    ),
+    html.Div(id="search_result_txt_da"),
     # Log/Linear switch
     dbc.Row(
         [
@@ -182,12 +114,15 @@ right_layout_de = [
             ),
         ]
     ),
-    dcc.Loading(
-        children=main_fig_de,
-        type="circle",
-    ),
+    main_fig(pageparam),
+    # dcc.Loading(
+    #     children=main_fig(pageparam),
+    #     type="circle",
+    # ),
+    dcc.Store(id="entries_store_da"),
+    dcc.Store(id="libs_store_da"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    create_tabs("da"),
+    create_tabs(pageparam),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
@@ -214,7 +149,7 @@ def layout(**query_strings):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
-                                    html.Div(input_lib(**query_strings)),
+                                    html.Div(input(**query_strings)),
                                 ],
                                 style={"margin-left": "10px"},
                             ),
@@ -246,82 +181,222 @@ def layout(**query_strings):
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
-    Output("location_da", "href", allow_duplicate=True),
-    Input("dataset", "value"),
+    [
+        Output("location_da", "href", allow_duplicate=True),
+        Output("location_da", "refresh", allow_duplicate=True),
+    ],
+    Input("dataset_da", "value"),
     prevent_initial_call=True,
 )
 def redirect_to_pages_da(dataset):
     if dataset:
-        return page_urls[dataset]
+        return page_urls[dataset], True
+
     else:
         raise PreventUpdate
 
 
 @callback(
-    Output("location_da", "href", allow_duplicate=True),
-    Input("reaction_category", "value"),
+    [
+        Output("location_da", "href", allow_duplicate=True),
+        Output("location_da", "refresh", allow_duplicate=True),
+    ],
+    Input("observable_da", "value"),
     prevent_initial_call=True,
 )
-def redirect_to_subpages_da(type):
+def redirect_to_subpages(type):
+    print("redirect_to_subpages")
     if type:
-        return lib_page_urls[type]
+        return lib_page_urls[type], True  # , dict({"type": type})
+
     else:
         raise PreventUpdate
 
 
+
+
+
 @callback(
-    Output("location_da", "href", allow_duplicate=True),
-    [
-        Input("reaction_category", "value"),
-        Input("target_elem_da", "value"),
-        Input("target_mass_da", "value"),
-        Input("reaction_da", "value"),
-    ],
-    prevent_initial_call=True,
+    Output("reaction_da", "options"),
+    Input("incident_particle_da", "value"),
 )
-def update_url_da(type, elem, mass, reaction):
-    input_check(type, elem, mass, reaction)
+def update_reaction_list(proj):
+    print("update_reaction_list")
 
-    if type == "DA" and (elem and mass and reaction):
-        url = url_basename + "reactions/da"
-
-        if elem:
-            url += "?&target_elem=" + elem
-
-        if mass:
-            url += "&target_mass=" + mass
-
-        if reaction:
-            url += "&reaction=" + reaction
-
-        return url
+    if not proj:
+        raise PreventUpdate
 
     else:
-        raise PreventUpdate
+        return generate_reactions(proj)
+
+
+
 
 
 @callback(
+    Output("reac_branch_da", "options"),
     [
-        Output("result_cont_da", "children"),
-        Output("main_fig_da", "figure"),
-        Output("index_table_da", "rowData"),
-        Output("exfor_table_da", "rowData"),
+        Input("observable_da", "value"),
+        Input("reaction_da", "value"),
     ],
+)
+def update_branch_list(type, reaction):
+    print("update_branch_list")
+    if type != "DA":
+        raise PreventUpdate
+
+    if not reaction:
+        raise PreventUpdate
+
+    return [{"label": "Partial", "value": "PAR"}]
+
+
+
+
+
+@callback(
+    Output("input_store_da", "data"),
     [
-        Input("reaction_category", "value"),
+        Input("observable_da", "value"),
         Input("target_elem_da", "value"),
         Input("target_mass_da", "value"),
         Input("reaction_da", "value"),
+        Input("reac_branch_da", "value"),
+        Input("exclude_mxw_switch_da", "value"),
     ],
     # prevent_initial_call=True,
 )
-def update_fig_da(type, elem, mass, reaction):
+def input_store_da(type, elem, mass, reaction, branch, excl_junk_switch):
+    print("input_store_da", type)
+    if type != "DA":
+        return dict({"type": type})
+
     elem, mass, reaction = input_check(type, elem, mass, reaction)
-    print(type, elem, mass, reaction)
+    mt = get_mt(reaction)
+
+    if reaction.split(",")[1][-1].isdigit():
+        ## such as n,n1, n,n2 but not n,2n
+        level_num = int(get_number_from_string(reaction.split(",")[1]))
+    else:
+        level_num = None
+
+    return dict(
+        {
+            "type": type,
+            "target_elem": elem,
+            "target_mass": mass,
+            "reaction": reaction,
+            "rp_elem": None,
+            "rp_mass": None,
+            "level_num": level_num,
+            "branch": branch,
+            "mt": mt,
+            "excl_junk_switch": excl_junk_switch,
+        }
+    )
+
+
+
+@callback(
+    [
+        Output("location_da", "search"),
+        Output("location_da", "refresh", allow_duplicate=True),
+    ],
+    Input("input_store_da", "data"),
+    prevent_initial_call=True,
+)
+def update_url_da(input_store):
+    print("update_url")
+
+    if input_store:
+        type = input_store.get("type").upper()
+        elem = input_store.get("target_elem")
+        mass = input_store.get("target_mass")
+        reaction = input_store.get("reaction")
+        branch = input_store.get("branch")
+    else:
+        raise PreventUpdate
+
+    if type == "DA" and elem and mass and reaction:
+        query_string = ""
+        if elem:
+            query_string += "?&target_elem=" + elem
+
+        if mass:
+            query_string += "&target_mass=" + mass
+
+        if reaction:
+            query_string += "&reaction=" + reaction.replace("+", "%2B")
+
+            if reaction.split(",")[1].upper() == "INL":
+                if not branch:
+                    pass
+
+                elif isinstance(branch, int):
+                    query_string += "&branch=" + str(branch)
+
+            elif reaction.split(",")[1].upper() != "INL":
+                if branch == "PAR":
+                    query_string += "&branch=" + str(branch)
+
+                else:
+                    query_string = remove_query_parameter(query_string, "branch")
+
+        return query_string, False
+
+    else:
+        return no_update, False
+
+
+
+@callback(
+    [
+        Output("search_result_txt_da", "children"),
+        Output("index_table_da", "rowData"),
+        Output("entries_store_da", "data"),
+        Output("libs_store_da", "data"),
+    ],
+    [
+        Input("input_store_da", "data"),
+        Input("rest_btn_da", "n_clicks"),
+    ],
+    # prevent_initial_call=True,
+)
+def initial_data_da(input_store, r_click):
+    print("initial_data_da")
+    if input_store:
+        if ctx.triggered_id != "rest_btn_da":
+            no_update
+        return get_indexes(input_store)
+
+    else:
+        raise PreventUpdate
+
+
+
+
+@callback(
+    [
+        Output("main_fig_da", "figure", allow_duplicate=True),
+        Output("exfor_table_da", "rowData"),
+    ],
+    [
+        Input("input_store_da", "data"),
+        Input("entries_store_da", "data"),
+        Input("libs_store_da", "data"),
+        # Input("endf_selct_da", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def create_fig_da(input_store, legends, libs):
+    if input_store:
+        reaction = input_store.get("reaction")
+
+    else:
+        raise PreventUpdate
+    
     df = pd.DataFrame()
     index_df = pd.DataFrame()
-
-    mt = reaction_list[reaction.split(",")[1].upper()]["mt"].zfill(3)
 
     fig = go.Figure(
         layout=go.Layout(
@@ -343,28 +418,41 @@ def update_fig_da(type, elem, mass, reaction):
         )
     )
 
-    entries = reaction_query(
-        type, elem, mass, reaction, branch=None, rp_elem=None, rp_mass=None
-    )
-    search_result = (
-        f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)}"
-    )
+    lib_df = pd.DataFrame()
+    if libs:
+        print(libs)
+        lib_df = lib_da_data_query(libs)
 
-    if not entries:
-        return search_result, fig, None, None
+        for l in libs:
+            line_color = color_libs(libs[l])
+            new_col = next(line_color)
 
-    if entries:
-        legend = get_entry_bib(e[:5] for e in entries.keys())
-        legend = {
-            t: dict(**i, **v)
-            for k, i in legend.items()
-            for t, v in entries.items()
-            if k == t[:5]
-        }
-        df = data_query(entries.keys())
+            fig.add_trace(
+                go.Scatter(
+                    x=lib_df[lib_df["reaction_id"] == int(l)]["en_inc"].astype(float),
+                    y=lib_df[lib_df["reaction_id"] == int(l)]["data"].astype(float),
+                    showlegend=True,
+                    line_color=new_col,
+                    name=str(libs[l]),
+                    mode="lines",
+                )
+            )
+
+    df = pd.DataFrame()
+    if legends:
+        df = data_query(input_store, legends.keys())
+        df["bib"] = df["entry_id"].map(legends)
+        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
+        df = df.drop(columns=["bib"])
+        df["entry_id_link"] = (
+            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
+        )
 
         i = 0
-        for e in legend.keys():
+        for e in list(legends.keys()):
+            if e == "total_points":
+                continue
+            
             fig.add_trace(
                 go.Scatter(
                     x=df[df["entry_id"] == e]["angle"],
@@ -372,9 +460,13 @@ def update_fig_da(type, elem, mass, reaction):
                     error_x=dict(type="data", array=df[df["entry_id"] == e]["dangle"]),
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
-                    name=f"{legend[e]['author']}, {legend[e]['year']}"
-                    if legend[e].get("year")
-                    else legend[e]["author"],
+                    name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
+                        if legends.get(e)
+                        and legends[e].get("author")
+                        and legends[e].get("year")
+                        else f"{legends[e]['author']}, 1900 [{e}]"
+                        if legends.get(e)
+                        else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -384,29 +476,13 @@ def update_fig_da(type, elem, mass, reaction):
             if i == 30:
                 i = 1
 
-        index_df = pd.DataFrame.from_dict(legend, orient="index").reset_index()
-        index_df.rename(columns={"index": "entry_id"}, inplace=True)
-        index_df["entry_id_link"] = (
-            "["
-            + index_df["entry_id"]
-            + "](../exfor/entry/"
-            + index_df["entry_id"]
-            + ")"
-        )
+    return  fig, df.to_dict("records")
 
-        df["bib"] = df["entry_id"].map(legend)
-        df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
-        df = df.drop(columns=["bib"])
-        df["entry_id_link"] = (
-            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
-        )
 
-    return (
-        search_result,
-        fig,
-        index_df.to_dict("records"),
-        df.to_dict("records"),
-    )
+
+
+
+
 
 
 @callback(
@@ -431,56 +507,158 @@ def update_axis(xaxis_type, yaxis_type, fig):
         Output("main_fig_da", "figure", allow_duplicate=True),
         Output("index_table_da", "filter_query"),
     ],
-    [
-        Input("energy_range_da", "value"),
-        Input("year_range_da", "value"),
-    ],
+    Input("energy_range_da", "value"),
     State("main_fig_da", "figure"),
     prevent_initial_call=True,
 )
-def fileter_by_range_lib(energy_range, year_range, fig):
-    # print(json.dumps(fig, indent=1))
-    print(energy_range, year_range)
-    filter = ""
+def fileter_by_range_lib(energy_range, fig):
+    return fileter_by_en_range(energy_range, fig)
 
-    for records in fig.get("data"):
-        if len(records.get("name").split(",")) > 1:
-            author, year = records.get("name").split(",")
-
-            sum_x = sum([float(x) for x in records["x"] if x is not None])
-            lower, upper = energy_range_conversion(energy_range)
-
-            filter = (
-                "{year} ge "
-                + str(year_range[0])
-                + " && {year} le "
-                + str(year_range[1])
-            )
-            filter += (
-                " && {e_inc_min} ge " + str(lower) + " && {e_inc_max} le " + str(upper)
-            )
-
-            if (
-                not lower < sum_x / len(records["x"]) < upper
-                or not year_range[0] < int(year) < year_range[1]
-            ):
-                records.update({"visible": "legendonly"})
-
-            if (
-                lower < sum_x / len(records["x"]) < upper
-                or year_range[0] < int(year) < year_range[1]
-            ):
-                records.update({"visible": "true"})
-
-    return fig, filter
 
 
 @callback(
-    Output("exfor_table_da", "exportDataAsCsv"),
-    Input("csv-button_da", "n_clicks"),
+    [
+        Output("main_fig_da", "figure", allow_duplicate=True),
+        Output("index_table_da", "filterModel", allow_duplicate=True),
+    ],
+    Input("year_range_da", "value"),
+    State("main_fig_da", "figure"),
+    prevent_initial_call=True,
 )
-def export_data_as_cs_da(n_clicks):
-    if n_clicks:
-        return True
+def fileter_by_year_range_lib(year_range, fig):
+    return filter_by_year_range(year_range, fig)
 
-    return False
+
+
+@callback(
+    Output("main_fig_da", "figure", allow_duplicate=True),
+    Input("index_table_da", "selectedRows"),
+    State("main_fig_da", "figure"),
+    prevent_initial_call=True,
+)
+def highlight_data_xs(selected, fig):
+    return highlight_data(selected, fig)
+
+
+
+@callback(
+    Output("main_fig_da", "figure", allow_duplicate=True),
+    Input("index_table_da", "cellValueChanged"),
+    State("main_fig_da", "figure"),
+    prevent_initial_call=True,
+)
+def scale_data_xs(selected, fig):
+    return scale_data(selected, fig)
+
+
+
+
+
+@callback(
+    [
+        Output("main_fig_da", "figure", allow_duplicate=True),
+        Output("index_table_da", "rowTransaction"),
+    ],
+    Input("del_btn_da", "n_clicks"),
+    [
+        State("main_fig_da", "figure"),
+        State("index_table_da", "selectedRows"),
+    ],
+    prevent_initial_call=True,
+)
+def del_rows_da(n1, fig, selected):
+    if n1:
+        if selected is None:
+            return no_update, no_update
+        return del_rows_fig(selected, fig)
+
+
+@callback(
+    [
+        Output("index_table_da", "exportDataAsCsv"),
+        Output("index_table_da", "csvExportParams"),
+    ],
+    [
+        Input("btn_csv_index_da", "n_clicks"),
+        Input("btn_csv_index_selct_da", "n_clicks"),
+        Input("input_store_da", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def export_index_xs(n1, n2, input_store):
+    # return export_index(n_clicks_all, n_clicks_slctd, input_store)
+    if not input_store:
+        raise PreventUpdate
+    
+    if ctx.triggered_id == "btn_csv_index_da":
+        return export_index(False, input_store)
+    
+    elif ctx.triggered_id == "btn_csv_index_selct_da":
+        return export_index(True, input_store)
+    
+    else:
+        return no_update, no_update
+
+
+
+@callback(
+    [
+        Output("exfor_table_da", "exportDataAsCsv"),
+        Output("exfor_table_da", "csvExportParams"),
+    ],
+    [
+        Input("btn_csv_exfor_da", "n_clicks"),
+        Input("btn_csv_exfor_selct_da", "n_clicks"),
+        Input("input_store_da", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def export_data_xs(n1, n2, input_store):
+    # return export_data(n_clicks_all, n_clicks_slctd, input_store)
+    if not input_store:
+        raise PreventUpdate
+
+    if ctx.triggered_id == "btn_csv_exfor_da":
+        return export_data(False, input_store)
+    
+    elif ctx.triggered_id == "btn_csv_exfor_selct_da":
+        return export_data(True, input_store)
+    
+    else:
+        return no_update, no_update
+
+
+
+
+
+
+
+@callback(
+    [
+        Output("btn_api_da", "href"),
+        Output("btn_api_data_da", "href"),
+    ],
+    Input("location", "search"),
+)
+def generate_api_links(search_str):
+    if search_str:
+        return f"/api/reactions/{pageparam}{search_str}", f"/api/reactions/{pageparam}{search_str}&data=True"
+    else:
+        return no_update, no_update
+
+
+
+@callback(
+    [
+        Output("exfiles_link_da", "children"),
+        Output("libfiles_link_da", "children"),
+    ],
+    Input("input_store_da", "data"),
+)
+def generate_file_links(input_store):
+    if not input_store:
+        raise PreventUpdate
+
+    return generate_exfortables_file_path(
+        input_store
+    ), generate_endftables_file_path(input_store)
