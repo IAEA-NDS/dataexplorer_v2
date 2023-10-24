@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 import site
 import dash
 
-DEVENV = True
+DEVENV = False
 
 if DEVENV:
     ## Application file location
