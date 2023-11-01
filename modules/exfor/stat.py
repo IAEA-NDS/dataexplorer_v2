@@ -14,18 +14,15 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash import html, dcc
 from datetime import date, timedelta
-import dateutil.relativedelta
 
-from exfor.geofig import reactions_df, geo_fig
-from exfor.aggrid import aggrid_updated
-from exfor.list import ent_update_df
-from common import exfor_navbar, footer
-from submodules.exfor.queries import (
-    entry_query_by_id,
-    get_entry_bib,
-    get_exfor_bib_table,
-    index_query_by_id,
-)
+
+from modules.exfor.geofig import get_reactions_geo
+from modules.exfor.aggrid import aggrid_updated
+from modules.exfor.list import ent_update_df, bib_df, reactions_df
+from pages_common import URL_PATH, exfor_navbar, footer
+from submodules.exfor.queries import entry_query_by_id
+
+geo_df = get_reactions_geo(reactions_df)
 
 
 def updated_list():
@@ -48,14 +45,12 @@ def updated_list():
 def year_fig():
     count_df = pd.DataFrame(
         {
-            "count": get_exfor_bib_table()
-            .groupby(
+            "count": bib_df.groupby(
                 [
                     "year",
                     # "entries",
                 ]
-            )["entry"]
-            .count()
+            )["entry"].count()
         }
     ).reset_index()
     # print(count_df)
@@ -80,15 +75,15 @@ stat_right_layout = [
     html.Label(
         children=[
             "Nuclear Reaction Experimental Facilities (Based on EXFOR FACILITY)  ",
-            html.A("GEO Search", href="exfor/geo"),
+            html.A("GEO Search", href=URL_PATH + "exfor/geo"),
         ]
     ),
-    dcc.Loading(
-        children=dbc.Row(
-            dcc.Graph(id="geo_map", figure=geo_fig("Country", reactions_df))
-        ),
-        type="circle",
-    ),
+    # dcc.Loading(
+    #     children=dbc.Row(
+    #         dcc.Graph(figure=geo_fig("Country", geo_df))
+    #     ),
+    #     type="circle",
+    # ),
     ## year counts
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     html.Label("Number of Nuclear Reaction Measurements (Based on EXFOR REFERENCE)"),
@@ -106,4 +101,25 @@ stat_right_layout = [
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     # html.Div(id="test"),
     footer,
+]
+
+
+stat_content = [
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Label("Recently added/updated EXFOR entries"),
+    updated_list(),
+    ## geo
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Label(
+        children=[
+            "Nuclear Reaction Experimental Facilities (Based on EXFOR FACILITY)  ",
+            html.A("GEO Search", href=URL_PATH + "exfor/geo"),
+        ]
+    ),
+    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
+    html.Label("Number of Nuclear Reaction Measurements (Based on EXFOR REFERENCE)"),
+    dcc.Loading(
+        children=dbc.Row(dcc.Graph(figure=year_fig())),
+        type="circle",
+    ),
 ]

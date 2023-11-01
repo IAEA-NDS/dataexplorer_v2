@@ -15,22 +15,19 @@ from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 
 
-from common import (
+from pages_common import (
     PARTICLE_FY,
     sidehead,
     footer,
     libs_navbar,
     page_urls,
     lib_page_urls,
+    URL_PATH,
     main_fig,
     input_check,
+    input_obs,
     input_target,
-    input_general,
     excl_mxw_switch,
-    generate_reactions,
-    get_mt,
-    remove_query_parameter,
-    limit_number_of_datapoints,
     exfor_filter_opt,
     libs_filter_opt,
     get_indexes,
@@ -41,31 +38,33 @@ from common import (
     fileter_by_en_range,
     export_index,
     export_data,
+    list_link_of_files,
+    generate_api_link,
+)
+
+from modules.reactions.list import color_libs
+from modules.reactions.figs import default_chart, default_axis
+from modules.reactions.tabs import create_tabs
+
+from submodules.common import (
+    MT_BRANCH_LIST_FY,
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
-
-from libraries.list import MT_BRANCH_LIST_FY, color_libs
-from libraries.figs import default_chart, default_axis
-from libraries.tabs import create_tabs
-from submodules.libraries.queries import (
-    lib_query,
-    lib_data_query_fy,
-)
-from submodules.exfor.queries import (
-    # index_query_fy,
-    get_entry_bib,
-    data_query,
-)
+from submodules.reactions.queries import lib_fy_data_query
+from submodules.exfor.queries import data_query
 
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fy", redirect_from=["/fy"])
 pageparam = "fy"
 
+
 ## Input layout
 def input_fy(**query_strings):
     return [
+        html.Br(),
+        html.Div(children=input_obs(pageparam)),
         html.Div(children=input_target(pageparam, **query_strings)),
         html.Label("Reaction"),
         dcc.Dropdown(
@@ -84,13 +83,13 @@ def input_fy(**query_strings):
         html.Label("Measured for"),
         dcc.Dropdown(
             id="reac_branch_fy",
-            options=[
-                {"label": l, "value": l} for l, i in MT_BRANCH_LIST_FY.items() 
-            ],
+            options=[{"label": l, "value": l} for l, i in MT_BRANCH_LIST_FY.items()],
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
-            value=query_strings["fy_type"].capitalize() if query_strings.get("fy_type") else "Cumulative",
+            value=query_strings["fy_type"].capitalize()
+            if query_strings.get("fy_type")
+            else "Cumulative",
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.RadioItems(
@@ -116,7 +115,6 @@ def input_fy(**query_strings):
         html.Div(children=libs_filter_opt(pageparam)),
         dcc.Store(id="input_store_fy"),
     ]
-
 
 
 ## Layout of right panel
@@ -162,18 +160,20 @@ right_layout_fy = [
                 ),
                 width="auto",
             ),
-        ]),
-        dbc.Row([
-            dbc.Col( html.Label("Plot by"), width="auto"),
-            dbc.Col( 
+        ]
+    ),
+    dbc.Row(
+        [
+            dbc.Col(html.Label("Plot by"), width="auto"),
+            dbc.Col(
                 dcc.RadioItems(
                     id="plot_opt_fy",
-                    options=["Mass", "Charge", "Energy"], 
-                    value="Mass", 
+                    options=["Mass", "Charge", "Energy"],
+                    value="Mass",
                     labelStyle={"display": "inline-block"},
                 ),
                 width="auto",
-            )
+            ),
         ]
     ),
     main_fig(pageparam),
@@ -254,12 +254,11 @@ def redirect_to_pages_fy(dataset):
         raise PreventUpdate
 
 
-
 @callback(
     [
         Output("location_fy", "href", allow_duplicate=True),
         Output("location_fy", "refresh", allow_duplicate=True),
-    ],    
+    ],
     Input("observable_fy", "value"),
     prevent_initial_call=True,
 )
@@ -270,7 +269,6 @@ def redirect_to_subpages_fy(type):
 
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -287,7 +285,16 @@ def redirect_to_subpages_fy(type):
     ],
     # prevent_initial_call=True,
 )
-def input_store_fy(type, elem, mass, reaction, fy_type, mesurement_opt_fy, reac_product_fy, excl_junk_switch):
+def input_store_fy(
+    type,
+    elem,
+    mass,
+    reaction,
+    fy_type,
+    mesurement_opt_fy,
+    reac_product_fy,
+    excl_junk_switch,
+):
     print("input_store_fy", type)
     if type != "FY":
         return dict({"type": type})
@@ -301,14 +308,17 @@ def input_store_fy(type, elem, mass, reaction, fy_type, mesurement_opt_fy, reac_
             "target_mass": mass,
             "reaction": reaction,
             "fy_type": fy_type,
-            "branch": MT_BRANCH_LIST_FY[fy_type]["branch"] if MT_BRANCH_LIST_FY.get(fy_type) else None, # fy_type in query string
-            "mt": MT_BRANCH_LIST_FY[fy_type]["mt"] if MT_BRANCH_LIST_FY.get(fy_type) else None,
+            "branch": MT_BRANCH_LIST_FY[fy_type]["branch"]
+            if MT_BRANCH_LIST_FY.get(fy_type)
+            else None,  # fy_type in query string
+            "mt": MT_BRANCH_LIST_FY[fy_type]["mt"]
+            if MT_BRANCH_LIST_FY.get(fy_type)
+            else None,
             "mesurement_opt_fy": mesurement_opt_fy,
             "reac_product_fy": reac_product_fy,
             "excl_junk_switch": excl_junk_switch,
         }
     )
-
 
 
 @callback(
@@ -332,7 +342,7 @@ def update_url_fy(input_store):
 
     else:
         raise PreventUpdate
-    
+
     if type == "FY" and (elem and mass and reaction):
         query_string = ""
         if elem:
@@ -345,7 +355,6 @@ def update_url_fy(input_store):
             query_string += "&fy_type=" + fy_type
         # if branch:
         #     query_string += "&branch=" + branch
-
 
         return query_string, False
 
@@ -375,8 +384,6 @@ def initial_data_fy(input_store, r_click):
 
     else:
         raise PreventUpdate
-    
-    
 
 
 @callback(
@@ -404,10 +411,9 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
 
     else:
         raise PreventUpdate
-    
+
     xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
     fig = default_chart(xaxis_type, yaxis_type, reaction, str(mt).zfill(3))
-
 
     lib_df = pd.DataFrame()
     if libs:
@@ -416,7 +422,7 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
         else:
             libs_select = libs.keys()
 
-        lib_df = lib_data_query_fy(libs_select)
+        lib_df = lib_fy_data_query(libs_select)
 
         if plot_opt_fy == "Mass":
             x_ax = "mass"
@@ -430,8 +436,8 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
 
                 fig.add_trace(
                     go.Scatter(
-                        x=dff[dff["reaction_id"] == l]["mass"].astype(float),
-                        y=dff[dff["reaction_id"] == l]["data"].astype(float),
+                        x=dff[dff["reaction_id"] == int(l)]["mass"].astype(float),
+                        y=dff[dff["reaction_id"] == int(l)]["data"].astype(float),
                         showlegend=True,
                         line_color=new_col,
                         name=str(libs[l]),
@@ -447,7 +453,6 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
             x_ax = "en_inc"
             fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
 
-
     reac_products = []
     df = pd.DataFrame()
 
@@ -458,11 +463,17 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
         df = df.drop(columns=["bib"])
 
         df["entry_id_link"] = (
-            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
+            "["
+            + df["entry_id"]
+            + "]("
+            + URL_PATH
+            + "exfor/entry/"
+            + df["entry_id"]
+            + ")"
         )
-        print(df)
-        reac_products = sorted( [i for i in df["residual"].unique() if i is not None] )
-        print(df["residual"].unique())
+        # print(df)
+        reac_products = sorted([i for i in df["residual"].unique() if i is not None])
+        # print(reac_products)
         i = 0
         for e in list(legends.keys()):
             if e == "total_points":
@@ -499,18 +510,18 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
             # ------
 
             fig.add_trace(
-                go.Scattergl(
+                go.Scatter(
                     x=df2[df2["entry_id"] == e][x_ax],
                     y=df2[df2["entry_id"] == e]["data"],
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
                     name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
-                        if legends.get(e)
-                        and legends[e].get("author")
-                        and legends[e].get("year")
-                        else f"{legends[e]['author']}, 1900 [{e}]"
-                        if legends.get(e)
-                        else e,
+                    if legends.get(e)
+                    and legends[e].get("author")
+                    and legends[e].get("year")
+                    else f"{legends[e]['author']}, 1900 [{e}]"
+                    if legends.get(e)
+                    else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -541,22 +552,22 @@ def update_axis_fy(xaxis_type, yaxis_type, fig):
     return fig
 
 
-
-
-
-
 @callback(
     [
         Output("main_fig_fy", "figure", allow_duplicate=True),
         Output("index_table_fy", "filterModel", allow_duplicate=True),
+        Output("output_energy_slider_fy", "children"),
     ],
     Input("energy_range_fy", "value"),
     State("main_fig_fy", "figure"),
     prevent_initial_call=True,
 )
 def fileter_by_en_range_fy(energy_range, fig):
-    return fileter_by_en_range(energy_range, fig)
-
+    range_text = ""
+    fig, filter_model = fileter_by_en_range(energy_range, fig)
+    if filter_model:
+        range_text = f"{filter_model['e_inc_min']['filter']:.2e} - {filter_model['e_inc_max']['filter']:.2e} MeV"
+    return fig, filter_model, range_text
 
 
 @callback(
@@ -582,8 +593,6 @@ def highlight_data_fy(selected, fig):
     return highlight_data(selected, fig)
 
 
-
-
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     Input("index_table_fy", "cellValueChanged"),
@@ -592,7 +601,6 @@ def highlight_data_fy(selected, fig):
 )
 def scale_data_fy(selected, fig):
     return scale_data(selected, fig)
-
 
 
 @callback(
@@ -614,8 +622,6 @@ def del_rows_fy(n1, fig, selected):
         return del_rows_fig(selected, fig)
 
 
-
-
 @callback(
     [
         Output("index_table_fy", "exportDataAsCsv"),
@@ -632,17 +638,15 @@ def export_index_fy(n1, n2, input_store):
     # return export_index(n_clicks_all, n_clicks_slctd, input_store)
     if not input_store:
         raise PreventUpdate
-    
+
     if ctx.triggered_id == "btn_csv_index_fy":
         return export_index(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_index_selct_fy":
         return export_index(True, input_store)
-    
+
     else:
         return no_update, no_update
-
-
 
 
 @callback(
@@ -664,14 +668,12 @@ def export_data_fy(n1, n2, input_store):
 
     if ctx.triggered_id == "btn_csv_exfor_fy":
         return export_data(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_exfor_selct_fy":
         return export_data(True, input_store)
-    
+
     else:
         return no_update, no_update
-
-
 
 
 @callback(
@@ -682,11 +684,7 @@ def export_data_fy(n1, n2, input_store):
     Input("location", "search"),
 )
 def generate_api_links_fy(search_str):
-    if search_str:
-        return f"/api/reactions/{pageparam}{search_str}", f"/api/reactions/{pageparam}{search_str}&data=True"
-    else:
-        return no_update, no_update
-
+    return generate_api_link(pageparam, search_str)
 
 
 @callback(
@@ -700,9 +698,7 @@ def generate_file_links_fy(input_store):
     if not input_store:
         raise PreventUpdate
 
-    return generate_exfortables_file_path(
-        input_store
-    ), generate_endftables_file_path(input_store)
+    dir_ex, files_ex = generate_exfortables_file_path(input_store)
+    dir_lib, files_lib = generate_endftables_file_path(input_store)
 
-
-
+    return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)

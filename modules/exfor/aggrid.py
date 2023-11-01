@@ -25,7 +25,7 @@ defaultColDef = {
 
 
 ### ------------------------------------------------ ###
-#             Bib store
+#             Bib Table
 ### ------------------------------------------------ ###
 columnDefsBib = [
     {
@@ -62,11 +62,10 @@ columnDefsBib = [
         "filterParams": defaultFilterParams,
     },
     {
-        "headerName": "Ref",
-        "field": "main_reference",
-        "type": "rightAligned",
-        # "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
+        "headerName": "Reference",
+        "field": "main_reference_link",
+        "filter": "agTextColumnFilter",
+        "cellRenderer": "markdown",
     },
     {
         "headerName": "Year",
@@ -105,7 +104,8 @@ aggrid_layout_bib = dag.AgGrid(
             "message": "Please select facility from map",
             "fontSize": 12,
         },
-        # "pagination": True,
+        "pagination": True,
+        "paginationPageSize": 20,
     },
     style={"height": None},  # , "width": "100%"},
     className="ag-theme-balham",
@@ -114,42 +114,7 @@ aggrid_layout_bib = dag.AgGrid(
 )
 
 
-columnDefsUpd = [
-    {
-        "headerName": "Entry",
-        "field": "entry_id_link",
-        "type": "leftAligned",
-        "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
-        "cellRenderer": "markdown",
-    },
-    {
-        "headerName": "Authors",
-        "field": "authors",
-        "type": "leftAligned",
-        "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
-        # "editable": True,
-    },
-    {
-        "headerName": "Title",
-        "field": "title",
-        "type": "leftAligned",
-        "filter": "agTextColumnFilter",
-        "filterParams": defaultFilterParams,
-    },
-    {
-        "headerName": "Ref",
-        "field": "main_reference",
-        "type": "rightAligned",
-        "filterParams": defaultFilterParams,
-    },
-    {
-        "headerName": "Published Year",
-        "field": "year",
-        "type": "rightAligned",
-        "filter": "agNumberColumnFilter",
-    },
+columnDefsUpd = columnDefsBib + [
     {
         "headerName": "Updated",
         "field": "last_update",
@@ -193,15 +158,14 @@ def aggrid_updated(df=None):
             "rowMultiSelectWithClick": True,
             "domLayout": "autoHeight",
             "pagination": True,
-            "paginationPageSize": 25,
-            "noRowsOverlayComponent": "CustomNoRowsOverlay",
-            "noRowsOverlayComponentParams": {
-                "message": "Please select facility from map",
-                "fontSize": 12,
+            "paginationPageSize": 15,
+            "loadingOverlayComponent": "CustomLoadingOverlay",
+            "loadingOverlayComponentParams": {
+                "loadingMessage": "Recently added/updated list will be shown here.",
             },
-            # "pagination": True,
         },
-        style={"height": None},  # , "width": "100%"},
+        # style={"height": None},  # , "width": "100%"},
+        style={"height": 400, "width": "100%"},
         className="ag-theme-balham",
         persistence=True,
         persisted_props=["filterModel"],
@@ -211,16 +175,37 @@ def aggrid_updated(df=None):
 ### ------------------------------------------------ ###
 #             Full Index Store
 ### ------------------------------------------------ ###
-columnDefs = [
+columnDefsIndexAll = [
     {
         "headerName": "Entry Id",
         "field": "entry_id_link",
         "filter": "agTextColumnFilter",
         "filterParams": defaultFilterParams,
         "cellRenderer": "markdown",
-        "checkboxSelection": True,
-        "headerCheckboxSelection": True,
+        # "checkboxSelection": True,
+        # "headerCheckboxSelection": True,
     },
+    {
+        "headerName": "Authors",
+        "field": "authors",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "Year",
+        "field": "year",
+        "filter": "agNumberColumnFilter",
+    },
+    {
+        "headerName": "Reference",
+        "field": "main_reference_link",
+        "filter": "agTextColumnFilter",
+        "cellRenderer": "markdown",
+    },
+    # {
+    #     "headerName": "Reference",
+    #     "field": "main_reference",
+    #     "filter": "agTextColumnFilter",
+    # },
     {
         "headerName": "Target",
         "field": "target",
@@ -233,15 +218,21 @@ columnDefs = [
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
     },
+    # {
+    #     "headerName": "Residual",
+    #     "field": "residual",
+    #     "type": "rightAligned",
+    #     "filter": "agTextColumnFilter",
+    # },
+    # {
+    #     "headerName": "Level Num",
+    #     "field": "level_num",
+    #     "type": "rightAligned",
+    #     "filter": "agTextColumnFilter",
+    # },
     {
-        "headerName": "Residual",
-        "field": "residual",
-        "type": "rightAligned",
-        "filter": "agTextColumnFilter",
-    },
-    {
-        "headerName": "Level Num",
-        "field": "level_num",
+        "headerName": "SF4",
+        "field": "sf4",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
     },
@@ -270,14 +261,77 @@ columnDefs = [
         "filter": "agTextColumnFilter",
     },
     {
-        "headerName": "Emin",
-        "field": "e_inc_min",
+        "headerName": "EXFOR Reaction Code",
+        "field": "x4_code",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
     },
     {
+        "headerName": "Emin",
+        "field": "e_inc_min",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+    {
         "headerName": "Emax",
         "field": "e_inc_max",
+        "type": "rightAligned",
+        "filter": "agNumberColumnFilter",
+        "valueFormatter": {"function": "d3.format('(.3e')(params.value)"},
+    },
+]
+
+
+columnDefsIndexSearchRes = [
+    {
+        "headerName": "Entry Id",
+        "field": "entry_id_link",
+        "filter": "agTextColumnFilter",
+        "filterParams": defaultFilterParams,
+        "cellRenderer": "markdown",
+        # "checkboxSelection": True,
+        # "headerCheckboxSelection": True,
+    },
+    {
+        "headerName": "Target",
+        "field": "target",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "Process",
+        "field": "process",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "SF4",
+        "field": "sf4",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "SF5",
+        "field": "sf5",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "SF6",
+        "field": "sf6",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "SF7",
+        "field": "sf7",
+        "type": "rightAligned",
+        "filter": "agTextColumnFilter",
+    },
+    {
+        "headerName": "SF8",
+        "field": "sf8",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
     },
@@ -287,59 +341,77 @@ columnDefs = [
 columnSizeOptionsIndex = {
     # "defaultMinWidth": 100,
     "columnLimits": [
-        {"key": "entry_id_link", "minWidth": 100},
+        {"key": "entry_id_link", "maxWidth": 150},
+        {"key": "authors", "maxWidth": 300},
         {"key": "target", "maxWidth": 100},
+        {"key": "main_reference", "maxWidth": 200},
+        {"key": "year", "maxWidth": 100},
         {"key": "process", "maxWidth": 100},
         {"key": "residual", "maxWidth": 100},
-        {"key": "level_num", "maxWidth": 30},
-        {"key": "sf5", "maxWidth": 50},
-        {"key": "sf6", "minWidth": 50},
-        {"key": "sf7", "maxWidth": 30},
-        {"key": "sf8", "maxWidth": 30},
+        {"key": "level_num", "maxWidth": 100},
+        {"key": "sf4", "maxWidth": 100},
+        {"key": "sf5", "maxWidth": 100},
+        {"key": "sf6", "maxWidth": 100},
+        {"key": "sf7", "maxWidth": 100},
+        {"key": "sf8", "maxWidth": 100},
     ],
 }
 
 
-def aggrid_layout(param):
+def aggrid_index_result(param):
     return dag.AgGrid(
-        id="index-all-" + param,
-        columnDefs=columnDefs,
+        id="index_all_" + param,
+        columnDefs=columnDefsIndexSearchRes,
         columnSize="responsiveSizeToFit",
         columnSizeOptions=columnSizeOptionsIndex,
         defaultColDef=defaultColDef,
         dashGridOptions={
             "rowSelection": "multiple",
             "rowMultiSelectWithClick": True,
+            "pagination": True,
+            "paginationPageSize": 20,
             # "pagination": True,
-            "domLayout": "autoHeight",
-            # "noRowsOverlayComponent": "CustomNoRowsOverlay",
-            # "noRowsOverlayComponentParams": {
-            #     "message": "Please select facility from map",
-            #     "fontSize": 12,
-            # },
+            # "domLayout": "autoHeight",
+            "loadingOverlayComponent": "CustomLoadingOverlay",
+            "loadingOverlayComponentParams": {
+                "loadingMessage": "Please specify search criteria.",
+                # "color": "red",
+            },
         },
-        style={"height": None},  # "width": "100%"},
+        # style={"height": None},  # "width": "100%"},
+        style={"height": 400, "width": "100%"},
         className="ag-theme-balham",
         persistence=True,
         persisted_props=["filterModel"],
     )
 
 
-# # def aggrid_layout():
-# #     return
-# aggrid_layout_index = dag.AgGrid(
-#             id="index-all",
-#             columnDefs=columnDefs,
-#             columnSize="responsiveSizeToFit",
-#             defaultColDef=defaultColDef,
-#             dashGridOptions={
-#                 "rowSelection": "multiple",
-#                 "rowMultiSelectWithClick": True,
-#             },
-#             className="ag-theme-balham",
-#             persistence=True,
-#             persisted_props=["filterModel"],
-#         )
+def aggrid_search_result(param):
+    return dag.AgGrid(
+        id="index_search_res_" + param,
+        columnDefs=columnDefsIndexAll,
+        columnSize="responsiveSizeToFit",
+        columnSizeOptions=columnSizeOptionsIndex,
+        defaultColDef=defaultColDef,
+        dashGridOptions={
+            "rowSelection": "single",
+            # "rowMultiSelectWithClick": True,
+            "pagination": True,
+            "paginationPageSize": 100,
+            # "pagination": True,
+            # "domLayout": "autoHeight",
+            "loadingOverlayComponent": "CustomLoadingOverlay",
+            "loadingOverlayComponentParams": {
+                "loadingMessage": "Please specify search criteria.",
+                # "color": "red",
+            },
+        },
+        # style={"height": None},  # "width": "100%"},
+        style={"height": 800, "width": "100%"},
+        className="ag-theme-balham",
+        persistence=True,
+        persisted_props=["filterModel"],
+    )
 
 
 ### ------------------------------------------------ ###

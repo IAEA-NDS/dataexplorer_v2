@@ -27,15 +27,14 @@ columnDefs = [
     #     "filter": False,
     #     'cellStyle': {'paddingRight': 0, 'paddingLeft': 0},
     # },
-    
     {
         "headerName": "Author",
         "field": "author",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
         "filterParams": defaultFilterParams,
-        # "checkboxSelection": True,
-        # "headerCheckboxSelection": True,
+        "checkboxSelection": True,
+        "headerCheckboxSelection": True,
     },
     {
         "headerName": "Year",
@@ -96,7 +95,7 @@ columnDefs = [
     #     "filter": "agTextColumnFilter",
     # },
     {
-        "headerName": "Wanna scale data?",
+        "headerName": "Scale data",
         "field": "scale",
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
@@ -141,6 +140,7 @@ def index_table_ag(pageparam):
             # "paginationPageSize": 100,
             # "paginationAutoPageSize": True,
         },
+        style={"height": 400, "width": "100%"},
         className="ag-theme-balham",  ## Themes: ag-theme-alpine, ag-theme-alpine-dark, ag-theme-balham, ag-theme-balham-dark, ag-theme-material, and ag-bootstrap.
         persistence=False,
         getRowId="params.data.entry_id",

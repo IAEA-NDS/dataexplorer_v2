@@ -12,11 +12,10 @@ import dash
 import re
 from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
-import dash_daq as daq
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 
-from common import (
+from pages_common import (
     PARTICLE,
     sidehead,
     footer,
@@ -24,12 +23,17 @@ from common import (
     page_urls,
     lib_page_urls,
     def_inp_values,
+    URL_PATH,
     main_fig,
     input_check,
+    input_obs,
     input_target,
+    input_residual,
+    input_check_elem,
     exfor_filter_opt,
     limit_number_of_datapoints,
     libs_filter_opt,
+    input_lin_log_switch,
     reduce_data_switch,
     excl_mxw_switch,
     get_indexes,
@@ -40,70 +44,65 @@ from common import (
     fileter_by_en_range,
     export_index,
     export_data,
+    list_link_of_files,
+    generate_api_link,
+)
+
+from modules.reactions.list import color_libs
+from modules.reactions.tabs import create_tabs
+from modules.reactions.figs import default_chart
+
+from submodules.utilities.util import split_by_number
+from submodules.common import (
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
-
-from libraries.list import color_libs
-from libraries.tabs import create_tabs
-from libraries.figs import default_chart
-from submodules.libraries.queries import lib_residual_data_query
+from submodules.reactions.queries import (
+    lib_residual_data_query,
+    lib_residual_nuclide_list,
+)
 from submodules.exfor.queries import data_query
 
 
-
 ## Registration of page
-dash.register_page(__name__, path="/reactions/residual", redirect_from=["/residual", "/rp", "/reactions/rp"])
+dash.register_page(
+    __name__,
+    path="/reactions/residual",
+    redirect_from=["/residual", "/rp", "/reactions/rp"],
+)
 pageparam = "rp"
+
 
 ## Input layout
 def input_lib(**query_strings):
     return [
+        html.Br(),
+        html.Div(children=input_obs(pageparam)),
         html.Div(children=input_target(pageparam, **query_strings)),
         html.P("Reaction"),
         dcc.Dropdown(
             id="inc_pt_rp",
-            options=[{"label": f"{pt.lower()},x", "value": pt.upper()} for pt in PARTICLE],
+            options=[
+                {"label": f"{pt.lower()},x", "value": pt.upper()} for pt in PARTICLE
+            ],
             placeholder="Reaction e.g. (p,x)",
             persistence=True,
             persistence_type="memory",
             value=query_strings["inc_pt"].upper()
-                if query_strings.get("inc_pt")
-                else def_inp_values[pageparam.upper()]["inc_pt"],
+            if query_strings.get("inc_pt")
+            else def_inp_values[pageparam.upper()]["inc_pt"],
             style={"font-size": "small", "width": "100%"},
         ),
-        html.P("Residual product"),
-        dcc.Input(
-            id="rp_elem",
-            placeholder="e.g. F, f, Mo, mo, MO",
-            # multi=False,
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["rp_elem"] 
-                if query_strings.get("rp_elem") 
-                else def_inp_values[pageparam.upper()]["rp_elem"],
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="rp_mass",
-            placeholder="e.g. 56, 99g (ground), 99m(metastable)",
-            # multi=False,
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["rp_mass"] 
-                if query_strings.get("rp_mass")
-                else def_inp_values[pageparam.upper()]["rp_mass"],
-            style={"font-size": "small", "width": "100%"},
-        ),
+        html.Div(children=input_residual(pageparam, **query_strings)),
         html.Br(),
         html.Br(),
-        html.Div(children=exfor_filter_opt("rp")),
+        html.Div(children=exfor_filter_opt(pageparam)),
         html.Br(),
         html.Div(children=reduce_data_switch(pageparam)),
         html.Div(children=excl_mxw_switch(pageparam)),
         html.Br(),
         html.Br(),
-        html.Div(children=libs_filter_opt("rp")),
+        html.Div(children=libs_filter_opt(pageparam)),
         dcc.Store(id="input_store_rp"),
     ]
 
@@ -124,38 +123,7 @@ right_layout_lib = [
     ),
     html.Div(id="search_result_txt_rp"),
     # Log/Linear switch
-    dbc.Row(
-        [
-            dbc.Col(html.Label("X:"), width="auto"),
-            dbc.Col(
-                dcc.RadioItems(
-                    id="xaxis_type_rp",
-                    options=[
-                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
-                    ],
-                    value="linear",
-                    persistence=True,
-                    persistence_type="memory",
-                    labelStyle={"display": "inline-block"},
-                ),
-                width="auto",
-            ),
-            dbc.Col(html.Label("Y:"), width="auto"),
-            dbc.Col(
-                dcc.RadioItems(
-                    id="yaxis_type_rp",
-                    options=[
-                        {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
-                    ],
-                    value="linear",
-                    persistence=True,
-                    persistence_type="memory",
-                    labelStyle={"display": "inline-block"},
-                ),
-                width="auto",
-            ),
-        ]
-    ),
+    html.Div(children=input_lin_log_switch(pageparam)),
     main_fig(pageparam),
     dcc.Store(id="entries_store_rp"),
     dcc.Store(id="libs_store_rp"),
@@ -253,41 +221,94 @@ def redirect_to_subpages_rp(type):
 
 
 @callback(
+    [
+        Output("rp_elem_rp", "placeholder"),
+        Output("rp_mass_rp", "placeholder"),
+        # Output('list-suggested-inputs', 'children'),
+        # Output('list-suggested-inputs2', 'children'),
+    ],
+    [
+        Input("target_elem_rp", "value"),
+        Input("target_mass_rp", "value"),
+        Input("inc_pt_rp", "value"),
+        Input("rp_elem_rp", "value"),
+    ],
+)
+def list_rp(elem, mass, inc_pt, rp_elem_rp):
+    elem, mass, _ = input_check(type, elem, mass, f"{inc_pt.lower()},x")
+
+    # run query to get list of possible residual nuclide
+    rp_list = lib_residual_nuclide_list(elem, mass, inc_pt)
+
+    if not rp_list:
+        raise PreventUpdate
+
+    rp_dict = {}
+    for rp in rp_list:
+        nuclide = split_by_number(rp)
+
+        if not rp_dict.get(nuclide[0]):
+            rp_dict[nuclide[0]] = ["".join(nuclide[1:])]
+        else:
+            rp_dict[nuclide[0]].append("".join(nuclide[1:]))
+
+    if rp_elem_rp:
+        rp_elem_rp = input_check_elem(rp_elem_rp)
+
+        return (
+            "e.g, " + ", ".join(rp_dict.keys()),
+            "e.g, " + ", ".join([m.lstrip("0") for m in rp_dict[rp_elem_rp]])
+            if rp_dict.get(rp_elem_rp)
+            else "",
+        )
+        # return list( rp_dict.keys() ) , [ m.lstrip("0") for m in rp_dict[rp_elem_rp] ]
+
+    else:
+        return "e.g, " + ", ".join(rp_dict.keys()), ""
+
+
+@callback(
     Output("input_store_rp", "data"),
     [
         Input("observable_rp", "value"),
         Input("target_elem_rp", "value"),
         Input("target_mass_rp", "value"),
         Input("inc_pt_rp", "value"),
-        Input("rp_elem", "value"),
-        Input("rp_mass", "value"),
+        Input("rp_elem_rp", "value"),
+        Input("rp_mass_rp", "value"),
         Input("exclude_mxw_switch_rp", "value"),
     ],
     # prevent_initial_call=True,
 )
 def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch):
-    elem, mass, _  = input_check(type, elem, mass, f"{inc_pt.lower()},x")
+    elem, mass, _ = input_check(type, elem, mass, f"{inc_pt.lower()},x")
+
     rp_elem, rp_mass, _ = input_check(type, rp_elem, rp_mass, f"{inc_pt.lower()},x")
+
     if type != "RP":
-        return dict({"type": type,
-            "target_elem": elem,
-            "target_mass": mass,
-            "reaction": f"{inc_pt.lower()},x",
-            })
+        return dict(
+            {
+                "type": type,
+                "target_elem": elem,
+                "target_mass": mass,
+                "reaction": f"{inc_pt.lower()},x",
+            }
+        )
     else:
         return dict(
-        {
-            "type": type,
-            "target_elem": elem,
-            "target_mass": mass,
-            "reaction": f"{inc_pt.lower()},x",
-            "rp_elem": rp_elem,
-            "rp_mass": rp_mass,
-            "level_num": None,
-            "branch": None,
-            "mt": None,
-            "excl_junk_switch": excl_junk_switch,
-        }
+            {
+                "type": type,
+                "target_elem": elem,
+                "target_mass": mass,
+                "reaction": f"{inc_pt.lower()},x",
+                "inc_pt": inc_pt,
+                "rp_elem": rp_elem,
+                "rp_mass": rp_mass,
+                "level_num": None,
+                "branch": None,
+                "mt": None,
+                "excl_junk_switch": excl_junk_switch,
+            }
         )
 
 
@@ -306,9 +327,10 @@ def update_url_rp(input_store):
         type = input_store.get("type").upper()
         elem = input_store.get("target_elem")
         mass = input_store.get("target_mass")
-        inc_pt = input_store.get("reaction").split(",")[0]
+        inc_pt = input_store.get("inc_pt")
         rp_elem = input_store.get("rp_elem")
         rp_mass = input_store.get("rp_mass")
+
     else:
         raise PreventUpdate
 
@@ -361,11 +383,12 @@ def initial_data_rp(input_store, r_click):
         raise PreventUpdate
 
 
-
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
         Output("exfor_table_rp", "rowData"),
+        Output("xaxis_type_rp", "value"),
+        Output("yaxis_type_rp", "value"),
     ],
     [
         Input("input_store_rp", "data"),
@@ -379,14 +402,18 @@ def initial_data_rp(input_store, r_click):
 def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
     # print("create_fig_rp")
     if input_store:
-        inc_pt = input_store.get("reaction").split(",")[0]
+        inc_pt = input_store.get("inc_pt")
 
     else:
         raise PreventUpdate
 
-    fig = default_chart(
-        xaxis_type="linear", yaxis_type="linear", reaction=inc_pt, mt=None
-    )
+    if inc_pt.upper() == "N":
+        xaxis_type, yaxis_type = "log", "log"
+
+    else:
+        xaxis_type, yaxis_type = "linear", "linear"
+
+    fig = default_chart(xaxis_type, yaxis_type, reaction=inc_pt, mt=None)
 
     lib_df = pd.DataFrame()
     if libs:
@@ -420,9 +447,14 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
         df = df.drop(columns=["bib"])
 
         df["entry_id_link"] = (
-            "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
+            "["
+            + df["entry_id"]
+            + "]("
+            + URL_PATH
+            + "exfor/entry/"
+            + df["entry_id"]
+            + ")"
         )
-
         i = 0
         for e in list(legends.keys()):
             if e == "total_points":
@@ -444,12 +476,12 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
                     error_y=dict(type="data", array=df2["ddata"]),
                     showlegend=True,
                     name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
-                        if legends.get(e)
-                        and legends[e].get("author")
-                        and legends[e].get("year")
-                        else f"{legends[e]['author']}, 1900 [{e}]"
-                        if legends.get(e)
-                        else e,
+                    if legends.get(e)
+                    and legends[e].get("author")
+                    and legends[e].get("year")
+                    else f"{legends[e]['author']}, 1900 [{e}]"
+                    if legends.get(e)
+                    else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -459,8 +491,7 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
             if i == 30:
                 i = 1
 
-    return fig, df.to_dict("records")
-
+    return fig, df.to_dict("records"), xaxis_type, yaxis_type
 
 
 @callback(
@@ -480,20 +511,22 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
     return fig
 
 
-
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
         Output("index_table_rp", "filterModel", allow_duplicate=True),
+        Output("output_energy_slider_rp", "children"),
     ],
     Input("energy_range_rp", "value"),
     State("main_fig_rp", "figure"),
     prevent_initial_call=True,
 )
 def fileter_by_en_range_rp(energy_range, fig):
-    return fileter_by_en_range(energy_range, fig)
-
-
+    range_text = ""
+    fig, filter_model = fileter_by_en_range(energy_range, fig)
+    if filter_model:
+        range_text = f"{filter_model['e_inc_min']['filter']:.2e} - {filter_model['e_inc_max']['filter']:.2e} MeV"
+    return fig, filter_model, range_text
 
 
 @callback(
@@ -509,8 +542,6 @@ def fileter_by_year_range_rp(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     Input("index_table_rp", "selectedRows"),
@@ -521,8 +552,6 @@ def highlight_data_rp(selected, fig):
     return highlight_data(selected, fig)
 
 
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     Input("index_table_rp", "cellValueChanged"),
@@ -531,9 +560,6 @@ def highlight_data_rp(selected, fig):
 )
 def scale_data_rp(selected, fig):
     return scale_data(selected, fig)
-
-
-
 
 
 @callback(
@@ -555,9 +581,6 @@ def del_rows_rp(n1, fig, selected):
         return del_rows_fig(selected, fig)
 
 
-
-
-
 @callback(
     [
         Output("index_table_rp", "exportDataAsCsv"),
@@ -574,16 +597,15 @@ def export_index_rp(n1, n2, input_store):
     # return export_index(n_clicks_all, n_clicks_slctd, input_store)
     if not input_store:
         raise PreventUpdate
-    
+
     if ctx.triggered_id == "btn_csv_index_rp":
         return export_index(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_index_selct_rp":
         return export_index(True, input_store)
-    
+
     else:
         return no_update, no_update
-
 
 
 @callback(
@@ -605,10 +627,10 @@ def export_data_rp(n1, n2, input_store):
 
     if ctx.triggered_id == "btn_csv_exfor_rp":
         return export_data(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_exfor_selct_rp":
         return export_data(True, input_store)
-    
+
     else:
         return no_update, no_update
 
@@ -621,13 +643,7 @@ def export_data_rp(n1, n2, input_store):
     Input("location_rp", "search"),
 )
 def generate_api_links_rp(search_str):
-    # print(search_str)
-
-    if search_str:
-        return f"/api/reactions/{pageparam}{search_str}", f"/api/reactions/{pageparam}{search_str}&data=True"
-    else:
-        return no_update, no_update
-
+    return generate_api_link(pageparam, search_str)
 
 
 @callback(
@@ -638,12 +654,10 @@ def generate_api_links_rp(search_str):
     Input("input_store_rp", "data"),
 )
 def generate_file_links_rp(input_store):
-    print("hello")
     if not input_store:
         raise PreventUpdate
-    
-    return generate_exfortables_file_path(
-        input_store
-    ), generate_endftables_file_path(input_store)
 
+    dir_ex, files_ex = generate_exfortables_file_path(input_store)
+    dir_lib, files_lib = generate_endftables_file_path(input_store)
 
+    return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)

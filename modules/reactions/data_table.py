@@ -1,6 +1,7 @@
 ####################################################################
 #
-# This file is part of libraries-2023 dataexplorer, https://nds.iaea.org/dataexplorer/.
+# This file is part of libraries-2023 dataexplorer,
+# https://nds.iaea.org/dataexplorer/.
 # Copyright (C) 2022 International Atomic Energy Agency (IAEA)
 #
 # Contact:    nds.contact-point@iaea.org
@@ -24,6 +25,8 @@ columnDefsDefault = [
         "type": "rightAligned",
         "filter": "agTextColumnFilter",
         "filterParams": defaultFilterParams,
+        "checkboxSelection": True,
+        "headerCheckboxSelection": True,
     },
     {
         "headerName": "Year",

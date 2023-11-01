@@ -9,17 +9,14 @@
 
 import pandas as pd
 import dash
-import json
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
-from collections import OrderedDict
-from operator import getitem
 
 
-from common import (
-    PARTICLE,
+from pages_common import (
+
     sidehead,
     footer,
     libs_navbar,
@@ -34,10 +31,10 @@ from submodules.utilities.elem import elemtoz_nz
 from submodules.utilities.mass import mass_range
 
 
-from libraries.list import reaction_list
-from libraries.tabs import create_tabs
-from libraries.figs import default_chart, default_axis
-from submodules.libraries.queries import (
+from submodules.common import reaction_list
+from modules.reactions.tabs import create_tabs
+from modules.reactions.figs import default_chart, default_axis
+from submodules.reactions.queries import (
     lib_query,
     lib_xs_data_query,
 )

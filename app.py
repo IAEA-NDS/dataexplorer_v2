@@ -64,4 +64,6 @@ else:
 app.layout = html.Div([dash.page_container])
 
 if __name__ == "__main__":
-    app.run_server(debug=True, dev_tools_prune_errors=False, use_reloader=True)
+    app.run_server(
+        host="0.0.0.0", debug=True, dev_tools_prune_errors=False, use_reloader=True
+    )

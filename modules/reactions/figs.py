@@ -35,6 +35,8 @@ def default_axis(mt):
         "018",
         "019",
         "102",
+        "103",
+        "104",
         "201",
         "202",
         "203",
@@ -42,6 +44,7 @@ def default_axis(mt):
         "205",
         "206",
         "207",
+        "600",
     ]:  # and not nuclide.endswith("000")
         xaxis_type = "log"
         yaxis_type = "log"

@@ -13,7 +13,7 @@
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-from common import footer, libs_navbar
+from pages_common import footer, libs_navbar
 
 dash.register_page(__name__, path="/api_manual")
 

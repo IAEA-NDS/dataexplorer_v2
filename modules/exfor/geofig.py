@@ -8,55 +8,44 @@
 ####################################################################
 
 import pandas as pd
+import numpy as np
 import plotly.express as px
-
-from exfor.list import dict3_to_country, get_facility_type, get_institute_df
-from submodules.exfor.queries import join_reaction_bib
+from modules.exfor.list import dict3_to_country, get_facility_type, institute_df
 
 
-def get_reactions_geo():
-    reactions_df = join_reaction_bib()
-    institute_df = get_institute_df()
-
-    reactions_df["main_facility_institute"] = reactions_df[
-        "main_facility_institute"
-    ].str.replace(r"\(|\)", "", regex=True)
-    reactions_df["main_facility_type"] = reactions_df["main_facility_type"].str.replace(
+def get_reactions_geo(df):
+    df["main_facility_institute"] = df["main_facility_institute"].str.replace(
         r"\(|\)", "", regex=True
     )
-    reactions_df["main_facility_country"] = reactions_df["main_facility_institute"].str[
-        0:4
-    ]
-    reactions_df["main_facility_country"] = reactions_df["main_facility_country"].map(
-        dict3_to_country()
+
+    df["main_facility_type"] = df["main_facility_type"].str.replace(
+        r"\(|\)", "", regex=True
     )
-    reactions_df["main_facility_type_desc"] = reactions_df["main_facility_type"].map(
-        get_facility_type()
-    )
-    reactions_df = pd.merge(
-        reactions_df,
+    df["main_facility_country"] = df["main_facility_institute"].str[0:4]
+    df["main_facility_country"] = df["main_facility_country"].map(dict3_to_country())
+    df["main_facility_type_desc"] = df["main_facility_type"].map(get_facility_type())
+
+    df = pd.merge(
+        df,
         institute_df,
-        how="inner",
+        how="left",
         left_on="main_facility_institute",
         right_on="code",
     )
 
-    return reactions_df
+    return df
 
 
-reactions_df = get_reactions_geo()
-
-
-def geo_fig(grouping, reactions_df):
+def geo_fig(grouping, geo_df):
     # reactions_df = get_exfor_bib_table()
     # get entries per facility/type
-    entries = reactions_df.groupby(["main_facility_institute", "main_facility_type"])[
+    entries = geo_df.groupby(["main_facility_institute", "main_facility_type"])[
         "entry"
     ].unique()
 
     count_df = pd.DataFrame(
         {
-            "count": reactions_df.groupby(
+            "count": geo_df.groupby(
                 [
                     "name",
                     "main_facility_institute",

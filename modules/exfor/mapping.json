@@ -1,13 +1,13 @@
 {
   "top_category":
   {
-    "FY": "Fission Yield(FY)",
-    "DDX": "Double Differential Cross Section (DA/DE)",
     "SIG": "Cross Section (SIG)",
     "DA": "Angular Distribution (DA)",
     "DE": "Energy Distribution (DE)",
+    "FY": "Fission Yield(FY)",
+    "DDX": "Double Differential Cross Section (DA/DE)",
     "KE": "Kinetic Energy (KE)",
-    "RP": "Resonance Parameter",
+    "RES": "Resonance Parameter",
     "NU": "Neutron (NU)",
     "TTY": "Tick Target Yield (TTY)",
     "Others": "Others"
@@ -39,11 +39,11 @@
     },
     "ARE": {
       "description": "Resonance-area",
-      "top_category": "RP"
+      "top_category": "RES"
     },
     "D": {
       "description": "Average level-spacing",
-      "top_category": "RP"
+      "top_category": "RES"
     },
     "DA": {
       "description": "Angular Distribution (DA)",
@@ -79,7 +79,7 @@
     },
     "EN": {
       "description": "Resonance-energy",
-      "top_category": "RP"
+      "top_category": "RES"
     },
     "ETA": {
       "description": "Average neutron yield per nonelastic event",
@@ -107,7 +107,7 @@
     },
     "J": {
       "description": "Spin J",
-      "top_category": "RP"
+      "top_category": "RES"
     },
     "KE": {
       "description": "Kinetic Energy (KE, AKE)",
@@ -127,7 +127,7 @@
     },
     "L": {
       "description": "Angular momentum L",
-      "top_category": "DA"
+      "top_category": "RES"
     },
     "LD": {
       "description": "Level-density",
@@ -251,7 +251,7 @@
     },
     "WID": {
       "description": "Resonance width",
-      "top_category": "RP"
+      "top_category": "RES"
     },
     "ZP": {
       "description": "Most probable charge of fission fragments",

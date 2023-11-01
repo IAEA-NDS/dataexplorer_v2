@@ -12,18 +12,14 @@ import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from collections import OrderedDict
-from operator import getitem
 from dash.exceptions import PreventUpdate
 
-from common import (
-    PARTICLE,
+from pages_common import (
     sidehead,
     footer,
     libs_navbar,
     URL_PATH,
     page_urls,
-    lib_selections,
     lib_page_urls,
     input_check,
     input_general,
@@ -31,13 +27,11 @@ from common import (
     energy_range_conversion,
 )
 
-from submodules.utilities.elem import elemtoz_nz
-from submodules.utilities.mass import mass_range
+from submodules.common import reaction_list
 
-from libraries.list import reaction_list
-from libraries.tabs import create_tabs
-from libraries.figs import default_chart, default_axis
-from submodules.libraries.queries import (
+from modules.reactions.tabs import create_tabs
+from modules.reactions.figs import default_chart, default_axis
+from submodules.reactions.queries import (
     lib_query,
     lib_xs_data_query,
 )

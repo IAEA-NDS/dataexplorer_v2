@@ -16,7 +16,7 @@ import dash_daq as daq
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 
-from common import (
+from pages_common import (
     sidehead,
     footer,
     libs_navbar,
@@ -27,7 +27,6 @@ from common import (
     input_target,
     input_general,
     generate_reactions,
-    get_mt,
     remove_query_parameter,
     exfor_filter_opt,
     excl_mxw_switch,
@@ -39,19 +38,24 @@ from common import (
     fileter_by_en_range,
     export_index,
     export_data,
+    list_link_of_files,
+)
+
+from modules.reactions.list import color_libs
+from modules.reactions.tabs import create_tabs
+from submodules.common import (
+    get_mt,
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
-
-from libraries.list import color_libs
-from libraries.tabs import create_tabs
-
 from submodules.exfor.queries import data_query
-from submodules.libraries.queries import lib_da_data_query
+from submodules.reactions.queries import lib_da_data_query
 from submodules.utilities.util import get_number_from_string
 
 ## Registration of page
-dash.register_page(__name__, path="/reactions/da", redirect_from=["/angle", "/da", "/reactions/angle"])
+dash.register_page(
+    __name__, path="/reactions/da", redirect_from=["/angle", "/da", "/reactions/angle"]
+)
 
 pageparam = "da"
 
@@ -67,7 +71,6 @@ def input(**query_strings):
         html.Br(),
         dcc.Store(id="input_store_da"),
     ]
-
 
 
 right_layout_de = [
@@ -213,9 +216,6 @@ def redirect_to_subpages(type):
         raise PreventUpdate
 
 
-
-
-
 @callback(
     Output("reaction_da", "options"),
     Input("incident_particle_da", "value"),
@@ -228,9 +228,6 @@ def update_reaction_list(proj):
 
     else:
         return generate_reactions(proj)
-
-
-
 
 
 @callback(
@@ -249,9 +246,6 @@ def update_branch_list(type, reaction):
         raise PreventUpdate
 
     return [{"label": "Partial", "value": "PAR"}]
-
-
-
 
 
 @callback(
@@ -294,7 +288,6 @@ def input_store_da(type, elem, mass, reaction, branch, excl_junk_switch):
             "excl_junk_switch": excl_junk_switch,
         }
     )
-
 
 
 @callback(
@@ -348,7 +341,6 @@ def update_url_da(input_store):
         return no_update, False
 
 
-
 @callback(
     [
         Output("search_result_txt_da", "children"),
@@ -373,8 +365,6 @@ def initial_data_da(input_store, r_click):
         raise PreventUpdate
 
 
-
-
 @callback(
     [
         Output("main_fig_da", "figure", allow_duplicate=True),
@@ -394,7 +384,7 @@ def create_fig_da(input_store, legends, libs):
 
     else:
         raise PreventUpdate
-    
+
     df = pd.DataFrame()
     index_df = pd.DataFrame()
 
@@ -452,7 +442,7 @@ def create_fig_da(input_store, legends, libs):
         for e in list(legends.keys()):
             if e == "total_points":
                 continue
-            
+
             fig.add_trace(
                 go.Scatter(
                     x=df[df["entry_id"] == e]["angle"],
@@ -461,12 +451,12 @@ def create_fig_da(input_store, legends, libs):
                     error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
                     showlegend=True,
                     name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
-                        if legends.get(e)
-                        and legends[e].get("author")
-                        and legends[e].get("year")
-                        else f"{legends[e]['author']}, 1900 [{e}]"
-                        if legends.get(e)
-                        else e,
+                    if legends.get(e)
+                    and legends[e].get("author")
+                    and legends[e].get("year")
+                    else f"{legends[e]['author']}, 1900 [{e}]"
+                    if legends.get(e)
+                    else e,
                     marker=dict(size=8, symbol=i),
                     mode="markers",
                 )
@@ -476,13 +466,7 @@ def create_fig_da(input_store, legends, libs):
             if i == 30:
                 i = 1
 
-    return  fig, df.to_dict("records")
-
-
-
-
-
-
+    return fig, df.to_dict("records")
 
 
 @callback(
@@ -515,7 +499,6 @@ def fileter_by_range_lib(energy_range, fig):
     return fileter_by_en_range(energy_range, fig)
 
 
-
 @callback(
     [
         Output("main_fig_da", "figure", allow_duplicate=True),
@@ -529,7 +512,6 @@ def fileter_by_year_range_lib(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
-
 @callback(
     Output("main_fig_da", "figure", allow_duplicate=True),
     Input("index_table_da", "selectedRows"),
@@ -540,7 +522,6 @@ def highlight_data_xs(selected, fig):
     return highlight_data(selected, fig)
 
 
-
 @callback(
     Output("main_fig_da", "figure", allow_duplicate=True),
     Input("index_table_da", "cellValueChanged"),
@@ -549,9 +530,6 @@ def highlight_data_xs(selected, fig):
 )
 def scale_data_xs(selected, fig):
     return scale_data(selected, fig)
-
-
-
 
 
 @callback(
@@ -589,16 +567,15 @@ def export_index_xs(n1, n2, input_store):
     # return export_index(n_clicks_all, n_clicks_slctd, input_store)
     if not input_store:
         raise PreventUpdate
-    
+
     if ctx.triggered_id == "btn_csv_index_da":
         return export_index(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_index_selct_da":
         return export_index(True, input_store)
-    
+
     else:
         return no_update, no_update
-
 
 
 @callback(
@@ -620,17 +597,12 @@ def export_data_xs(n1, n2, input_store):
 
     if ctx.triggered_id == "btn_csv_exfor_da":
         return export_data(False, input_store)
-    
+
     elif ctx.triggered_id == "btn_csv_exfor_selct_da":
         return export_data(True, input_store)
-    
+
     else:
         return no_update, no_update
-
-
-
-
-
 
 
 @callback(
@@ -642,10 +614,12 @@ def export_data_xs(n1, n2, input_store):
 )
 def generate_api_links(search_str):
     if search_str:
-        return f"/api/reactions/{pageparam}{search_str}", f"/api/reactions/{pageparam}{search_str}&data=True"
+        return (
+            f"/api/reactions/{pageparam}{search_str}",
+            f"/api/reactions/{pageparam}{search_str}&data=True",
+        )
     else:
         return no_update, no_update
-
 
 
 @callback(
@@ -659,6 +633,7 @@ def generate_file_links(input_store):
     if not input_store:
         raise PreventUpdate
 
-    return generate_exfortables_file_path(
-        input_store
-    ), generate_endftables_file_path(input_store)
+    dir_ex, files_ex = generate_exfortables_file_path(input_store)
+    dir_lib, files_lib = generate_endftables_file_path(input_store)
+
+    return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)

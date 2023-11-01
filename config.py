@@ -15,7 +15,7 @@ if DEVENV:
 
     ## URLs to generate links inside the application
     # BASE_URL = "http://127.0.0.1:8050"
-    # API_BASE_URL = "http://127.0.0.1:5000/"
+    API_BASE_URL = "http://127.0.0.1:5000/"
 
 
 else:
@@ -27,10 +27,11 @@ else:
 
     ## URLs to generate links inside the application
     # BASE_URL = "https://int-nds.iaea.org"
-    # API_BASE_URL = BASE_URL
+    API_BASE_URL = "https://int-nds.iaea.org/api/"
 
 
 ## Package locations
+# URL_PATH = dash.get_relative_path("/")
 SITE_DIR = site.getsitepackages()[0]
 EXFOR_PARSER = os.path.join(SITE_DIR, "exforparser")
 EXFOR_DICTIONARY = os.path.join(SITE_DIR, "exfor_dictionary")
@@ -42,8 +43,8 @@ RIPL3 = os.path.join(SITE_DIR, "ripl3_json")
 MT_PATH_JSON = os.path.join(EXFOR_PARSER, "tabulated/mf3.json")
 MT50_PATH_JSON = os.path.join(EXFOR_PARSER, "tabulated/mt50.json")
 
-MAPPING_FILE = os.path.join(TOP_DIR, "exfor/mapping.json")
-MASS_RANGE_FILE = os.path.join(TOP_DIR, "submodules/utilities/A_min_max.txt")
+MAPPING_FILE = os.path.join(TOP_DIR, "modules/exfor/mapping.json")
+# MASS_RANGE_FILE = os.path.join(TOP_DIR, "submodules/utilities/A_min_max.txt")
 
 ## Define the location of data files
 EXFOR_DB = os.path.join(DATA_DIR, "exfor.sqlite")
@@ -63,7 +64,7 @@ MASTER_GIT_REPO_URL = "https://github.com/IAEA-NDS/exfor_master/"
 owner = "IAEA-NDS"
 repo = "exfor_master"
 ref = "main"
-keyFile = open( os.path.join(DATA_DIR, "key.txt") )
+keyFile = open(os.path.join(DATA_DIR, "key.txt"))
 api_token = keyFile.readline().rstrip()
 
 
@@ -76,14 +77,15 @@ api_token = keyFile.readline().rstrip()
 #     "content-type": "application/json",
 #     "X-CSRFToken": "",
 # }
-HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) ' 
-                'AppleWebKit/537.11 (KHTML, like Gecko) '
-                'Chrome/23.0.1271.64 Safari/537.11',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-                'Accept-Encoding': 'none',
-                'Accept-Language': 'en-US,en;q=0.8',
-                'Connection': 'keep-alive'
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) "
+    "AppleWebKit/537.11 (KHTML, like Gecko) "
+    "Chrome/23.0.1271.64 Safari/537.11",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
+    "Accept-Encoding": "none",
+    "Accept-Language": "en-US,en;q=0.8",
+    "Connection": "keep-alive",
 }
 
 """ SQL database """

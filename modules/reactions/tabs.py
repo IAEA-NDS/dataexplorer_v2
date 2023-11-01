@@ -7,13 +7,11 @@
 #
 ####################################################################
 
-import os
-
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 
-from libraries.index_table import index_table_ag
-from libraries.data_table import data_table_ag
+from modules.reactions.index_table import index_table_ag
+from modules.reactions.data_table import data_table_ag
 
 
 def create_tabs(pageparam):
@@ -54,6 +52,18 @@ def create_tabs(pageparam):
                                     ),
                                     dbc.Col(
                                         [
+                                            dcc.Clipboard(
+                                                id="".join(
+                                                    ["cb_state_index_", pageparam]
+                                                ),
+                                                # target_id="index_table_xs",
+                                                title="Copy Selected ",
+                                                style={
+                                                    "display": "inline-block",
+                                                    "fontSize": 20,
+                                                    # "verticalAlign": "top",
+                                                },
+                                            ),
                                             dbc.Badge(
                                                 "Download CSV",
                                                 id="".join(
@@ -103,6 +113,16 @@ def create_tabs(pageparam):
                     html.Br(),
                     html.Div(
                         [
+                            dcc.Clipboard(
+                                id="".join(["cb_state_exfor_", pageparam]),
+                                title="Copy Selected ",
+                                style={
+                                    "display": "inline-block",
+                                    "fontSize": 20,
+                                    "verticalAlign": "top",
+                                },
+                            ),
+                            html.P("   "),
                             dbc.Badge(
                                 "Download CSV",
                                 id="".join(["btn_csv_exfor_", pageparam]),
@@ -176,7 +196,3 @@ def create_tabs(pageparam):
     )
     # ])
     return tabs
-
-
-#                             " and ",
-# ,
