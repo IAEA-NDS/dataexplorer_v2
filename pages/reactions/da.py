@@ -44,10 +44,10 @@ from pages_common import (
 from modules.reactions.list import color_libs
 from modules.reactions.tabs import create_tabs
 from submodules.common import (
-    get_mt,
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
+from submodules.utilities.reaction import get_mt
 from submodules.exfor.queries import data_query
 from submodules.reactions.queries import lib_da_data_query
 from submodules.utilities.util import get_number_from_string

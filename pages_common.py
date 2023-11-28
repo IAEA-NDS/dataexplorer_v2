@@ -27,10 +27,11 @@ from config import DATA_DIR, API_BASE_URL
 from man import manual
 
 from modules.exfor.list import MAPPING, bib_df, number_of_entries, number_of_reactions
-from submodules.common import reaction_list, exfor_reaction_list, LIB_LIST_MAX
+from submodules.common import LIB_LIST_MAX
 from submodules.utilities.elem import ELEMS, elemtoz_nz, ztoelem
 from submodules.utilities.mass import mass_range
 from submodules.utilities.util import get_number_from_string, get_str_from_string
+from submodules.utilities.reaction import reaction_list, exfor_reaction_list
 from submodules.reactions.queries import lib_query
 from submodules.exfor.queries import index_query, get_entry_bib
 
@@ -62,9 +63,10 @@ toast = html.Div(
     [
         dbc.Col(
             # dbc.Button("Tips", id="toast-toggle", color="primary", n_clicks=0,)
-            [html.Div(html.P("Tips", id="toast-toggle"))]
+            
         ),
         dbc.Col(
+            [html.Div(html.A("Tips", id="toast-toggle", href="#")),
             dbc.Toast(
                 [html.Div(manual)],
                 id="toast",
@@ -82,6 +84,7 @@ toast = html.Div(
                 },
                 body_style={"background-color": "white", "font-size": "large"},
             )
+            ],
         ),
     ]
 )
@@ -97,7 +100,7 @@ sidehead = dbc.Row(
                 href="https://nds.iaea.org",
             )
         ),
-        dbc.Col(html.P("Docs")),
+        dbc.Col(html.A("API Docs", href=URL_PATH + "api_manual")),
         dbc.Col(toast),
         html.Br(),
         html.Br(),
@@ -192,7 +195,7 @@ libs_navbar = html.Div(
                                         height="20px",
                                     ),
                                 ],
-                                href="https://nds.iaea.org",
+                                href=URL_PATH,
                             ),
                             " Libraries 2023",
                         ],
@@ -211,13 +214,13 @@ libs_navbar = html.Div(
                             ),
                             " and ",
                             html.A(
-                                "EXFORTABLES",
+                                "EXFORTABLES (Python version)",
                                 href="https://github.com/shinokumura/endftables_py",
                                 # className="text-dark",
                             ),
                             " by ",
                             html.A(
-                                "exforparser",
+                                "EXFOR_Parser",
                                 href="https://github.com/shinokumura/exforparser",
                                 # className="text-dark",
                             ),
@@ -251,7 +254,7 @@ exfor_navbar = html.Div(
                                         height="20px",
                                     ),
                                 ],
-                                href="https://nds.iaea.org",
+                                href=URL_PATH,
                             ),
                             " EXFOR Viewer",
                         ],
@@ -520,7 +523,7 @@ def libs_filter_opt(pageparam):
             persistence=True,
             persistence_type="memory",
             multi=True,
-            value=["endfb8.0", "tendl.2021", "jendl5.0"],
+            value=["endfb8.0", "tendl.2021", "jeff3.3", "jendl5.0"],
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("Groupwise data", style={"font-size": "small"}),
@@ -1092,3 +1095,15 @@ def generate_api_link(pageparam, search_str):
         )
     else:
         return no_update, no_update
+
+
+
+@callback(
+    Output("toast", "is_open"),
+    [Input("toast-toggle", "n_clicks")],
+)
+def open_toast(n):
+    if ctx.triggered_id == "toast-toggle":
+        return True
+    else:
+        return no_update

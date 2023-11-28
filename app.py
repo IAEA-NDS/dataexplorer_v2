@@ -17,7 +17,7 @@ import dash_bootstrap_components as dbc
 
 from config import DEVENV
 
-
+# see dash API reference: https://dash.plotly.com/reference
 # Style selection [CERULEAN, COSMO, CYBORG, DARKLY, FLATLY, JOURNAL, LITERA, LUMEN, LUX, MATERIA, MINTY, PULSE, SANDSTONE, SIMPLEX, SKETCHY, SLATE, SOLAR, SPACELAB, SUPERHERO, UNITED, YETI, ZEPHYR]
 if DEVENV:
     app = dash.Dash(
@@ -68,5 +68,8 @@ if __name__ == "__main__":
         app.run_server(
             host="0.0.0.0", debug=True, dev_tools_prune_errors=False, use_reloader=True
         )
+        # app.run_server(
+        #     host="127.0.0.1", debug=True, dev_tools_prune_errors=False, use_reloader=True
+        # )
     else:
         app.run_server(use_reloader=True)

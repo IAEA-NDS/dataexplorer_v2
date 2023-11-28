@@ -96,7 +96,7 @@ def get_git_history_api(entnum):
             "api_url": commits[n]["url"],
         }
         simple_history[n] = commit_dict
-
+    print(simple_history)
     return simple_history
 
 
@@ -210,7 +210,7 @@ def generate_json_link(entnum):
 def show_entry_links(entnum, entry_json):
     # get history from Github REST API
     gitlog_json = get_git_history_api(entnum)
-    # print(gitlog_json[0])
+    # print(gitlog_json)
 
     # get EXFOR comiplation history from dataexplorer API
     tooltip = dbc.Tooltip(

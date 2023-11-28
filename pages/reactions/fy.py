@@ -47,10 +47,10 @@ from modules.reactions.figs import default_chart, default_axis
 from modules.reactions.tabs import create_tabs
 
 from submodules.common import (
-    MT_BRANCH_LIST_FY,
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
+from submodules.utilities.reaction import MT_BRANCH_LIST_FY
 from submodules.reactions.queries import lib_fy_data_query
 from submodules.exfor.queries import data_query
 
@@ -108,6 +108,7 @@ def input_fy(**query_strings):
             placeholder="Options",
             persistence=True,
             persistence_type="memory",
+            multi=True,
             style={"font-size": "small", "width": "100%"},
         ),
         html.Br(),
@@ -380,6 +381,11 @@ def initial_data_fy(input_store, r_click):
     if input_store:
         if ctx.triggered_id != "rest_btn_fy":
             no_update
+        
+        ## search_result,
+        ## index_df.to_dict("records"),
+        ## legends,
+        ## libs,
         return get_indexes(input_store)
 
     else:
@@ -412,8 +418,29 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
     else:
         raise PreventUpdate
 
-    xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
-    fig = default_chart(xaxis_type, yaxis_type, reaction, str(mt).zfill(3))
+    fig = go.Figure(
+        layout=go.Layout(
+            # template="plotly_white",
+            xaxis={
+                "title": "Incident energy [MeV]",
+                "type": "linear",
+                "range": [70, 180],
+                "autorange": True if reaction[0] != "n" else False,
+                "rangeslider": {
+                    "bgcolor": "White",
+                    "visible": True,
+                    "autorange": True,
+                    "thickness": 0.2,
+                },
+            },
+            yaxis={
+                "title": "Cross section [barn]",
+                "type": "linear" ,
+                "fixedrange": False,
+            },
+            margin={"l": 40, "b": 40, "t": 30, "r": 0},
+        )
+    )
 
     lib_df = pd.DataFrame()
     if libs:
@@ -444,14 +471,35 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
                         mode="lines",
                     )
                 )
+            
+            fig.update_layout(dict(xaxis={"title": "Mass number"}, xaxis_range=[60,180]))
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
-            fig.update_layout(dict(xaxis={"title": "Charge number"}))
+            print(lib_df)
+            dff = lib_df.groupby(["reaction_id", "charge", "en_inc"], as_index=False)[
+                "data"
+            ].max(numeric_only=True)
+
+            for l in libs_select:
+                line_color = color_libs(libs[l])
+                new_col = next(line_color)
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=dff[dff["reaction_id"] == int(l)]["charge"].astype(float),
+                        y=dff[dff["reaction_id"] == int(l)]["data"].astype(float),
+                        showlegend=True,
+                        line_color=new_col,
+                        name=str(libs[l]),
+                        mode="lines",
+                    )
+                )
+            fig.update_layout(dict(xaxis={"title": "Charge number"}, xaxis_range=[20,80]))
 
         elif plot_opt_fy == "Energy":
             x_ax = "en_inc"
-            fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}))
+            fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}, xaxis_range=[0,20]))
 
     reac_products = []
     df = pd.DataFrame()
@@ -483,7 +531,7 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
 
             # Filtered by reaction product
             if reac_product_fy:
-                df2 = df2[df2["residual"] == reac_product_fy]
+                df2 = df2[df2["residual"].isin(reac_product_fy)]
 
             if mesurement_opt_fy == "A":
                 x_ax = "mass"
@@ -681,7 +729,7 @@ def export_data_fy(n1, n2, input_store):
         Output("btn_api_fy", "href"),
         Output("btn_api_data_fy", "href"),
     ],
-    Input("location", "search"),
+    Input("location_fy", "search"),
 )
 def generate_api_links_fy(search_str):
     return generate_api_link(pageparam, search_str)

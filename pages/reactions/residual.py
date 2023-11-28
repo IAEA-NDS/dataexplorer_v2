@@ -407,13 +407,13 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
     else:
         raise PreventUpdate
 
-    if inc_pt.upper() == "N":
+    if inc_pt == "n":
         xaxis_type, yaxis_type = "log", "log"
 
     else:
         xaxis_type, yaxis_type = "linear", "linear"
 
-    fig = default_chart(xaxis_type, yaxis_type, reaction=inc_pt, mt=None)
+    fig = default_chart(xaxis_type, yaxis_type, reaction=inc_pt)
 
     lib_df = pd.DataFrame()
     if libs:

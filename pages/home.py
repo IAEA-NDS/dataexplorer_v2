@@ -18,7 +18,7 @@ from pages_common import footer
 ## Registration of page
 dash.register_page(
     __name__,
-    path="/",
+    path="/home",
     title="IAEA Nuclear Dataexplorer",
     description="Nuclear reaction experimental and evaluated data plotter",
 )
@@ -52,7 +52,7 @@ nav = dbc.NavbarSimple(
         ),
         dbc.DropdownMenu(
             [
-                dbc.DropdownMenuItem(dbc.NavLink("Dataexplorer API", href="api/ripl3")),
+                dbc.DropdownMenuItem(dbc.NavLink("Dataexplorer API", href="api/reactions")),
                 dbc.DropdownMenuItem(dbc.NavLink("EXFOR API", href="api/exfor")),
                 dbc.DropdownMenuItem(dbc.NavLink("RIPLE-3 API", href="api/ripl3")),
             ],

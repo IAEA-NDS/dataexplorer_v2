@@ -168,3 +168,4 @@ exfor_dictionary/
 endflib_sql/
 sql/
 uninstall.txt
+config.py

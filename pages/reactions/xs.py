@@ -54,10 +54,10 @@ from modules.reactions.list import color_libs
 from modules.reactions.tabs import create_tabs
 from modules.reactions.figs import default_chart, default_axis
 from submodules.common import (
-    get_mt,
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
+from submodules.utilities.reaction import get_mt
 from submodules.reactions.queries import lib_xs_data_query
 from submodules.exfor.queries import data_query
 from submodules.utilities.util import get_number_from_string
@@ -67,6 +67,7 @@ from submodules.utilities.util import get_number_from_string
 dash.register_page(
     __name__,
     path="/reactions/xs",
+    title="Nuclear Reaction Cross Section",
     redirect_from=["/xs", "/cs", "/reactions/cs", "/reactions/"],
 )
 pageparam = "xs"
@@ -383,8 +384,13 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
     else:
         raise PreventUpdate
 
-    xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
-    fig = default_chart(xaxis_type, yaxis_type, reaction, str(mt).zfill(3))
+    if reaction.split(",")[0] == "n":
+        xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
+    else:
+        xaxis_type = "linear"
+        yaxis_type = "linear"
+        
+    fig = default_chart(xaxis_type, yaxis_type, reaction)
 
     lib_df = pd.DataFrame()
     if libs:
@@ -485,7 +491,7 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
 
             if i > 30:
                 i = 1
-    print(len(df.to_dict("records")), len(df.index))
+
     return fig, df.to_dict("records"), xaxis_type, yaxis_type
 
 

@@ -28,6 +28,8 @@ main_fig = dcc.Graph(
 )
 
 
+
+
 def default_axis(mt):
     if mt in [
         "001",
@@ -35,7 +37,7 @@ def default_axis(mt):
         "018",
         "019",
         "102",
-        "103",
+        # "103",
         "104",
         "201",
         "202",
@@ -56,7 +58,9 @@ def default_axis(mt):
     return xaxis_type, yaxis_type
 
 
-def default_chart(xaxis_type, yaxis_type, reaction, mt):
+
+
+def default_chart(xaxis_type, yaxis_type, reaction):
     reaction = reaction.split(",")
 
     fig = go.Figure(
@@ -65,7 +69,8 @@ def default_chart(xaxis_type, yaxis_type, reaction, mt):
             xaxis={
                 "title": "Incident energy [MeV]",
                 "type": xaxis_type,
-                "autorange": True,
+                "range": [0, 30] if xaxis_type == "linear" else [-8, 1.2],
+                "autorange": True if reaction[0] != "n" else False,
                 "rangeslider": {
                     "bgcolor": "White",
                     "visible": True,
@@ -84,115 +89,9 @@ def default_chart(xaxis_type, yaxis_type, reaction, mt):
 
     # Expornential format
     if xaxis_type == "log":
-        fig.update_xaxes(exponentformat="power")
+        fig.update_xaxes(exponentformat="power", range=[-8,1.2])
 
     if yaxis_type == "log":
         fig.update_yaxes(exponentformat="power")
 
     return fig
-
-    # elif (
-    #     mt
-    #     in [
-    #         "001",
-    #         "002",
-    #         "018",
-    #         "019",
-    #         "102",
-    #         "103",
-    #         "201",
-    #         "202",
-    #         "203",
-    #         "204",
-    #         "205",
-    #         "206",
-    #         "207",
-    #         "rp",
-    #     ]
-    #     and reaction[0] == "n"
-    # ):
-    #     #  and not nuclide.endswith("000")
-    #     fig = go.Figure(
-    #         layout=go.Layout(
-    #             xaxis={
-    #                 "title": "Incident energy [MeV]",
-    #                 "type": xaxis_type,
-    #                 "rangeslider": {
-    #                     "bgcolor": "White",
-    #                     "autorange": True,
-    #                     "thickness": 0.15,
-    #                 },
-    #             },
-    #             yaxis={
-    #                 "title": "Cross section [barn]",
-    #                 "type": yaxis_type,
-    #                 "fixedrange": False,
-    #             },
-    #             margin={"l": 40, "b": 40, "t": 30, "r": 0},
-    #         )
-    #     )
-
-    # elif any(str(i).zfill(3) in mt for i in range(50, 90)):
-    #     #  and not nuclide.endswith("000")
-    #     fig = go.Figure(
-    #         layout=go.Layout(
-    #             xaxis={
-    #                 "title": "Incident energy [MeV]",
-    #                 "type": xaxis_type,
-    #                 "range": [0, 20] if xaxis_type == "linear" else [5.0, 6.5],
-    #                 "rangeslider": {
-    #                     "bgcolor": "White",
-    #                     "autorange": True,
-    #                     "thickness": 0.15,
-    #                 },
-    #             },
-    #             yaxis={
-    #                 "title": "Cross section [barn]",
-    #                 "type": yaxis_type,
-    #                 "fixedrange": False,
-    #             },
-    #             margin={"l": 40, "b": 40, "t": 30, "r": 0},
-    #         )
-    #     )
-
-    # elif mt in ["016", "017", "037"] and reaction[0] == "n":
-    #     #  and not nuclide.endswith("000")
-    #     fig = go.Figure(
-    #         layout=go.Layout(
-    #             xaxis={
-    #                 "title": "Incident energy [MeV]",
-    #                 "type": xaxis_type,
-    #                 "range": [1000000, 50000000]
-    #                 if xaxis_type == "linear"
-    #                 else [6.1, 7.5],
-    #                 "rangeslider": {
-    #                     "bgcolor": "White",
-    #                     "autorange": True,
-    #                     "thickness": 0.15,
-    #                 },
-    #             },
-    #             yaxis={
-    #                 "title": "Cross section [barn]",
-    #                 "type": yaxis_type,
-    #                 "fixedrange": False,
-    #             },
-    #             margin={"l": 40, "b": 40, "t": 30, "r": 0},
-    #         )
-    #     )
-
-    # else:
-    #     fig = go.Figure(
-    #         layout=go.Layout(
-    #             # template="plotly_white",
-    #             xaxis={
-    #                 "title": "Incident energy [MeV]",
-    #                 "type": xaxis_type,
-    #                 "autorange": True,
-    #             },
-    #             yaxis={
-    #                 "title": "Cross section [barn]",
-    #                 "type": yaxis_type,
-    #             },
-    #             margin={"l": 40, "b": 40, "t": 30, "r": 0},
-    #         )
-    #     )

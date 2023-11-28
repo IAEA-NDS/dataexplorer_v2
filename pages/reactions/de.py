@@ -27,8 +27,7 @@ from pages_common import (
     energy_range_conversion,
 )
 
-from submodules.common import reaction_list
-
+from submodules.utilities.reaction import reaction_list
 from modules.reactions.tabs import create_tabs
 from modules.reactions.figs import default_chart, default_axis
 from submodules.reactions.queries import (

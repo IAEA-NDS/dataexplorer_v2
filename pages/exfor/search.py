@@ -7,21 +7,19 @@
 #
 ####################################################################
 
-import pandas as pd
 import datetime
 from urllib.parse import urlencode
 import numpy as np
 
 import dash
 from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
-from dash.dash_table.Format import Format, Scheme
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 ## from dataexplorer modules
 from pages_common import (
-    sidehead,
     URL_PATH,
+    sidehead,
     page_urls,
     exfor_navbar,
     footer,
