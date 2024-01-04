@@ -1,7 +1,7 @@
 ####################################################################
 #
 # This file is part of libraries-2021 dataexplorer, https://nds.iaea.org/dataexplorer/.
-# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+# Copyright (C) 2024 International Atomic Energy Agency (IAEA)
 #
 # Contact:    nds.contact-point@iaea.org
 #
@@ -9,11 +9,12 @@
 
 
 import dash
-from dash import html, dcc
+from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 
 
 from pages_common import footer
+
 
 ## Registration of page
 dash.register_page(
@@ -22,6 +23,7 @@ dash.register_page(
     title="IAEA Nuclear Dataexplorer",
     description="Nuclear reaction experimental and evaluated data plotter",
 )
+
 
 nav = dbc.NavbarSimple(
     [
@@ -70,6 +72,7 @@ nav = dbc.NavbarSimple(
 
 layout = dbc.Container(
     [
+        dcc.Location(id="location"),
         nav,
         dbc.Row(
             dbc.Col(

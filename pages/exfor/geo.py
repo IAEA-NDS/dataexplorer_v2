@@ -36,7 +36,7 @@ from submodules.utilities.reaction import (
 )
 
 
-dash.register_page(__name__, path="/exfor/geo")
+dash.register_page(__name__, path="/exfor/geo", redirect_from=["/geo", "/geo/"])
 pageparam = "geo"
 geo_df = get_reactions_geo(reactions_df)
 

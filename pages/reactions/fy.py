@@ -182,7 +182,6 @@ right_layout_fy = [
     dcc.Store(id="libs_store_fy"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     create_tabs(pageparam),
-    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
 
@@ -264,7 +263,7 @@ def redirect_to_pages_fy(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages_fy(type):
-    print("redirect_to_subpages")
+    # print("redirect_to_subpages")
     if type:
         return lib_page_urls[type], True  # , dict({"type": type})
 
@@ -296,7 +295,7 @@ def input_store_fy(
     reac_product_fy,
     excl_junk_switch,
 ):
-    print("input_store_fy", type)
+    # print("input_store_fy", type)
     if type != "FY":
         return dict({"type": type})
 
@@ -331,7 +330,7 @@ def input_store_fy(
     prevent_initial_call=True,
 )
 def update_url_fy(input_store):
-    print("update_url", input_store)
+    # print("update_url", input_store)
 
     if input_store:
         type = input_store.get("type").upper()
@@ -377,7 +376,7 @@ def update_url_fy(input_store):
     prevent_initial_call=True,
 )
 def initial_data_fy(input_store, r_click):
-    print("initial_data_fy")
+    # print("initial_data_fy")
     if input_store:
         if ctx.triggered_id != "rest_btn_fy":
             no_update
@@ -408,7 +407,7 @@ def initial_data_fy(input_store, r_click):
     prevent_initial_call=True,
 )
 def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
-    print("create_fig")
+    # print("create_fig")
     if input_store:
         reaction = input_store.get("reaction")
         mt = input_store.get("mt")
@@ -618,6 +617,8 @@ def fileter_by_en_range_fy(energy_range, fig):
     return fig, filter_model, range_text
 
 
+
+
 @callback(
     [
         Output("main_fig_fy", "figure", allow_duplicate=True),
@@ -631,6 +632,7 @@ def fileter_by_year_range_fy(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
+
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     Input("index_table_fy", "selectedRows"),
@@ -641,6 +643,8 @@ def highlight_data_fy(selected, fig):
     return highlight_data(selected, fig)
 
 
+
+
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     Input("index_table_fy", "cellValueChanged"),
@@ -649,6 +653,8 @@ def highlight_data_fy(selected, fig):
 )
 def scale_data_fy(selected, fig):
     return scale_data(selected, fig)
+
+
 
 
 @callback(
@@ -668,6 +674,8 @@ def del_rows_fy(n1, fig, selected):
         if selected is None:
             return no_update, no_update
         return del_rows_fig(selected, fig)
+
+
 
 
 @callback(
@@ -697,6 +705,8 @@ def export_index_fy(n1, n2, input_store):
         return no_update, no_update
 
 
+
+
 @callback(
     [
         Output("exfor_table_fy", "exportDataAsCsv"),
@@ -724,6 +734,8 @@ def export_data_fy(n1, n2, input_store):
         return no_update, no_update
 
 
+
+
 @callback(
     [
         Output("btn_api_fy", "href"),
@@ -733,6 +745,8 @@ def export_data_fy(n1, n2, input_store):
 )
 def generate_api_links_fy(search_str):
     return generate_api_link(pageparam, search_str)
+
+
 
 
 @callback(

@@ -52,18 +52,18 @@ def create_tabs(pageparam):
                                     ),
                                     dbc.Col(
                                         [
-                                            dcc.Clipboard(
-                                                id="".join(
-                                                    ["cb_state_index_", pageparam]
-                                                ),
-                                                # target_id="index_table_xs",
-                                                title="Copy Selected ",
-                                                style={
-                                                    "display": "inline-block",
-                                                    "fontSize": 20,
-                                                    # "verticalAlign": "top",
-                                                },
-                                            ),
+                                            # dcc.Clipboard(
+                                            #     id="".join(
+                                            #         ["cb_state_index_", pageparam]
+                                            #     ),
+                                            #     # target_id="index_table_xs",
+                                            #     title="Copy Selected ",
+                                            #     style={
+                                            #         "display": "inline-block",
+                                            #         "fontSize": 20,
+                                            #         # "verticalAlign": "top",
+                                            #     },
+                                            # ),
                                             dbc.Badge(
                                                 "Download CSV",
                                                 id="".join(

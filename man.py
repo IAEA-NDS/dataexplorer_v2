@@ -1,7 +1,7 @@
 ####################################################################
 #
 # This file is part of libraries-2021 dataexplorer, https://nds.iaea.org/dataexplorer/.
-# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+# Copyright (C) 2024 International Atomic Energy Agency (IAEA)
 #
 # Contact:    nds.contact-point@iaea.org
 #
@@ -80,10 +80,10 @@ A double click on an entry makes all other data sets disappear. Double clicking 
 
 **Icons :**
 Just above the legend, you find more than 10 icons for particular actions:
-* ![title](./assets/figs/pictureit.png) Download plot in png format
-* ![title](./assets/figs/zoom.png) Zoom in and out
-* ![title](./assets/figs/resetax.png) Download plot in png format
-* ![title](./assets/figs/spikeline.png) Show spike line
+* ![](../assets/figs/pictureit.png) Download plot in png format
+* ![](../assets/figs/zoom.png) Zoom in and out
+* ![](../assets/figs/resetax.png) Download plot in png format
+* ![](../assets/figs/spikeline.png) Show spike line
 
 
 **Data table and download :**
@@ -99,4 +99,5 @@ mail: <nds.contact-point@iaea.org>
 [Terms of Use](https://nucleus.iaea.org/Pages/Others/Terms-Of-Use.aspx)
 
 """
+,dangerously_allow_html=True
 )

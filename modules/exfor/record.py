@@ -96,7 +96,7 @@ def get_git_history_api(entnum):
             "api_url": commits[n]["url"],
         }
         simple_history[n] = commit_dict
-    print(simple_history)
+
     return simple_history
 
 

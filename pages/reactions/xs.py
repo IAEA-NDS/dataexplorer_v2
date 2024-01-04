@@ -68,7 +68,7 @@ dash.register_page(
     __name__,
     path="/reactions/xs",
     title="Nuclear Reaction Cross Section",
-    redirect_from=["/xs", "/cs", "/reactions/cs", "/reactions/"],
+    redirect_from=["/xs", "/cs", "/reactions/cs", "/reactions", "/reactions/"],
 )
 pageparam = "xs"
 
@@ -117,7 +117,6 @@ right_layout_lib = [
     dcc.Store(id="libs_store"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     create_tabs(pageparam),
-    html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
 
@@ -192,6 +191,7 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
+
 @callback(
     [
         Output("location", "href", allow_duplicate=True),
@@ -201,7 +201,7 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages(type):
-    print("redirect_to_subpages")
+    # print("redirect_to_subpages")
     if type:
         return lib_page_urls[type], True  # , dict({"type": type})
 
@@ -209,18 +209,20 @@ def redirect_to_subpages(type):
         raise PreventUpdate
 
 
+
 @callback(
     Output("reaction_xs", "options"),
     Input("incident_particle_xs", "value"),
 )
 def update_reaction_list(proj):
-    print("update_reaction_list")
+    # print("update_reaction_list")
 
     if not proj:
         raise PreventUpdate
 
     else:
         return generate_reactions(proj)
+
 
 
 @callback(
@@ -231,7 +233,7 @@ def update_reaction_list(proj):
     ],
 )
 def update_branch_list(type, reaction):
-    print("update_branch_list")
+    # print("update_branch_list")
     if type != "XS":
         raise PreventUpdate
 
@@ -239,6 +241,8 @@ def update_branch_list(type, reaction):
         raise PreventUpdate
 
     return [{"label": "Partial", "value": "PAR"}]
+
+
 
 
 @callback(
@@ -254,7 +258,7 @@ def update_branch_list(type, reaction):
     # prevent_initial_call=True,
 )
 def input_store_xs(type, elem, mass, reaction, branch, excl_junk_switch):
-    print("input_store_xs", type)
+    # print("input_store_xs", type)
     if type != "XS":
         return dict({"type": type})
 
@@ -284,6 +288,8 @@ def input_store_xs(type, elem, mass, reaction, branch, excl_junk_switch):
     )
 
 
+
+
 @callback(
     [
         Output("location", "search"),
@@ -293,7 +299,7 @@ def input_store_xs(type, elem, mass, reaction, branch, excl_junk_switch):
     prevent_initial_call=True,
 )
 def update_url(input_store):
-    print("update_url")
+    # print("update_url")
 
     if input_store:
         type = input_store.get("type").upper()
@@ -335,6 +341,8 @@ def update_url(input_store):
         return no_update, False
 
 
+
+
 @callback(
     [
         Output("search_result_txt", "children"),
@@ -349,7 +357,7 @@ def update_url(input_store):
     prevent_initial_call=True,
 )
 def initial_data_xs(input_store, r_click):
-    print("initial_data_xs")
+    # print("initial_data_xs")
     if input_store:
         if ctx.triggered_id != "rest_btn_xs":
             no_update
@@ -357,6 +365,8 @@ def initial_data_xs(input_store, r_click):
 
     else:
         raise PreventUpdate
+
+
 
 
 @callback(
@@ -376,7 +386,7 @@ def initial_data_xs(input_store, r_click):
     prevent_initial_call=True,
 )
 def create_fig(input_store, legends, libs, endf_selct, switcher):
-    print("create_fig")
+    # print("create_fig")
     if input_store:
         reaction = input_store.get("reaction")
         mt = input_store.get("mt")
@@ -495,6 +505,8 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
     return fig, df.to_dict("records"), xaxis_type, yaxis_type
 
 
+
+
 @callback(
     Output("main_fig_xs", "figure", allow_duplicate=True),
     [
@@ -510,6 +522,8 @@ def update_axis(xaxis_type, yaxis_type, fig):
     fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
+
+
 
 
 @callback(
@@ -530,6 +544,8 @@ def fileter_by_en_range_xs(energy_range, fig):
     return fig, filter_model, range_text
 
 
+
+
 @callback(
     [
         Output("main_fig_xs", "figure", allow_duplicate=True),
@@ -543,6 +559,8 @@ def fileter_by_year_range_lib(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
+
+
 @callback(
     Output("main_fig_xs", "figure", allow_duplicate=True),
     Input("index_table_xs", "selectedRows"),
@@ -553,6 +571,8 @@ def highlight_data_xs(selected, fig):
     return highlight_data(selected, fig)
 
 
+
+
 @callback(
     Output("main_fig_xs", "figure", allow_duplicate=True),
     Input("index_table_xs", "cellValueChanged"),
@@ -561,6 +581,8 @@ def highlight_data_xs(selected, fig):
 )
 def scale_data_xs(selected, fig):
     return scale_data(selected, fig)
+
+
 
 
 @callback(
@@ -580,6 +602,8 @@ def del_rows(n1, fig, selected):
         if selected is None:
             return no_update, no_update
         return del_rows_fig(selected, fig)
+
+
 
 
 @callback(
@@ -609,6 +633,8 @@ def export_index_xs(n1, n2, input_store):
         return no_update, no_update
 
 
+
+
 @callback(
     Output("cb_state_exfor_xs", "content"),
     Input("cb_state_exfor_xs", "n_clicks"),
@@ -629,6 +655,8 @@ def selected(n, col_state, selected):
     dff = dff[columns]
 
     return dff.to_string()
+
+
 
 
 @callback(
@@ -658,6 +686,8 @@ def export_data_xs(n1, n2, input_store):
         return no_update, no_update
 
 
+
+
 @callback(
     [
         Output("btn_api_xs", "href"),
@@ -667,6 +697,8 @@ def export_data_xs(n1, n2, input_store):
 )
 def generate_api_links(search_str):
     return generate_api_link(pageparam, search_str)
+
+
 
 
 @callback(

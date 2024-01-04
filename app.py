@@ -1,7 +1,7 @@
 ####################################################################
 #
 # This file is part of libraries-2021 dataexplorer, https://nds.iaea.org/dataexplorer/.
-# Copyright (C) 2022 International Atomic Energy Agency (IAEA)
+# Copyright (C) 2024 International Atomic Energy Agency (IAEA)
 #
 # Contact:    nds.contact-point@iaea.org
 #
@@ -30,7 +30,7 @@ if DEVENV:
         meta_tags=[
             {
                 "name": "IAEA Nuclear Data Section",
-                "content": "Nuclear Reaction data plot, LIBRARIES-2022, TALYS",
+                "content": "Nuclear Reaction, Nuclear Data, Cross Section, TALYS, TENDL",
             },
             {"http-equiv": "X-UA-Compatible", "content": "IE=edge"},
             {"name": "viewport", "content": "width=device-width, initial-scale=1.0"},
@@ -57,16 +57,14 @@ else:
         use_pages=True,
     )
     server = app.server  # for PROD/INT env
-    app.title = "LIBRARIES-2023 Data Explorer"
 
-# print(app.config["url_base_pathname"])
-
+app.title = "IAEA Nuclear Reaction Data Explorer"
 app.layout = html.Div([dash.page_container])
 
 if __name__ == "__main__":
     if DEVENV:
         app.run_server(
-            host="0.0.0.0", debug=True, dev_tools_prune_errors=False, use_reloader=True
+            host="0.0.0.0", use_reloader=True
         )
         # app.run_server(
         #     host="127.0.0.1", debug=True, dev_tools_prune_errors=False, use_reloader=True
