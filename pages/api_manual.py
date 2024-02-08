@@ -23,7 +23,7 @@ layout = dbc.Container(
         libs_navbar,
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         dcc.Markdown(
-        """
+            """
 ### [REACTIONS REST API Documentation](#reactions)
 
 The REACTIONS REST API is built using Flask and provides access to the nuclear reaction dataset extracted from the Experimental Nuclear Reaction Database (EXFOR) using EXFOR_parser. The API endpoints are designed to retrieve data tables of specific nuclear reactions. This document outlines the available endpoints and their functionalities.
@@ -214,7 +214,7 @@ GET `/api/exfor/subentry/10300/001`
 }
 ```
         """,
-        link_target="_blank",
+            link_target="_blank",
         ),
         footer,
     ]

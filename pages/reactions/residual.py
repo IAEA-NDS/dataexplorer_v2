@@ -493,8 +493,6 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
     return fig, df.to_dict("records"), xaxis_type, yaxis_type
 
 
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     [
@@ -510,8 +508,6 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
     fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
-
 
 
 @callback(
@@ -532,8 +528,6 @@ def fileter_by_en_range_rp(energy_range, fig):
     return fig, filter_model, range_text
 
 
-
-
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
@@ -545,8 +539,6 @@ def fileter_by_en_range_rp(energy_range, fig):
 )
 def fileter_by_year_range_rp(year_range, fig):
     return filter_by_year_range(year_range, fig)
-
-
 
 
 @callback(
@@ -569,8 +561,6 @@ def scale_data_rp(selected, fig):
     return scale_data(selected, fig)
 
 
-
-
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
@@ -588,8 +578,6 @@ def del_rows_rp(n1, fig, selected):
         if selected is None:
             return no_update
         return del_rows_fig(selected, fig)
-
-
 
 
 @callback(
@@ -619,8 +607,6 @@ def export_index_rp(n1, n2, input_store):
         return no_update, no_update
 
 
-
-
 @callback(
     [
         Output("exfor_table_rp", "exportDataAsCsv"),
@@ -648,8 +634,6 @@ def export_data_rp(n1, n2, input_store):
         return no_update, no_update
 
 
-
-
 @callback(
     [
         Output("btn_api_rp", "href"),
@@ -659,8 +643,6 @@ def export_data_rp(n1, n2, input_store):
 )
 def generate_api_links_rp(search_str):
     return generate_api_link(pageparam, search_str)
-
-
 
 
 @callback(

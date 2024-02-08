@@ -26,7 +26,7 @@ from datetime import date
 from config import DATA_DIR, API_BASE_URL
 from man import manual
 
-from modules.exfor.list import MAPPING, bib_df, number_of_entries, number_of_reactions
+from modules.exfor.list import MAPPING, bib_df, number_of_entries, number_of_reactions, get_latest_master_release
 from submodules.common import LIB_LIST_MAX
 from submodules.utilities.elem import ELEMS, elemtoz_nz, ztoelem
 from submodules.utilities.mass import mass_range
@@ -62,28 +62,25 @@ URL_PATH = dash.get_relative_path("/")
 toast = html.Div(
     [
         dbc.Col(
-            # dbc.Button("Tips", id="toast-toggle", color="primary", n_clicks=0,)
-            
-        ),
-        dbc.Col(
-            [html.Div(html.A("Tips", id="toast-toggle", href="#")),
-            dbc.Toast(
-                [html.Div(manual)],
-                id="toast",
-                header="Tips for Data Explorer",
-                icon="primary",
-                dismissable=True,
-                is_open=False,
-                style={
-                    "position": "absolute",
-                    "top": 10,
-                    "left": 10,
-                    "width": 850,
-                    "maxWidth": "1000px",
-                    "zIndex": 1,
-                },
-                body_style={"background-color": "white", "font-size": "large"},
-            )
+            [
+                html.Div(html.A("Tips", id="toast-toggle", href="#")),
+                dbc.Toast(
+                    [html.Div(manual)],
+                    id="toast",
+                    header="Tips for Data Explorer",
+                    icon="primary",
+                    dismissable=True,
+                    is_open=False,
+                    style={
+                        "position": "absolute",
+                        "top": 10,
+                        "left": 10,
+                        "width": 850,
+                        "maxWidth": "1000px",
+                        "zIndex": 1,
+                    },
+                    body_style={"background-color": "white", "font-size": "large"},
+                ),
             ],
         ),
     ]
@@ -100,7 +97,7 @@ sidehead = dbc.Row(
                 href="https://nds.iaea.org",
             )
         ),
-        dbc.Col(html.A("API Docs", href=URL_PATH + "api_manual", id='exfor')),
+        dbc.Col(html.A("API Docs", href=URL_PATH + "api_manual", id="exfor")),
         dbc.Col(toast),
         html.Br(),
         html.Br(),
@@ -120,6 +117,10 @@ lib_selections = [
         "value": "XS",
     },
     {
+        "label": "Thernal Neutron Cross Section",
+        "value": "TH",
+    },
+    {
         "label": "Residual Production XS",
         "value": "RP",
     },
@@ -129,6 +130,7 @@ lib_selections = [
 
 lib_page_urls = {
     "XS": URL_PATH + "reactions/xs",
+    "TH": URL_PATH + "reactions/thermal",
     "RP": URL_PATH + "reactions/residual",
     "FY": URL_PATH + "reactions/fy",
     "DA": URL_PATH + "reactions/da",
@@ -140,6 +142,7 @@ lib_page_urls = {
 ## based on pageparam
 def_inp_values = {
     "XS": {"elem": "Al", "mass": "27", "inc_pt": "N", "reaction": "n,p"},
+    "TH": {"elem": "Cl", "mass": "35", "inc_pt": "N", "reaction": "n,p"},
     "RP": {"elem": "Ti", "mass": "0", "inc_pt": "A", "rp_elem": "Cr", "rp_mass": "51"},
     "FY": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
     "DA": {"elem": "Fe", "mass": "56", "inc_pt": "N", "reaction": "n,2n"},
@@ -167,7 +170,12 @@ def_inp_values = {
 
 navbar = html.Div(
     [
-        html.H5(html.A(html.B("IAEA Nuclear Reaction Data Explorer"), href="https://nds.iaea.org/dataexplorer/")),
+        html.H5(
+            html.A(
+                html.B("IAEA Nuclear Reaction Data Explorer"),
+                href="https://nds.iaea.org/dataexplorer/",
+            )
+        ),
         html.P(
             "Nuclear Data Section | International Atomic Energy Agency.",
             style={"font-size": "medium"},
@@ -182,7 +190,12 @@ navbar = html.Div(
 
 libs_navbar = html.Div(
     [
-        html.H5(html.A(html.B("IAEA Nuclear Reaction Data Explorer"), href="https://nds.iaea.org/dataexplorer/")),
+        html.H5(
+            html.A(
+                html.B("IAEA Nuclear Reaction Data Explorer"),
+                href="https://nds.iaea.org/dataexplorer/",
+            )
+        ),
         dbc.Row(
             [
                 dbc.Col(
@@ -198,7 +211,11 @@ libs_navbar = html.Div(
                                 href=URL_PATH,
                             ),
                             " ",
-                            html.A("Libraries 2023", href=f"{URL_PATH}reactions", className="text-dark"),
+                            html.A(
+                                "Nuclear Reactions",
+                                href=f"{URL_PATH}reactions",
+                                className="text-dark",
+                            ),
                         ],
                     ),
                     width=2,
@@ -207,25 +224,25 @@ libs_navbar = html.Div(
                 dbc.Col(
                     html.Div(
                         [
-                            "Buildt with ",
+                            "Built with ",
                             html.A(
-                                "ENDFTABLES",
+                                "ENDFTABLES (2023)",
                                 href="https://nds.iaea.org/talys/",
                                 # className="text-dark",
                             ),
                             " and ",
                             html.A(
-                                "EXFORTABLES (Python version)",
-                                href="https://github.com/shinokumura/endftables_py",
+                                "EXFORTABLES_py (EXFORTABLE-Inspired Nucelar Reaction Database)",
+                                href="https://github.com/IAEA-NDS/exfortables_py",
                                 # className="text-dark",
                             ),
-                            " by ",
+                            " by the EXFOR Parsing softwear, ",
                             html.A(
                                 "EXFOR_Parser",
-                                href="https://github.com/shinokumura/exforparser",
+                                href="https://github.com/IAEA-NDS/exforparser",
                                 # className="text-dark",
                             ),
-                            ". Maintained in IAEA Nuclear Data Section. Data updated 2024-01-02.",
+                            f" using EXFOR master file: {get_latest_master_release()}.",
                         ],
                         style={
                             "font-size": "smaller",
@@ -242,7 +259,12 @@ libs_navbar = html.Div(
 
 exfor_navbar = html.Div(
     [
-        html.H5(html.A(html.B("IAEA Nuclear Reaction Data Explorer"), href="https://nds.iaea.org/dataexplorer/")),
+        html.H5(
+            html.A(
+                html.B("IAEA Nuclear Reaction Data Explorer"),
+                href="https://nds.iaea.org/dataexplorer/",
+            )
+        ),
         dbc.Row(
             [
                 dbc.Col(
@@ -258,7 +280,11 @@ exfor_navbar = html.Div(
                                 href=URL_PATH,
                             ),
                             " ",
-                            html.A("EXFOR Viewer", href = f"{URL_PATH}exfor", className="text-dark"),
+                            html.A(
+                                "EXFOR Viewer",
+                                href=f"{URL_PATH}exfor",
+                                className="text-dark",
+                            ),
                         ],
                     ),
                     width=2,
@@ -267,9 +293,13 @@ exfor_navbar = html.Div(
                 dbc.Col(
                     [
                         # html.Div([
-                        "Experimental Nuclear Reaction Experimental Data (EXFOR) is compiled by the International Network of Nuclear Reaction Data Centres (NRDC) under the auspices of the International Atomic Energy Agency.",
+                        "Experimental Nuclear Reaction Experimental Data (EXFOR) is compiled by the ",
+                        html.A("International Network of Nuclear Reaction Data Centres (NRDC)", 
+                               href="https://nds.iaea.org/nrdc"),
+                        "under the auspices of the International Atomic Energy Agency. ",
                         html.Br(),
-                        f"Number of entry: {number_of_entries}, Number of dataset: {number_of_reactions}."
+                        f"Number of entry: {number_of_entries}, Number of dataset: {number_of_entries}. ",
+                        f"Last update EXFOR master repository: {get_latest_master_release()}.",
                         # ]),
                     ],
                     style={"font-size": "smaller"},
@@ -285,7 +315,11 @@ footer = html.Div(
         html.Br(),
         html.Hr(style={"border": "3px", "border-top": "1px solid"}),
         f"Copyright {current_year}, ",
-        html.A("International Atomic Energy Agency",href="https://iaea.org", className="text-dark"),
+        html.A(
+            "International Atomic Energy Agency",
+            href="https://www.iaea.org",
+            className="text-dark",
+        ),
         " - ",
         html.A(
             "Nuclear Data Section.", href="https://nds.iaea.org/", className="text-dark"
@@ -293,7 +327,7 @@ footer = html.Div(
         html.Br(),
         html.A(
             "Terms of use.",
-            href="https://nucleus.iaea.org/Pages/Others/Terms-Of-Use.aspx",
+            href="https://www.iaea.org/about/terms-of-use",
             className="text-dark",
         ),
         html.Br(),
@@ -309,8 +343,6 @@ footer = html.Div(
     style={"text-align": "center"},
     className="text-dark",
 )
-
-
 
 
 def main_fig(pageparam):
@@ -331,8 +363,6 @@ def main_fig(pageparam):
     )
 
 
-
-
 def input_obs(pageparam):
     ## limited observables ready for the data view
     return [
@@ -347,8 +377,6 @@ def input_obs(pageparam):
             style={"font-size": "small", "width": "100%"},
         ),
     ]
-
-
 
 
 def input_obs_all(pageparam):
@@ -367,8 +395,6 @@ def input_obs_all(pageparam):
             style={"font-size": "small", "width": "100%"},
         ),
     ]
-
-
 
 
 def input_target(pageparam, **query_strings):
@@ -396,8 +422,6 @@ def input_target(pageparam, **query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
     ]
-
-
 
 
 def input_general(pageparam, **query_strings):
@@ -431,8 +455,6 @@ def input_general(pageparam, **query_strings):
     ]
 
 
-
-
 def input_residual(pageparam, **query_strings):
     return [
         html.P("Residual Product", style={"font-size": "small"}),
@@ -463,8 +485,6 @@ def input_residual(pageparam, **query_strings):
     ]
 
 
-
-
 def input_partial(pageparam, **query_strings):
     return [
         dcc.Dropdown(
@@ -477,8 +497,6 @@ def input_partial(pageparam, **query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
     ]
-
-
 
 
 def input_entry(pageparam, entry_id):
@@ -496,8 +514,6 @@ def input_entry(pageparam, entry_id):
             style={"font-size": "small", "width": "95%", "margin-left": "6px"},
         ),
     ]
-
-
 
 
 def exfor_filter_opt(pageparam):
@@ -534,8 +550,6 @@ def exfor_filter_opt(pageparam):
     ]
 
 
-
-
 def libs_filter_opt(pageparam):
     pageparam = pageparam.lower()
     return [
@@ -566,8 +580,6 @@ def libs_filter_opt(pageparam):
             clearable=False,
         ),
     ]
-
-
 
 
 def input_lin_log_switch(pageparam):
@@ -607,8 +619,6 @@ def input_lin_log_switch(pageparam):
     )
 
 
-
-
 def reduce_data_switch(pageparam):
     return [
         dbc.Row(
@@ -621,33 +631,30 @@ def reduce_data_switch(pageparam):
                 ),
                 dbc.Col(
                     [
-                    html.Div(
-                        [
-                            "Use reduced data points ",
-                            html.A("[?]", id="data-toast-toggle", href="#"),
-                        ],
-                        style={"font-size": "smaller", "color": "gray"},
-                    ),
-                    dbc.Tooltip(
-                        f"Change the number of data points loaded into the figure.\n\nIf there are more than a thousand data points in one dataset, some of the data points are ommited from the plot. By default, every 100 points will be loaded into figure. All data will be loaded if this switch is on.",
-                        target="data-toast-toggle",
-                        placement="left",
-                        style={
+                        html.Div(
+                            [
+                                "Use reduced data points ",
+                                html.A("[?]", id="data-toast-toggle", href="#"),
+                            ],
+                            style={"font-size": "smaller", "color": "gray"},
+                        ),
+                        dbc.Tooltip(
+                            f"Change the number of data points loaded into the figure.\n\nIf there are more than a thousand data points in one dataset, some of the data points are ommited from the plot. By default, every 100 points will be loaded into figure. All data will be loaded if this switch is on.",
+                            target="data-toast-toggle",
+                            placement="left",
+                            style={
                                 "font-size": "small",
                                 "min-width": "600px",
                                 "max-width": "100%",
                                 "white-space": "pre-wrap",
                                 "data-html": True,
                             },
-                    )
+                        ),
                     ]
                 ),
-
             ]
         )
     ]
-
-
 
 
 def excl_mxw_switch(pageparam):
@@ -662,24 +669,23 @@ def excl_mxw_switch(pageparam):
                 ),
                 dbc.Col(
                     [
-                    html.Div(
-                        [
-                            "Exclude non pure data ",
-                            html.A("[?]", id="mxw-toast-toggle", href="#"),
-                        ],
-                        style={"font-size": "smaller", "color": "gray"},
+                        html.Div(
+                            [
+                                "Exclude non pure data ",
+                                html.A("[?]", id="mxw-toast-toggle", href="#"),
+                            ],
+                            style={"font-size": "smaller", "color": "gray"},
                         ),
-                    dbc.Tooltip(
-                        f"Change the type of data loaded into the figure. \n\nThe datasets from EXFOR measured at the monoenergetic incident source will be loaded by default. There are more data, which are measureed in Maxwellien average, spectrum average, and so on, in EXFOR. All data will be loaded if this switch is on.",
-                        target="mxw-toast-toggle",
-                        placement="left",
-                        style={
+                        dbc.Tooltip(
+                            f"Change the type of data loaded into the figure. \n\nThe datasets from EXFOR measured at the monoenergetic incident source will be loaded by default. There are more data, which are measureed in Maxwellien average, spectrum average, and so on, in EXFOR. All data will be loaded if this switch is on.",
+                            target="mxw-toast-toggle",
+                            placement="left",
+                            style={
                                 "font-size": "small",
                                 "min-width": "600px",
                                 "max-width": "100%",
                                 "white-space": "pre-wrap",
                                 "data-html": True,
-
                             },
                         ),
                     ]
@@ -687,8 +693,6 @@ def excl_mxw_switch(pageparam):
             ]
         ),
     ]
-
-
 
 
 def limit_number_of_datapoints(points, df):
@@ -712,8 +716,6 @@ def limit_number_of_datapoints(points, df):
         return df
 
 
-
-
 def remove_query_parameter(url, param):
     # Remove query parameter from querystrings
     url_parts = urllib.parse.urlparse(url)
@@ -721,8 +723,6 @@ def remove_query_parameter(url, param):
     query_params.pop(param, None)
     updated_query = urllib.parse.urlencode(query_params, doseq=True)
     return url_parts._replace(query=updated_query).geturl()
-
-
 
 
 def generate_reactions(proj=None):
@@ -737,8 +737,6 @@ def generate_reactions(proj=None):
     return options
 
 
-
-
 def generate_exfor_reactions(proj=None):
     ## EXFOR reactions are different from indexing one, i.e. N,N1 does not exist and only N,INL exist
     reactions = exfor_reaction_list(proj)
@@ -750,8 +748,6 @@ def generate_exfor_reactions(proj=None):
         for reac in reactions.keys()
     ]
     return options
-
-
 
 
 def input_check(type, elem, mass, reaction):
@@ -784,8 +780,6 @@ def input_check(type, elem, mass, reaction):
     return elem.capitalize(), mass.lower(), reaction.lower()
 
 
-
-
 def input_check_elem(elem):
     if elem.isnumeric():
         elem = ztoelem(elem)
@@ -794,8 +788,6 @@ def input_check_elem(elem):
         raise PreventUpdate
 
     return elem.capitalize()
-
-
 
 
 def input_check_mass(mass):
@@ -812,8 +804,6 @@ def input_check_mass(mass):
 
 
 entries = bib_df["entry"].to_list()
-
-
 
 
 def entry_id_check(entry_id):
@@ -838,9 +828,6 @@ def entry_id_check(entry_id):
     return entry_id
 
 
-
-
-
 def get_indexes(input_store):
     type = input_store.get("type").upper()
     elem = input_store.get("target_elem")
@@ -852,19 +839,29 @@ def get_indexes(input_store):
     legends = {}
     libs = {}
 
-    if type == "XS" or type == "DA" or type == "FY":
+    if type == "XS" or type == "DA" or type == "FY" or type == "TH":
         entries = index_query(input_store)
         libs = lib_query(input_store)
-
         total_points = sum([e["points"] for e in entries.values()]) if entries else 0
-        search_result = html.Div(
-            [
-                html.B(
-                    f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
-                ),
-                f"Number of EXFOR data: {len(entries)} datasets with {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
-            ]
-        )
+
+        if type == "TH":
+            search_result = html.Div(
+                [
+                    html.B(
+                        f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
+                    ),
+                    f"Number of EXFOR data: {len(entries)} datasets. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                ]
+            )
+        else:
+            search_result = html.Div(
+                [
+                    html.B(
+                        f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
+                    ),
+                    f"Number of EXFOR data: {len(entries)} datasets with {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                ]
+            )
 
     elif type == "RP":
         rp_elem = input_store.get("rp_elem")
@@ -883,8 +880,8 @@ def get_indexes(input_store):
             ]
         )
 
-    if not entries and not libs:
-        return search_result, None, None, None
+    # if not entries and not libs:
+    #     return search_result, None, None, None
 
     if entries:
         legends = get_entry_bib(e[:5] for e in entries.keys())
@@ -894,7 +891,6 @@ def get_indexes(input_store):
             for t, v in entries.items()
             if k == t[:5]
         }
-
         index_df = pd.DataFrame.from_dict(legends, orient="index").reset_index()
         index_df.rename(columns={"index": "entry_id"}, inplace=True)
         index_df["entry_id_link"] = (
@@ -906,15 +902,20 @@ def get_indexes(input_store):
         )
         legends["total_points"] = total_points
 
-    return (
-        search_result,
-        index_df.to_dict("records"),
-        legends,
-        libs,
-    )
+    if type != "TH":
+        return (
+            search_result,
+            index_df.to_dict("records"),
+            legends,
+            libs,
+        )
 
-
-
+    else:
+        return (
+            search_result,
+            legends,
+            libs,
+        )
 
 
 def highlight_data(selected, fig):
@@ -942,8 +943,6 @@ def highlight_data(selected, fig):
     return fig
 
 
-
-
 def del_rows_fig(selected, fig):
     del_data = []
 
@@ -962,8 +961,6 @@ def del_rows_fig(selected, fig):
         del fig["data"][d]
 
     return fig, {"remove": selected}
-
-
 
 
 def scale_data(selected, fig):
@@ -993,9 +990,6 @@ def scale_data(selected, fig):
                     )
 
     return fig
-
-
-
 
 
 def filter_by_year_range(year_range, fig):
@@ -1035,9 +1029,6 @@ def filter_by_year_range(year_range, fig):
     return fig, filter_model
 
 
-
-
-
 def fileter_by_en_range(energy_range, fig):
     # print(json.dumps(fig, indent=1))
     filter_model = {}
@@ -1062,7 +1053,6 @@ def fileter_by_en_range(energy_range, fig):
                     elif max_x < lower:
                         record.update({"visible": "legendonly"})
 
-
                     # elif not lower < sum_x / len(record["x"]) < upper:
                     #     record.update({"visible": "legendonly"})
 
@@ -1086,9 +1076,6 @@ def fileter_by_en_range(energy_range, fig):
     return no_update, no_update
 
 
-
-
-
 def energy_range_conversion(energy_range):
     if len(energy_range) != 2:
         return no_update, no_update
@@ -1102,8 +1089,6 @@ def energy_range_conversion(energy_range):
     upper = 10 ** energy_range[1] / 1e6
 
     return lower, upper
-
-
 
 
 def export_index(onlySelected, input_store):
@@ -1133,8 +1118,6 @@ def export_index(onlySelected, input_store):
         "onlySelected": onlySelected,
         "onlySelectedAllPages": onlySelected,
     }
-
-
 
 
 def export_data(onlySelected, input_store):
@@ -1183,16 +1166,11 @@ def export_data(onlySelected, input_store):
     return True, data
 
 
-
-
-
 def list_link_of_files(dir, files):
-
     flinks = []
     for f in sorted(files):
-
         fullpath = os.path.join(dir.replace(DATA_DIR, ""), f)
-        a = html.A(f, href= URL_PATH + fullpath, target="_blank")
+        a = html.A(f, href=URL_PATH + fullpath, target="_blank")
 
         flinks.append(a)
         flinks.append(html.Br())
@@ -1200,17 +1178,14 @@ def list_link_of_files(dir, files):
     return flinks
 
 
-
-
 def generate_api_link(pageparam, search_str):
     if search_str:
         return (
-            f"{API_BASE_URL}/reactions/{pageparam}{search_str}&page=1",
-            f"{API_BASE_URL}/reactions/{pageparam}{search_str}&table=True&page=1",
+            f"{API_BASE_URL}reactions/{pageparam}{search_str}&page=1",
+            f"{API_BASE_URL}reactions/{pageparam}{search_str}&table=True&page=1",
         )
     else:
         return no_update, no_update
-
 
 
 @callback(
@@ -1222,4 +1197,3 @@ def open_toast(n):
         return True
     else:
         return no_update
-

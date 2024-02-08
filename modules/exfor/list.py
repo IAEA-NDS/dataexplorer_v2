@@ -10,9 +10,10 @@
 import json
 import os
 import pandas as pd
+import requests
 
 from exfor_dictionary.exfor_dictionary import Diction
-from config import MAPPING_FILE, EXFOR_DICTIONARY, MASTER_GIT_REPO_PATH
+from config import EXFOR_DICTIONARY, MASTER_GIT_REPO_PATH, MASTER_GIT_REPO_URL, HEADERS
 
 from submodules.exfor.queries import (
     get_exfor_bib_table,
@@ -29,8 +30,274 @@ number_of_entries = len(bib_df)
 number_of_reactions = len(reactions_df)
 
 
-with open(MAPPING_FILE) as map_file:
-    MAPPING = json.load(map_file)
+MAPPING = {
+  "top_category":
+  {
+    "SIG": "Cross Section (SIG)",
+    "DA": "Angular Distribution (DA)",
+    "DE": "Energy Distribution (DE)",
+    "FY": "Fission Yield(FY)",
+    "DDX": "Double Differential Cross Section (DA/DE)",
+    "KE": "Kinetic Energy (KE)",
+    "RES": "Resonance Parameter",
+    "NU": "Neutron (NU)",
+    "TTY": "Tick Target Yield (TTY)",
+    "Others": "Others"
+  },
+  "SF6": {
+    "AG": {
+      "description": "Symmetry coefficient",
+      "top_category": "Others"
+    },
+    "AH": {
+      "description": "Asymmetry coefficient",
+      "top_category": "Others"
+    },
+    "AKE": {
+      "description": "Average kinetic energy",
+      "top_category": "KE"
+    },
+    "ALF": {
+      "description": "Alpha = capture/fission cross-section ratio",
+      "top_category": "Others"
+    },
+    "AMP": {
+      "description": "Scattering length",
+      "top_category": "Others"
+    },
+    "AP": {
+      "description": "Most probable mass of fission-fragments",
+      "top_category": "FY"
+    },
+    "ARE": {
+      "description": "Resonance-area",
+      "top_category": "RES"
+    },
+    "D": {
+      "description": "Average level-spacing",
+      "top_category": "RES"
+    },
+    "DA": {
+      "description": "Angular Distribution (DA)",
+      "top_category": "DA"
+    },
+    "DA2": {
+      "description": "Double-diff. by angle (for quadruple-diff cs only)",
+      "top_category": "DDX"
+    },
+    "DA/DE": {
+      "description": "Double-diff. cross section",
+      "top_category": "DDX"
+    },
+    "DE": {
+      "description": "Energy Distribution (E)",
+      "top_category": "DE"
+    },
+    "DE2": {
+      "description": "Double-diff. by energy (for quadruple-diff.cs only)",
+      "top_category": "DDX"
+    },
+    "DEN": {
+      "description": "Differential with incident energy",
+      "top_category": "DE"
+    },
+    "DP": {
+      "description": "Differential with lin.momentum of outgoing particles",
+      "top_category": "Others"
+    },
+    "DT": {
+      "description": "Diff.with 4-momentum transfer squared of outg.particles",
+      "top_category": "Others"
+    },
+    "EN": {
+      "description": "Resonance-energy",
+      "top_category": "RES"
+    },
+    "ETA": {
+      "description": "Average neutron yield per nonelastic event",
+      "top_category": "Others"
+    },
+    "FM": {
+      "description": "Product of polarization and cross section",
+      "top_category": "SIG"
+    },
+    "FY": {
+      "description": "Fission Yield",
+      "top_category": "FY"
+    },
+    "INT": {
+      "description": "Cross-section integral over incident energy",
+      "top_category": "SIG"
+    },
+    "IPA": {
+      "description": "Cs integrated over partial angular range",
+      "top_category": "SIG"
+    },
+    "IPP": {
+      "description": "Cs integrated over partial momentum range",
+      "top_category": "SIG"
+    },
+    "J": {
+      "description": "Spin J",
+      "top_category": "RES"
+    },
+    "KE": {
+      "description": "Kinetic Energy (KE, AKE)",
+      "top_category": "KE"
+    },
+    "KEM": {
+      "description": "Temperature of Maxwellian distr.of outgoing particles",
+      "top_category": "EN"
+    },
+    "KEP": {
+      "description": "Most probable kinetic energy of outgoing particle",
+      "top_category": "KE"
+    },
+    "KER": {
+      "description": "Kerma factor",
+      "top_category": "Others"
+    },
+    "L": {
+      "description": "Angular momentum L",
+      "top_category": "RES"
+    },
+    "LD": {
+      "description": "Level-density",
+      "top_category": "Others"
+    },
+    "LDP": {
+      "description": "Level-density parameter",
+      "top_category": "Others"
+    },
+    "MLT": {
+      "description": "Multiplicity (particle yield per event)",
+      "top_category": "FY"
+    },
+    "NU": {
+      "description": "Fission-neutron yield, nu-bar",
+      "top_category": "NU"
+    },
+    "PHS": {
+      "description": "Reich-Moore phase",
+      "top_category": "SIG"
+    },
+    "PN": {
+      "description": "Pn-value or delayed neutron emission probability",
+      "top_category": "NU"
+    },
+    "POL": {
+      "description": "Polarization",
+      "top_category": "SIG"
+    },
+    "PTY": {
+      "description": "Parity",
+      "top_category": "SIG"
+    },
+    "PY": {
+      "description": "Product yield",
+      "top_category": "TTY"
+    },
+    "RAD": {
+      "description": "Scattering radius",
+      "top_category": "Others"
+    },
+    "RAT": {
+      "description": "Ratio",
+      "top_category": "Others"
+    },
+    "RED": {
+      "description": "Reduced",
+      "top_category": "Others"
+    },
+    "RI": {
+      "description": "Resonance integral",
+      "top_category": "SIG"
+    },
+    "RYL": {
+      "description": "Reaction yield",
+      "top_category": "TTY"
+    },
+    "SCO": {
+      "description": "Spin cut-off factor",
+      "top_category": "Others"
+    },
+    "SGV": {
+      "description": "Thermonuclear reaction rate",
+      "top_category": "Others"
+    },
+    "SIF": {
+      "description": "Self-indication function",
+      "top_category": "Others"
+    },
+    "SIG": {
+      "description": "Cross Section (SIG)",
+      "top_category": "SIG"
+    },
+    "SPC": {
+      "description": "Intensity of discrete gamma-lines",
+      "top_category": "Others"
+    },
+    "STF": {
+      "description": "Strength function",
+      "top_category": "Others"
+    },
+    "STR": {
+      "description": "Strength",
+      "top_category": "Others"
+    },
+    "SUM": {
+      "description": "Sum",
+      "top_category": "Others"
+    },
+    "SWG": {
+      "description": "Statistical weight g",
+      "top_category": "Others"
+    },
+    "TEM": {
+      "description": "Nuclear temperature",
+      "top_category": "KE"
+    },
+    "TKE": {
+      "description": "Total kinetic energy",
+      "top_category": "KE"
+    },
+    "TMP": {
+      "description": "Temperature-dependent quantity",
+      "top_category": "Others"
+    },
+    "TRN": {
+      "description": "Transmission",
+      "top_category": "Others"
+    },
+    "TTT": {
+      "description": "Thick-target yield per unit time",
+      "top_category": "TTY"
+    },
+    "TTY": {
+      "description": "Thick-target yield of the specified reaction product.",
+      "top_category": "TTY"
+    },
+    "TYA": {
+      "description": "Differential with respect to Treiman-Yang angle",
+      "top_category": "DA"
+    },
+    "WID": {
+      "description": "Resonance width",
+      "top_category": "RES"
+    },
+    "ZP": {
+      "description": "Most probable charge of fission fragments",
+      "top_category": "FY"
+    }
+  }
+  }
+
+
+
+def get_latest_master_release():
+    response = requests.get(f"{MASTER_GIT_REPO_URL.replace('github.com','api.github.com/repos')}releases/latest", verify=False, headers=HEADERS)
+    return response.json()["name"]
+
 
 
 def get_updated_entries():

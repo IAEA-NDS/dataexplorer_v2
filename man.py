@@ -16,7 +16,8 @@ from dash import dcc
 manual = dcc.Markdown(
     """
 
-This site is aiming to mine data from evaluated nuclear data libraries (ENDFTABLES) and EXFOR (EXFORTABLES_py). 
+This site is aiming to mine data from evaluated nuclear data libraries (ENDFTABLES) and EXFOR datasets (EXFORTABLES_py). Previous version of dataexplorer with  libraries (ENDFTABLES and EXFORTABLES) is accessible via [dataexplorer-2022](https://nds.iaea.org/dataexplorer2022/).
+
 There are 3 main selections for data plotting and retrieval.
 
 ##### **1. Cross sections**
@@ -96,8 +97,26 @@ There are 3 tabs under the plot. Dataset list
 
 mail: <nds.contact-point@iaea.org>
 
-[Terms of Use](https://nucleus.iaea.org/Pages/Others/Terms-Of-Use.aspx)
+[Terms of Use](https://www.iaea.org/about/terms-of-use)
+
+""",
+    dangerously_allow_html=True,
+)
+
+
+
+
+
+table_desc_thermal = dcc.Markdown(
+"""
+##### **Column descriptions **
+This table contains cross-section data near thermal energy (2.53E-8 MeV). 
+- **Entry Id**: The entry (5 digits), subentry (3 digits), and pointer (1 digit) number taken from EXFOR, formatted as EEEEE-SSS-P.
+- **Author**: The name of the first author of the publication.
+- **Year**: The publication year of the main publication in `REFERENCE` field in EXFOR.
+- **SF4**: EXFOR's reaction subfield 4 (SF4) representing reaction product(s). For example, the 235U(n,g) reaction produces 236U as a reaction product.
+- **SF8**: EXFOR's reaction subfield 8 (SF8) indicating modifiers. The list of modifiers can be found [here](https://github.com/IAEA-NDS/exfor_dictionary/blob/b3d79674ea1b55b7c9e889b52cf8dd2e370b5550/src/exfor_dictionary/latest.json#L19984). In many cases, a null value in SF8 indicates that the measurements were done in the monoenergetic environment (or corrected), while `MXW` or `SPA` in SF8 mean the "Maxwellian average" or "Spectrum average", respectively.
+- **SF9**: EXFOR's reaction subfield 4 (SF4) representing data types. For example, `DERIV` means Derived data which was not directory measured in the experiment. The list of data types can be found [here](https://github.com/IAEA-NDS/exfor_dictionary/blob/b3d79674ea1b55b7c9e889b52cf8dd2e370b5550/src/exfor_dictionary/latest.json#L20337C24-L20337C50).
 
 """
-,dangerously_allow_html=True
 )

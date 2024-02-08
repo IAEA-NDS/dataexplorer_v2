@@ -169,3 +169,4 @@ endflib_sql/
 sql/
 uninstall.txt
 config.py
+submodules/

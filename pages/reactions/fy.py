@@ -380,7 +380,7 @@ def initial_data_fy(input_store, r_click):
     if input_store:
         if ctx.triggered_id != "rest_btn_fy":
             no_update
-        
+
         ## search_result,
         ## index_df.to_dict("records"),
         ## legends,
@@ -434,7 +434,7 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
             },
             yaxis={
                 "title": "Cross section [barn]",
-                "type": "linear" ,
+                "type": "linear",
                 "fixedrange": False,
             },
             margin={"l": 40, "b": 40, "t": 30, "r": 0},
@@ -470,8 +470,10 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
                         mode="lines",
                     )
                 )
-            
-            fig.update_layout(dict(xaxis={"title": "Mass number"}, xaxis_range=[60,180]))
+
+            fig.update_layout(
+                dict(xaxis={"title": "Mass number"}, xaxis_range=[60, 180])
+            )
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
@@ -494,11 +496,15 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
                         mode="lines",
                     )
                 )
-            fig.update_layout(dict(xaxis={"title": "Charge number"}, xaxis_range=[20,80]))
+            fig.update_layout(
+                dict(xaxis={"title": "Charge number"}, xaxis_range=[20, 80])
+            )
 
         elif plot_opt_fy == "Energy":
             x_ax = "en_inc"
-            fig.update_layout(dict(xaxis={"title": "Incident energy [MeV]"}, xaxis_range=[0,20]))
+            fig.update_layout(
+                dict(xaxis={"title": "Incident energy [MeV]"}, xaxis_range=[0, 20])
+            )
 
     reac_products = []
     df = pd.DataFrame()
@@ -617,8 +623,6 @@ def fileter_by_en_range_fy(energy_range, fig):
     return fig, filter_model, range_text
 
 
-
-
 @callback(
     [
         Output("main_fig_fy", "figure", allow_duplicate=True),
@@ -632,7 +636,6 @@ def fileter_by_year_range_fy(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
-
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     Input("index_table_fy", "selectedRows"),
@@ -643,8 +646,6 @@ def highlight_data_fy(selected, fig):
     return highlight_data(selected, fig)
 
 
-
-
 @callback(
     Output("main_fig_fy", "figure", allow_duplicate=True),
     Input("index_table_fy", "cellValueChanged"),
@@ -653,8 +654,6 @@ def highlight_data_fy(selected, fig):
 )
 def scale_data_fy(selected, fig):
     return scale_data(selected, fig)
-
-
 
 
 @callback(
@@ -674,8 +673,6 @@ def del_rows_fy(n1, fig, selected):
         if selected is None:
             return no_update, no_update
         return del_rows_fig(selected, fig)
-
-
 
 
 @callback(
@@ -705,8 +702,6 @@ def export_index_fy(n1, n2, input_store):
         return no_update, no_update
 
 
-
-
 @callback(
     [
         Output("exfor_table_fy", "exportDataAsCsv"),
@@ -734,8 +729,6 @@ def export_data_fy(n1, n2, input_store):
         return no_update, no_update
 
 
-
-
 @callback(
     [
         Output("btn_api_fy", "href"),
@@ -745,8 +738,6 @@ def export_data_fy(n1, n2, input_store):
 )
 def generate_api_links_fy(search_str):
     return generate_api_link(pageparam, search_str)
-
-
 
 
 @callback(

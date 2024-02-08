@@ -113,16 +113,16 @@ def create_tabs(pageparam):
                     html.Br(),
                     html.Div(
                         [
-                            dcc.Clipboard(
-                                id="".join(["cb_state_exfor_", pageparam]),
-                                title="Copy Selected ",
-                                style={
-                                    "display": "inline-block",
-                                    "fontSize": 20,
-                                    "verticalAlign": "top",
-                                },
-                            ),
-                            html.P("   "),
+                            # dcc.Clipboard(
+                            #     id="".join(["cb_state_exfor_", pageparam]),
+                            #     title="Copy Selected ",
+                            #     style={
+                            #         "display": "inline-block",
+                            #         "fontSize": 20,
+                            #         "verticalAlign": "top",
+                            #     },
+                            # ),
+                            # html.P("   "),
                             dbc.Badge(
                                 "Download CSV",
                                 id="".join(["btn_csv_exfor_", pageparam]),
@@ -143,6 +143,7 @@ def create_tabs(pageparam):
                                 "API",
                                 id="".join(["btn_api_data_", pageparam]),
                                 href=f"api/",
+                                target="_blank",
                                 color="info",
                                 className="me-1",
                             ),

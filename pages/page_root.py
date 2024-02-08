@@ -14,7 +14,6 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 
-
 ## Registration of page
 dash.register_page(
     __name__,
@@ -34,9 +33,8 @@ layout = dcc.Location(id="root_location")
     Input("root_location", "href"),
 )
 def redirect_to_xs(loc):
-
-    if loc.rsplit("/",1)[-1] == "":
+    if loc.rsplit("/", 1)[-1] == "":
         return "reactions/xs", True
-    
+
     else:
         raise PreventUpdate

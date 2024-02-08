@@ -20,8 +20,10 @@ from pages_common import (
     URL_PATH,
     exfor_navbar,
     footer,
+    input_check,
     input_obs_all,
     input_general,
+    input_target,
     generate_exfor_reactions,
     exfor_filter_opt,
 )
@@ -46,6 +48,7 @@ def input_ge(**query_strings):
         html.Br(),
         html.Label("Geological Search Option"),
         html.Div(children=input_obs_all(pageparam)),
+        html.Div(children=input_target(pageparam, **query_strings)),
         html.Div(children=input_general(pageparam, **query_strings)),
         html.Label("Facility type"),
         dcc.Dropdown(
@@ -183,13 +186,17 @@ def update_reaction_list(proj):
         Input("reaction_category_geo", "value"),
         Input("incident_particle_geo", "value"),
         Input("reaction_geo", "value"),
+        Input("target_elem_geo", "value"),
+        Input("target_mass_geo", "value"),
         Input("facility_type", "value"),
         Input("energy_range_geo", "value"),
         Input("year_range_geo", "value"),
     ],
     prevent_initial_call=True,
 )
-def input_store_geo(type, inc_pt, reactions, facility_types, energy_range, year_range):
+def input_store_geo(
+    type, inc_pt, reactions, elem, mass, facility_types, energy_range, year_range
+):
     print("input_store_geo")
     df = geo_df
     reactions_exfor_format = []
@@ -226,6 +233,7 @@ def input_store_geo(type, inc_pt, reactions, facility_types, energy_range, year_
 
                 if isinstance(level_num, int):
                     rr += [convert_partial_reactionstr_to_inl(r)]
+
             else:
                 rr += [r.upper()]
                 level_num = None
@@ -233,6 +241,12 @@ def input_store_geo(type, inc_pt, reactions, facility_types, energy_range, year_
         reactions_exfor_format = list(dict.fromkeys(rr))
 
         df = df[df["process"].isin([r.upper() for r in reactions_exfor_format])]
+
+    # if elem and mass:
+    #     elem, mass, reaction = input_check(type, elem, mass, reactions[0] if reactions else "n,g")
+    #     df = df[
+    #         (df["target"] == )
+    #     ]
 
     if energy_range:
         df = df[
@@ -248,6 +262,8 @@ def input_store_geo(type, inc_pt, reactions, facility_types, energy_range, year_
         "type": type,
         "inc_pt": inc_pt,
         "reaction": reactions_exfor_format,
+        "target_elem": elem,
+        "target_mass": mass,
         "level_num": level_num if level_num else None,
         "energy_range": energy_range,
         "year_range": year_range,
@@ -271,8 +287,10 @@ def change_grouping(grouping, entries_store):
 
         if entries_store:
             df = pd.DataFrame(entries_store)
+
         else:
             df = geo_df
+
         return geo_fig(grouping, df)
 
     raise PreventUpdate
@@ -298,6 +316,7 @@ def select_geo_node(entries_store, selected_data, grouping):
     if selected_data:
         if entries_store:
             df = pd.DataFrame(entries_store)
+
         else:
             df = geo_df
 
@@ -351,7 +370,7 @@ def selected_index(selected_rows):
     ## e.g. [{'entry': '33146', 'authors': 'I.Pasha, B.Rudraswamy, S.V.Suryanarayana, H.Naik, S.P.Ram, L.S.Danu, T.Patel, S.Bishnoi, M.P.Karantha', 'title': 'Measurement of neutron induced reaction cross sections of palladium isotopes at the neutron energy of 14.54 +/- 0.24 MeV with covariance analysis', 'main_reference': '(J,JRN,325,175,2020)', 'year': 2020}]
 
     if selected_rows:
-        print(selected_rows)
+        # print(selected_rows)
         entries = [s["entry"] for s in selected_rows]
         df = reaction_query_by_id(entries)
 

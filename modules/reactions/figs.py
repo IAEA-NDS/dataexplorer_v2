@@ -11,25 +11,6 @@ import plotly.graph_objects as go
 from dash import dcc
 
 
-main_fig = dcc.Graph(
-    id="main_fig",
-    config={
-        "displayModeBar": True,
-        "scrollZoom": True,
-        "modeBarButtonsToAdd": ["drawline", "drawopenpath", "eraseshape"],
-        "modeBarButtonsToRemove": ["lasso2d"],
-    },
-    figure={
-        "layout": {
-            "title": "Please select target and reaction.",
-            "height": 600,
-        }
-    },
-)
-
-
-
-
 def default_axis(mt):
     if mt in [
         "001",
@@ -56,8 +37,6 @@ def default_axis(mt):
         yaxis_type = "linear"
 
     return xaxis_type, yaxis_type
-
-
 
 
 def default_chart(xaxis_type, yaxis_type, reaction):
@@ -89,7 +68,7 @@ def default_chart(xaxis_type, yaxis_type, reaction):
 
     # Expornential format
     if xaxis_type == "log":
-        fig.update_xaxes(exponentformat="power", range=[-8,1.2])
+        fig.update_xaxes(exponentformat="power", range=[-8, 1.2])
 
     if yaxis_type == "log":
         fig.update_yaxes(exponentformat="power")

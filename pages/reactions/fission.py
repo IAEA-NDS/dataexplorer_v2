@@ -16,7 +16,6 @@ import plotly.graph_objects as go
 
 
 from pages_common import (
-
     sidehead,
     footer,
     libs_navbar,

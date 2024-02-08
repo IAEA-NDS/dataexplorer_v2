@@ -15,6 +15,6 @@ plotly==5.13.0
 Requests==2.31.0
 SQLAlchemy==2.0.18
 endftables_sql @ git+https://github.com/shinokumura/endftables_sql@main
-exforparser @ git+https://github.com/shinokumura/exforparser@main
+exforparser @ git+https://github.com/IAEA-NDS/exforparser@main
 exfor_dictionary @ git+https://github.com/IAEA-NDS/exfor_dictionary@main
 ripl3_json @ git+https://github.com/shinokumura/ripl3_json@main

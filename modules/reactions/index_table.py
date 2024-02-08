@@ -50,6 +50,7 @@ columnDefs = [
         "filterParams": defaultFilterParams,
         # "cellStyle": {"color": "blue", "text-decoration": "underline"},
         "cellRenderer": "markdown",
+        "linkTarget": "_blank",
     },
     {
         "headerName": "#Entry",
@@ -59,6 +60,7 @@ columnDefs = [
         "filterParams": defaultFilterParams,
         # "cellStyle": {"color": "blue", "text-decoration": "underline"},
         "cellRenderer": "markdown",
+        "linkTarget": "_blank",
         "hide": True,
     },
     {
