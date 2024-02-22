@@ -248,6 +248,7 @@ def list_rp(elem, mass, inc_pt, rp_elem_rp):
 
         if not rp_dict.get(nuclide[0]):
             rp_dict[nuclide[0]] = ["".join(nuclide[1:])]
+
         else:
             rp_dict[nuclide[0]].append("".join(nuclide[1:]))
 
@@ -264,6 +265,7 @@ def list_rp(elem, mass, inc_pt, rp_elem_rp):
 
     else:
         return "e.g, " + ", ".join(rp_dict.keys()), ""
+
 
 
 @callback(
@@ -311,6 +313,8 @@ def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch)
         )
 
 
+
+
 @callback(
     [
         Output("location_rp", "search"),
@@ -320,7 +324,6 @@ def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch)
     prevent_initial_call=True,
 )
 def update_url_rp(input_store):
-    # print("Residual:  update_url")
 
     if input_store:
         type = input_store.get("type").upper()
@@ -355,6 +358,8 @@ def update_url_rp(input_store):
     else:
         return no_update, False
         # raise PreventUpdate
+
+
 
 
 @callback(
@@ -493,6 +498,7 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
     return fig, df.to_dict("records"), xaxis_type, yaxis_type
 
 
+
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     [
@@ -508,6 +514,7 @@ def update_axis_rp(xaxis_type, yaxis_type, fig):
     fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
+
 
 
 @callback(
@@ -526,6 +533,7 @@ def fileter_by_en_range_rp(energy_range, fig):
     if filter_model:
         range_text = f"{filter_model['e_inc_min']['filter']:.2e} - {filter_model['e_inc_max']['filter']:.2e} MeV"
     return fig, filter_model, range_text
+
 
 
 @callback(
@@ -561,6 +569,7 @@ def scale_data_rp(selected, fig):
     return scale_data(selected, fig)
 
 
+
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
@@ -578,6 +587,7 @@ def del_rows_rp(n1, fig, selected):
         if selected is None:
             return no_update
         return del_rows_fig(selected, fig)
+
 
 
 @callback(
@@ -607,6 +617,7 @@ def export_index_rp(n1, n2, input_store):
         return no_update, no_update
 
 
+
 @callback(
     [
         Output("exfor_table_rp", "exportDataAsCsv"),
@@ -634,6 +645,7 @@ def export_data_rp(n1, n2, input_store):
         return no_update, no_update
 
 
+
 @callback(
     [
         Output("btn_api_rp", "href"),
@@ -643,6 +655,7 @@ def export_data_rp(n1, n2, input_store):
 )
 def generate_api_links_rp(search_str):
     return generate_api_link(pageparam, search_str)
+
 
 
 @callback(
@@ -660,3 +673,7 @@ def generate_file_links_rp(input_store):
     dir_lib, files_lib = generate_endftables_file_path(input_store)
 
     return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)
+
+
+
+

@@ -18,7 +18,7 @@ import pandas as pd
 import urllib.parse
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
+from dash import  html, dcc, Input, Output, ctx, no_update, callback
 import dash_daq as daq
 from dash.exceptions import PreventUpdate
 from datetime import date
@@ -26,7 +26,7 @@ from datetime import date
 from config import DATA_DIR, API_BASE_URL
 from man import manual
 
-from modules.exfor.list import MAPPING, bib_df, number_of_entries, number_of_reactions, get_latest_master_release
+from modules.exfor.list import MAPPING, bib_df, number_of_entries, get_latest_master_release
 from submodules.common import LIB_LIST_MAX
 from submodules.utilities.elem import ELEMS, elemtoz_nz, ztoelem
 from submodules.utilities.mass import mass_range
@@ -226,17 +226,17 @@ libs_navbar = html.Div(
                         [
                             "Built with ",
                             html.A(
-                                "ENDFTABLES (2023)",
+                                "ENDFTABLES (2021)",
                                 href="https://nds.iaea.org/talys/",
                                 # className="text-dark",
                             ),
                             " and ",
                             html.A(
-                                "EXFORTABLES_py (EXFORTABLE-Inspired Nucelar Reaction Database)",
+                                "EXFORTABLES_py (EXFORTABLE-Inspired Nuclear Reaction Database)",
                                 href="https://github.com/IAEA-NDS/exfortables_py",
                                 # className="text-dark",
                             ),
-                            " by the EXFOR Parsing softwear, ",
+                            " by ",
                             html.A(
                                 "EXFOR_Parser",
                                 href="https://github.com/IAEA-NDS/exforparser",
@@ -294,11 +294,11 @@ exfor_navbar = html.Div(
                     [
                         # html.Div([
                         "Experimental Nuclear Reaction Experimental Data (EXFOR) is compiled by the ",
-                        html.A("International Network of Nuclear Reaction Data Centres (NRDC)", 
+                        html.A("International Network of Nuclear Reaction Data Centres (NRDC) ", 
                                href="https://nds.iaea.org/nrdc"),
                         "under the auspices of the International Atomic Energy Agency. ",
                         html.Br(),
-                        f"Number of entry: {number_of_entries}, Number of dataset: {number_of_entries}. ",
+                        f"Number of entry: {number_of_entries}. ",
                         f"Last update EXFOR master repository: {get_latest_master_release()}.",
                         # ]),
                     ],
@@ -502,11 +502,11 @@ def input_partial(pageparam, **query_strings):
 def input_entry(pageparam, entry_id):
     pageparam = pageparam.lower()
     return [
-        html.Label("Entry Number/Entry ID", style={"font-size": "small"}),
+        html.Label("Search by entry number/ID"),
         dcc.Input(
             id="entid_" + pageparam,
             type="text",
-            placeholder="e.g. 12345, 12345-003-0",
+            placeholder="e.g. 12345, 12345-002-0",
             persistence=True,
             persistence_type="memory",
             # size="md",
@@ -850,7 +850,7 @@ def get_indexes(input_store):
                     html.B(
                         f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
                     ),
-                    f"Number of EXFOR data: {len(entries)} datasets. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                    f"Number of experimental datasets in EXFOR: {len(entries)}. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
                 ]
             )
         else:

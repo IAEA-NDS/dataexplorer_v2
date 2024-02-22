@@ -197,7 +197,7 @@ def input_sch(**query_strings):
                     title="More options",
                 ),
             ],
-            start_collapsed=True,
+            start_collapsed=False,
         ),
         dbc.Col(
             [

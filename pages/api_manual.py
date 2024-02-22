@@ -63,14 +63,14 @@ curl https://nds.iaea.org/dataexplorer/api/reactions/
 - **Examples:**
   - Cross Section Search:
       ```bash
-      curl https://api.example.com/reactions/xs?target_elem=Al&target_mass=27&reaction=n%2Cp&page=1
+      curl https://nds.iaea.org/reactions/xs?target_elem=Al&target_mass=27&reaction=n%2Cp&page=1
       ```
   - Fission Yield Search:
       ```bash
-      curl https://api.example.com/reactions/fy?&target_elem=U&target_mass=235&reaction=n,f&fy_type=Cumulative&page=1
+      curl https://nds.iaea.org/reactions/fy?&target_elem=U&target_mass=235&reaction=n,f&fy_type=Cumulative&page=1
   - Residual Products Search:
       ```bash
-      curl https://api.example.com/reactions/rp?target_elem=Ti&target_mass=0&inc_pt=A&rp_elem=Cr&rp_mass=51&page=1
+      curl https://nds.iaea.org/reactions/rp?target_elem=Ti&target_mass=0&inc_pt=A&rp_elem=Cr&rp_mass=51&page=1
       ```
 - **Response:**
   ```json
@@ -78,8 +78,6 @@ curl https://nds.iaea.org/dataexplorer/api/reactions/
   "hits": 10,
   "aggregations": { /* Aggregated data based on the search criteria */ },
   "libraries": { /* Information about libraries */ },
-  "datatables": [ /* Data table with detailed results (if requested) */ ],
-  "files": [ /* Links to generated files (if requested) */ ]
   }
   ```
 

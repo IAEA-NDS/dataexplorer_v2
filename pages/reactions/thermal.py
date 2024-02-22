@@ -9,7 +9,6 @@
 
 import statistics
 import pandas as pd
-import numpy as np
 import dash
 from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
@@ -34,12 +33,7 @@ from pages_common import (
     highlight_data,
     generate_reactions,
     export_data,
-    limit_number_of_datapoints,
-    exfor_filter_opt,
-    libs_filter_opt,
     input_lin_log_switch,
-    reduce_data_switch,
-    excl_mxw_switch,
     del_rows_fig,
     get_indexes,
     export_index,
@@ -48,16 +42,13 @@ from pages_common import (
 from man import table_desc_thermal
 
 # from config import BASE_URL
-from modules.reactions.list import color_libs
-from modules.reactions.tabs import create_tabs
-from modules.reactions.figs import default_chart, default_axis
 from modules.reactions.thermal_table import thermal_data_table_ag
 from submodules.common import (
     generate_exfortables_file_path,
     generate_endftables_file_path,
 )
 from submodules.utilities.reaction import get_mt
-from submodules.reactions.queries import lib_xs_data_query
+from submodules.reactions.queries import lib_th_data_query
 from submodules.exfor.queries import data_query
 from submodules.utilities.util import get_number_from_string
 
@@ -399,7 +390,7 @@ def update_url_th(input_store):
     # prevent_initial_call=True,
 )
 def initial_data_th(input_store):
-    print("initial_data_th", input_store)
+    # print("initial_data_th", input_store)
     if input_store:
         return get_indexes(input_store)
 
@@ -498,7 +489,7 @@ def create_fig_th(input_store, legends, libs, r_click):
         df = df.sort_values(
             by=["sf9", "sf8", "year"], ascending=False, na_position="first"
         )
-        print(df)
+
         df["entry_id_link"] = (
             "["
             + df["entry_id"]
@@ -571,18 +562,19 @@ def create_fig_th(input_store, legends, libs, r_click):
             ]
         )
 
+
+
+
         """
         Update figure
         """
-        # print(np.random.randn(50))
-        # print(np.linspace(1.0, 50.0, num=20))
         for index, row in df.iterrows():
             fig.add_trace(
                 go.Scatter(
                     x=[row["year"]],
                     y=[row["data"]],
-                    error_x=dict(type="data", array=[row["den_inc"]]),
-                    # error_y=dict(type="data", array=df["ddata"]),
+                    # error_x=dict(type="data", array=[row["den_inc"]]),
+                    error_y=dict(type="data", array=[ row["ddata"] ]),
                     showlegend=True,
                     name=f"{row['author']}, {row['year']} [{row['entry_id']}]",
                     marker=dict(
@@ -590,13 +582,15 @@ def create_fig_th(input_store, legends, libs, r_click):
                         symbol=i,
                     ),
                     mode="markers",
-                    # marker_color=int( row['year'] )
                 )
             )
             i += 1
 
             if i > 30:
                 i = 1
+
+    if libs:
+        lib_df = lib_th_data_query( libs.keys() )
 
     return fig, thermal_stat_content, df.to_dict("records"), xaxis_type, yaxis_type
 

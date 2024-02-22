@@ -191,6 +191,7 @@ def redirect_to_pages(dataset):
         raise PreventUpdate
 
 
+
 @callback(
     [
         Output("location", "href", allow_duplicate=True),

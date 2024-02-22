@@ -31,7 +31,7 @@ from submodules.exfor.queries import reaction_query_by_id
 from modules.exfor.list import MAPPING, reactions_df, get_facility_type
 from modules.exfor.geofig import get_reactions_geo, geo_fig
 from modules.exfor.aggrid import aggrid_layout_bib, aggrid_index_result
-from submodules.utilities.util import get_number_from_string
+from submodules.utilities.util import get_number_from_string, x4style_nuclide_expression
 from submodules.utilities.reaction import (
     convert_reaction_to_exfor_style,
     convert_partial_reactionstr_to_inl,
@@ -99,7 +99,7 @@ geo_right_layout = [
     ),
     dcc.Store(id="entries_store_geo"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    html.Label(id="result_bib"),
+    html.Label(id="result_bib", children=f"Click the bubble chart to show EXFOR entries from selected facility."),
     dbc.Row(aggrid_layout_bib),
     html.Br(),
     html.Label("Reactions in selected entries"),
@@ -163,6 +163,22 @@ def layout():
 ### App Callback
 ###------------------------------------------------------------------------------------
 @callback(
+    [
+        Output("location_geo", "href", allow_duplicate=True),
+        Output("location_geo", "refresh", allow_duplicate=True),
+    ],
+    Input("dataset", "value"),
+    prevent_initial_call=True,
+)
+def redirect_to_pages_geo(dataset):
+    if dataset:
+        return page_urls[dataset], True
+
+    else:
+        raise PreventUpdate
+
+
+@callback(
     Output("reaction_geo", "options"),
     Input("incident_particle_geo", "value"),
 )
@@ -197,8 +213,9 @@ def update_reaction_list(proj):
 def input_store_geo(
     type, inc_pt, reactions, elem, mass, facility_types, energy_range, year_range
 ):
-    print("input_store_geo")
+    # print("input_store_geo")
     df = geo_df
+    
     reactions_exfor_format = []
     level_num = None
     # df = df[ df["projectile"] == "D"]
@@ -213,6 +230,20 @@ def input_store_geo(
                 sf6s += [sf6]
 
         df = df[df["sf6"].isin(sf6s)]
+
+
+    if elem:
+        df = df[
+            (df["target"].str.contains(f"-{elem.upper()}-"))
+        ]
+
+
+    if elem and mass:
+        elem, mass, reaction = input_check(type if type else "SIG", elem, mass, reactions[0] if reactions else "N,G")
+        df = df[
+            (df["target"] == x4style_nuclide_expression(elem, mass))
+        ]
+
 
     if inc_pt:
         df = df[
@@ -242,11 +273,6 @@ def input_store_geo(
 
         df = df[df["process"].isin([r.upper() for r in reactions_exfor_format])]
 
-    # if elem and mass:
-    #     elem, mass, reaction = input_check(type, elem, mass, reactions[0] if reactions else "n,g")
-    #     df = df[
-    #         (df["target"] == )
-    #     ]
 
     if energy_range:
         df = df[
@@ -256,7 +282,6 @@ def input_store_geo(
     if year_range:
         df = df[(df["year"] > year_range[0]) & (df["year"] < year_range[1])]
 
-    # df = get_reactions_geo(df)
 
     input_dict = {
         "type": type,
@@ -272,6 +297,8 @@ def input_store_geo(
     return input_dict, df.to_dict("records")
 
 
+
+
 @callback(
     Output("geo_map", "figure", allow_duplicate=True),
     [
@@ -283,7 +310,6 @@ def input_store_geo(
 )
 def change_grouping(grouping, entries_store):
     if grouping:
-        print("change grouping option")
 
         if entries_store:
             df = pd.DataFrame(entries_store)
@@ -296,6 +322,9 @@ def change_grouping(grouping, entries_store):
     raise PreventUpdate
 
 
+
+
+
 @callback(
     [
         Output("result_bib", "children"),
@@ -304,14 +333,13 @@ def change_grouping(grouping, entries_store):
     [
         Input("entries_store_geo", "data"),
         Input("geo_map", "clickData"),
-        State("grouping", "value"),
+        # State("grouping", "value"),
     ],
 )
-def select_geo_node(entries_store, selected_data, grouping):
-    print("search selected node entries")
-
+def select_geo_node(entries_store, selected_data):
     if not entries_store and not selected_data:
-        raise PreventUpdate
+        # raise PreventUpdate
+        return f"Click the bubble chart to show EXFOR entries from selected facility:", no_update
 
     if selected_data:
         if entries_store:
@@ -359,7 +387,8 @@ def select_geo_node(entries_store, selected_data, grouping):
         )
 
     else:
-        return f"EXFOR entries from selected facility:", no_update
+        return f"Click the bubble chart to show EXFOR entries from selected facility:", no_update
+
 
 
 @callback(

@@ -32,7 +32,7 @@ nav = dbc.NavbarSimple(
                 dbc.DropdownMenuItem(dbc.NavLink("Cross Section", href="reactions/xs")),
                 dbc.DropdownMenuItem(
                     dbc.NavLink(
-                        "Residual Prouction Cross Section", href="reactions/residual"
+                        "Residual Production Cross Section", href="reactions/residual"
                     )
                 ),
                 dbc.DropdownMenuItem(dbc.NavLink("Fission Yield", href="reactions/fy")),
