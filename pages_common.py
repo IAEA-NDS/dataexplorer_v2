@@ -242,7 +242,14 @@ libs_navbar = html.Div(
                                 href="https://github.com/IAEA-NDS/exforparser",
                                 # className="text-dark",
                             ),
-                            f" using EXFOR master file: {get_latest_master_release()}.",
+                            f" using EXFOR master file: {get_latest_master_release()}. ",
+                            f"The previous version is available ",
+                            html.A(
+                                "here",
+                                href="https://nds.iaea.org/dataexplorer-2022/",
+                                # className="text-dark",
+                            ),
+                            f"."
                         ],
                         style={
                             "font-size": "smaller",
