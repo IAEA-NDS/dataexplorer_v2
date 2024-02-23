@@ -16,7 +16,7 @@ from dash import dcc
 manual = dcc.Markdown(
     """
 
-This site is aiming to mine data from evaluated nuclear data libraries (ENDFTABLES) and EXFOR datasets (EXFORTABLES_py). Previous version of dataexplorer with  libraries (ENDFTABLES and EXFORTABLES) is accessible via [dataexplorer-2022](https://nds.iaea.org/dataexplorer2022/).
+This site is aiming to mine data from evaluated nuclear data libraries (ENDFTABLES) and EXFOR datasets (EXFORTABLES_py). Previous version of dataexplorer with  libraries (ENDFTABLES and EXFORTABLES) is accessible via [dataexplorer-2022](https://nds.iaea.org/dataexplorer-2022/).
 
 There are 3 main selections for data plotting and retrieval.
 
