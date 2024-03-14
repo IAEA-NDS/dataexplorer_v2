@@ -8,9 +8,8 @@
 ####################################################################
 
 import pandas as pd
-import numpy as np
 import dash
-from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
+from dash import html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -90,7 +89,7 @@ def input_lib(**query_strings):
         html.Br(),
         html.Br(),
         html.Div(children=libs_filter_opt(pageparam)),
-        dcc.Store(id="input_store_xs"),
+        dcc.Store(id="input_store_" + pageparam),
     ]
 
 
@@ -201,7 +200,6 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages(type):
-    # print("redirect_to_subpages")
     if type:
         return lib_page_urls[type], True  # , dict({"type": type})
 
@@ -214,8 +212,6 @@ def redirect_to_subpages(type):
     Input("incident_particle_xs", "value"),
 )
 def update_reaction_list(proj):
-    # print("update_reaction_list")
-
     if not proj:
         raise PreventUpdate
 
@@ -231,7 +227,6 @@ def update_reaction_list(proj):
     ],
 )
 def update_branch_list(type, reaction):
-    # print("update_branch_list")
     if type != "XS":
         raise PreventUpdate
 

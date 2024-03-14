@@ -107,24 +107,42 @@ sidehead = dbc.Row(
 
 page_urls = {
     "Libraries-2023": URL_PATH + "reactions/xs",
+    "ENDF-6 Format Viewer": URL_PATH + "endf/endftk",
     "EXFOR Viewer": URL_PATH + "exfor/geo",
 }
 
 
 lib_selections = [
     {
-        "label": "Cross Section (XS)",
+        "label": "Cross Section (SIG)",
         "value": "XS",
     },
     {
-        "label": "Thernal Neutron Cross Section",
+        "label": "Thermal Neutron CS (SIG)",
         "value": "TH",
     },
     {
-        "label": "Residual Production XS",
+        "label": "Residual Production CS (SIG)",
         "value": "RP",
     },
+    # {  
+    #     "label": "Ion Induced Reaction Cross Section (SIG)",
+    #     "value": "ION"
+    # },
+    # {  
+    #     "label": "Resonance Parameters (RES)",
+    #     "value": "RES"
+    # },
     {"label": "Fission Yield (FY)", "value": "FY"},
+    # {
+    #     "label": "Angular Distribution (DA)",
+    #     "value": "DA",
+    # },
+
+    # {
+    #     "label": "Energy Distribution (DE)",
+    #     "value": "DE",
+    # },
 ]
 
 
@@ -134,20 +152,22 @@ lib_page_urls = {
     "RP": URL_PATH + "reactions/residual",
     "FY": URL_PATH + "reactions/fy",
     "DA": URL_PATH + "reactions/da",
-    "DE": URL_PATH + "reactions/de",
+    # "DE": URL_PATH + "reactions/de",
     "FIS": URL_PATH + "reactions/fission",
+    "ION": URL_PATH + "reactions/ion",
 }
 
 
 ## based on pageparam
 def_inp_values = {
     "XS": {"elem": "Al", "mass": "27", "inc_pt": "N", "reaction": "n,p"},
-    "TH": {"elem": "Cl", "mass": "35", "inc_pt": "N", "reaction": "n,p"},
+    "TH": {"elem": "Au", "mass": "197", "inc_pt": "N", "reaction": "n,g"},
     "RP": {"elem": "Ti", "mass": "0", "inc_pt": "A", "rp_elem": "Cr", "rp_mass": "51"},
     "FY": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
-    "DA": {"elem": "Fe", "mass": "56", "inc_pt": "N", "reaction": "n,2n"},
+    "DA": {"elem": "Fe", "mass": "56", "inc_pt": "N", "reaction": "n,n1"},
     "DE": {"elem": "Nb", "mass": "93", "inc_pt": "N", "reaction": "n,a"},
     "FIS": {"elem": "U", "mass": "238", "inc_pt": "N", "reaction": "n,2n"},
+    "ION": {"elem": "B", "mass": "10", "inc_pt": "h", "reaction": "h,g"},
     "ENT": {"elem": None, "mass": None, "inc_pt": None, "reaction": None},
     "SCH": {
         "elem": None,
@@ -165,6 +185,8 @@ def_inp_values = {
         "rp_elem": None,
         "rp_mass": None,
     },
+    "ENDFTK": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
+    "DECE": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
 }
 
 
@@ -242,8 +264,8 @@ libs_navbar = html.Div(
                                 href="https://github.com/IAEA-NDS/exforparser",
                                 # className="text-dark",
                             ),
-                            f" using EXFOR master file: {get_latest_master_release()}. ",
-                            f"The previous version is available ",
+                            # f" using EXFOR master file: {get_latest_master_release()}. ",
+                            f". The previous version is available ",
                             html.A(
                                 "here",
                                 href="https://nds.iaea.org/dataexplorer-2022/",
@@ -252,7 +274,7 @@ libs_navbar = html.Div(
                             f"."
                         ],
                         style={
-                            "font-size": "smaller",
+                            "font-size": "small",
                             "color": "gray",
                             "text-align": "left",
                         },
@@ -306,15 +328,76 @@ exfor_navbar = html.Div(
                         "under the auspices of the International Atomic Energy Agency. ",
                         html.Br(),
                         f"Number of entry: {number_of_entries}. ",
-                        f"Last update EXFOR master repository: {get_latest_master_release()}.",
+                        # f"Last update EXFOR master repository: {get_latest_master_release()}.",
                         # ]),
                     ],
-                    style={"font-size": "smaller"},
+                    style={"font-size": "small"},
                 ),
             ]
         ),
     ]
 )
+
+
+
+endftk_navbar = html.Div(
+    [
+        html.H5(
+            html.A(
+                html.B("IAEA Nuclear Reaction Data Explorer"),
+                href="https://nds.iaea.org/dataexplorer/",
+            )
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.Div(
+                        [
+                            html.A(
+                                [
+                                    html.Img(
+                                        src=dash.get_asset_url("logo.png"),
+                                        height="20px",
+                                    ),
+                                ],
+                                href=URL_PATH,
+                            ),
+                            " ",
+                            html.A(
+                                "ENDF-6 Format Viewer",
+                                href=f"{URL_PATH}endf",
+                                className="text-dark",
+                            ),
+                        ],
+                    ),
+                    width=2,
+                    style={"font-size": "small"},
+                ),
+                dbc.Col(
+                    [
+                        # html.Div([
+                        "Data viewer in ENDF-6 format. Powered by ",
+                        # html.A("ENDF Toolkit (ENDFtk)", 
+                        #        href="https://github.com/njoy/ENDFtk"),
+                        # " and ",
+                        html.A("DeCE", 
+                               href="https://github.com/toshihikokawano/DeCE/"),
+                        " developed in Los Alamos National Laboratory, NM, US.",
+                        html.Br(),
+                        # f"Number of entry: {number_of_entries}. ",
+                        # f"Last update EXFOR master repository: {get_latest_master_release()}.",
+                        # ]),
+                    ],
+                    style={"font-size": "small"},
+                ),
+            ]
+        ),
+    ]
+)
+
+
+
+
 
 
 footer = html.Div(
@@ -787,6 +870,8 @@ def input_check(type, elem, mass, reaction):
     return elem.capitalize(), mass.lower(), reaction.lower()
 
 
+
+
 def input_check_elem(elem):
     if elem.isnumeric():
         elem = ztoelem(elem)
@@ -795,6 +880,8 @@ def input_check_elem(elem):
         raise PreventUpdate
 
     return elem.capitalize()
+
+
 
 
 def input_check_mass(mass):
@@ -811,6 +898,7 @@ def input_check_mass(mass):
 
 
 entries = bib_df["entry"].to_list()
+
 
 
 def entry_id_check(entry_id):
@@ -1191,7 +1279,7 @@ def generate_api_link(pageparam, search_str):
             f"{API_BASE_URL}reactions/{pageparam}{search_str}&page=1",
             f"{API_BASE_URL}reactions/{pageparam}{search_str}&table=True&page=1",
         )
-    else:
+    else: 
         return no_update, no_update
 
 

@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 
 
 from pages_common import (
+    PARTICLE_FY,
     sidehead,
     footer,
     libs_navbar,
@@ -24,7 +25,11 @@ from pages_common import (
     lib_selections,
     lib_page_urls,
     input_check,
+    input_obs,
+    input_target,
+    input_general,
     energy_range_conversion,
+    exfor_filter_opt,
 )
 from submodules.utilities.elem import elemtoz_nz
 from submodules.utilities.mass import mass_range
@@ -39,6 +44,7 @@ from submodules.reactions.queries import (
 )
 from submodules.exfor.queries import (
     index_query,
+    index_query_fission,
     get_entry_bib,
     data_query,
 )
@@ -46,43 +52,16 @@ from submodules.exfor.queries import (
 
 ## Registration of page
 dash.register_page(__name__, path="/reactions/fission")
-
+pageparam = "fission"
 
 ## Input layout
 def input_fis(**query_strings):
     return [
-        html.Label("Observable"),
+        html.Div(children=input_obs(pageparam)),
+        html.Div(children=input_target(pageparam, **query_strings)),
+        html.Div(children=input_general(pageparam, **query_strings)),
         dcc.Dropdown(
-            id="reaction_category",
-            options=lib_selections,
-            placeholder="Select reaction",
-            persistence=True,
-            persistence_type="memory",
-            value="FIS",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_elem_fis",
-            placeholder="Target element: C, c, Pd, pd, PD",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_elem"]
-            if query_strings.get("target_elem")
-            else "U",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Input(
-            id="target_mass_fis",
-            placeholder="Target mass: 0:natural, m:metastable",
-            persistence=True,
-            persistence_type="memory",
-            value=query_strings["target_mass"]
-            if query_strings.get("target_mass")
-            else "233",
-            style={"font-size": "small", "width": "100%"},
-        ),
-        dcc.Dropdown(
-            id="reaction_fis",
+            id="reaction_fission",
             options=[f"{pt.lower()},f" for pt in PARTICLE_FY],
             placeholder="Reaction e.g. (n,f)",
             persistence=True,
@@ -91,7 +70,7 @@ def input_fis(**query_strings):
             style={"font-size": "small", "width": "100%"},
         ),
         dcc.Dropdown(
-            id="reac_branch_fis",
+            id="reac_branch_fission",
             options=[
                 {"label": "neutron multiplicity", "value": "nu_n"},
                 {"label": "delayed neutron yield", "value": "dn"},
@@ -105,30 +84,8 @@ def input_fis(**query_strings):
             value="dn",
             style={"font-size": "small", "width": "100%"},
         ),
-        html.P("Fileter EXFOR records by"),
-        html.Label("Energy Range"),
-        dcc.RangeSlider(
-            id="energy_range_fis",
-            min=0,
-            max=9,
-            marks={0: "eV", 3: "keV", 6: "MeV", 9: "GeV"},
-            value=[0, 9],
-            vertical=False,
-        ),
         html.Br(),
-        html.Label("Year Range"),
-        dcc.RangeSlider(
-            id="year_range_fis",
-            min=1930,
-            max=2023,
-            step=1,
-            marks={
-                i: f"Label {i}" if i == 1 else str(i) for i in range(1930, 2025, 40)
-            },
-            value=[1930, 2023],
-            tooltip={"placement": "bottom", "always_visible": True},
-            vertical=False,
-        ),
+        html.Div(children=exfor_filter_opt(pageparam)),
     ]
 
 
@@ -343,9 +300,9 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
     )
 
     lower, upper = energy_range_conversion(energy_range)
-    entries = index_query_fission(type, elem, mass, reaction, branch, energy_range)
+    entries = index_query_fission(type, elem, mass, reaction, branch, lower, upper)
     search_result = f"Search results for {type} {elem}-{mass}({reaction}): {len(entries)} at {lower}-{upper} MeV "
-    print(search_result)
+    print(entries)
 
     if entries:
         legend = get_entry_bib(e[:5] for e in entries.keys())
@@ -357,7 +314,7 @@ def update_fig_fy(type, elem, mass, reaction, branch, energy_range):
         }
 
         ## All data
-        df = data_query(entries.keys())
+        df = data_query(input_store, entries.keys())
         ## Some case like 41084-007-0 contains None in residual
         reac_products = sorted([i for i in df["residual"].unique() if i is not None])
 

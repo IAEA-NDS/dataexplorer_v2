@@ -162,6 +162,11 @@ examples/
 .vscode/
 _*
 requirements_old.txt
+pages/reactions/ion.py
+pages/reactions/da.py
+pages/reactions/de.py
+pages/reactions/trans_reacyield.py
+pages/reactions/resonance.py
 
 # other packages
 exfor_dictionary/

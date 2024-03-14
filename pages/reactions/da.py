@@ -15,6 +15,8 @@ import dash_bootstrap_components as dbc
 import dash_daq as daq
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
+from plotly.subplots import make_subplots
+
 
 from pages_common import (
     sidehead,
@@ -24,12 +26,12 @@ from pages_common import (
     lib_page_urls,
     main_fig,
     input_check,
+    input_obs,
     input_target,
     input_general,
+    libs_filter_opt,
     generate_reactions,
     remove_query_parameter,
-    exfor_filter_opt,
-    excl_mxw_switch,
     get_indexes,
     scale_data,
     del_rows_fig,
@@ -50,30 +52,34 @@ from submodules.common import (
 from submodules.utilities.reaction import get_mt
 from submodules.exfor.queries import data_query
 from submodules.reactions.queries import lib_da_data_query
-from submodules.utilities.util import get_number_from_string
+from submodules.utilities.util import get_number_from_string, round_half_up
 
 ## Registration of page
 dash.register_page(
-    __name__, path="/reactions/da", redirect_from=["/angle", "/da", "/reactions/angle"]
+    __name__, path="/reactions/da", 
+    redirect_from=["/angle", "/da", "/reactions/angle"]
 )
-
 pageparam = "da"
 
 
 def input(**query_strings):
     return [
+        html.Br(),
+        html.Div(children=input_obs(pageparam)),
         html.Div(children=input_target(pageparam, **query_strings)),
         html.Div(children=input_general(pageparam, **query_strings)),
         html.Br(),
-        html.Div(children=exfor_filter_opt(pageparam)),
+        # html.Div(children=exfor_filter_opt(pageparam)),
         html.Br(),
-        html.Div(children=excl_mxw_switch(pageparam)),
+        # html.Div(children=excl_mxw_switch(pageparam)),
         html.Br(),
+        html.Br(),
+        html.Div(children=libs_filter_opt(pageparam)),
         dcc.Store(id="input_store_da"),
     ]
 
 
-right_layout_de = [
+right_layout_da = [
     libs_navbar,
     html.Hr(
         style={
@@ -115,6 +121,17 @@ right_layout_de = [
                 ),
                 width="auto",
             ),
+            dbc.Col(
+                dcc.Dropdown(
+                    id="energy_list_" + pageparam,
+                    placeholder="Available incident energy [MeV]",
+                    persistence=True,
+                    persistence_type="memory",
+                    value="All",
+                    style={"font-size": "small", "width": "25%"},
+                    clearable=False,
+                ),
+            )
         ]
     ),
     main_fig(pageparam),
@@ -129,6 +146,8 @@ right_layout_de = [
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
     footer,
 ]
+
+
 
 
 def layout(**query_strings):
@@ -167,7 +186,7 @@ def layout(**query_strings):
                     dbc.Col(
                         [
                             html.Div(
-                                children=right_layout_de,
+                                children=right_layout_da,
                                 style={"margin-right": "20px", "margin-left": "10px"},
                             ),
                         ],
@@ -179,6 +198,28 @@ def layout(**query_strings):
         style={"height": "100vh"},
     )
 
+
+def figure_da():
+    fig = go.Figure(
+    layout=go.Layout(
+        xaxis={
+            "title": "Angle [Degree]",
+            "type": "linear",
+            "rangeslider": {
+                "bgcolor": "White",
+                "autorange": True,
+                "thickness": 0.15,
+            },
+        },
+        yaxis={
+            "title": "Angular distribution [mb/sr]",
+            "type": "linear",
+            "fixedrange": False,
+        },
+        margin={"l": 40, "b": 40, "t": 30, "r": 0},
+        )
+    )
+    return fig
 
 ###------------------------------------------------------------------------------------
 ### App Callback
@@ -230,23 +271,6 @@ def update_reaction_list(proj):
         return generate_reactions(proj)
 
 
-@callback(
-    Output("reac_branch_da", "options"),
-    [
-        Input("observable_da", "value"),
-        Input("reaction_da", "value"),
-    ],
-)
-def update_branch_list(type, reaction):
-    print("update_branch_list")
-    if type != "DA":
-        raise PreventUpdate
-
-    if not reaction:
-        raise PreventUpdate
-
-    return [{"label": "Partial", "value": "PAR"}]
-
 
 @callback(
     Output("input_store_da", "data"),
@@ -255,13 +279,9 @@ def update_branch_list(type, reaction):
         Input("target_elem_da", "value"),
         Input("target_mass_da", "value"),
         Input("reaction_da", "value"),
-        Input("reac_branch_da", "value"),
-        Input("exclude_mxw_switch_da", "value"),
     ],
-    # prevent_initial_call=True,
 )
-def input_store_da(type, elem, mass, reaction, branch, excl_junk_switch):
-    print("input_store_da", type)
+def input_store_da(type, elem, mass, reaction):
     if type != "DA":
         return dict({"type": type})
 
@@ -283,11 +303,12 @@ def input_store_da(type, elem, mass, reaction, branch, excl_junk_switch):
             "rp_elem": None,
             "rp_mass": None,
             "level_num": level_num,
-            "branch": branch,
+            "branch": None,
             "mt": mt,
-            "excl_junk_switch": excl_junk_switch,
+            "excl_junk_switch": None
         }
     )
+
 
 
 @callback(
@@ -299,7 +320,7 @@ def input_store_da(type, elem, mass, reaction, branch, excl_junk_switch):
     prevent_initial_call=True,
 )
 def update_url_da(input_store):
-    print("update_url")
+    print("update_url_da")
 
     if input_store:
         type = input_store.get("type").upper()
@@ -341,6 +362,7 @@ def update_url_da(input_store):
         return no_update, False
 
 
+
 @callback(
     [
         Output("search_result_txt_da", "children"),
@@ -365,8 +387,10 @@ def initial_data_da(input_store, r_click):
         raise PreventUpdate
 
 
+
 @callback(
     [
+        Output("energy_list_da", "options"),
         Output("main_fig_da", "figure", allow_duplicate=True),
         Output("exfor_table_da", "rowData"),
     ],
@@ -374,11 +398,11 @@ def initial_data_da(input_store, r_click):
         Input("input_store_da", "data"),
         Input("entries_store_da", "data"),
         Input("libs_store_da", "data"),
-        # Input("endf_selct_da", "value"),
+        Input("energy_list_da", "value"),
     ],
     prevent_initial_call=True,
 )
-def create_fig_da(input_store, legends, libs):
+def create_fig_da(input_store, legends, libs, en):
     if input_store:
         reaction = input_store.get("reaction")
 
@@ -386,47 +410,11 @@ def create_fig_da(input_store, legends, libs):
         raise PreventUpdate
 
     df = pd.DataFrame()
-    index_df = pd.DataFrame()
-
-    fig = go.Figure(
-        layout=go.Layout(
-            xaxis={
-                "title": "Angle [Degree]",
-                "type": "linear",
-                "rangeslider": {
-                    "bgcolor": "White",
-                    "autorange": True,
-                    "thickness": 0.15,
-                },
-            },
-            yaxis={
-                "title": "Angular distribution [mb/sr]",
-                "type": "linear",
-                "fixedrange": False,
-            },
-            margin={"l": 40, "b": 40, "t": 30, "r": 0},
-        )
-    )
-
     lib_df = pd.DataFrame()
+    energies = []
     if libs:
-        print(libs)
         lib_df = lib_da_data_query(libs)
-
-        for l in libs:
-            line_color = color_libs(libs[l])
-            new_col = next(line_color)
-
-            fig.add_trace(
-                go.Scatter(
-                    x=lib_df[lib_df["reaction_id"] == int(l)]["en_inc"].astype(float),
-                    y=lib_df[lib_df["reaction_id"] == int(l)]["data"].astype(float),
-                    showlegend=True,
-                    line_color=new_col,
-                    name=str(libs[l]),
-                    mode="lines",
-                )
-            )
+        lib_df["en_inc_int"] = lib_df["en_inc"].apply(round_half_up)
 
     df = pd.DataFrame()
     if legends:
@@ -437,36 +425,137 @@ def create_fig_da(input_store, legends, libs):
         df["entry_id_link"] = (
             "[" + df["entry_id"] + "](../exfor/entry/" + df["entry_id"] + ")"
         )
+        df["en_inc_int"] = df["en_inc"].apply(round_half_up)
 
-        i = 0
-        for e in list(legends.keys()):
-            if e == "total_points":
-                continue
+    energies = sorted(lib_df["en_inc_int"].unique().tolist() + df["en_inc_int"].unique().tolist() )
+    print(energies)
 
-            fig.add_trace(
-                go.Scatter(
-                    x=df[df["entry_id"] == e]["angle"],
-                    y=df[df["entry_id"] == e]["data"],
-                    error_x=dict(type="data", array=df[df["entry_id"] == e]["dangle"]),
-                    error_y=dict(type="data", array=df[df["entry_id"] == e]["ddata"]),
-                    showlegend=True,
-                    name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
-                    if legends.get(e)
-                    and legends[e].get("author")
-                    and legends[e].get("year")
-                    else f"{legends[e]['author']}, 1900 [{e}]"
-                    if legends.get(e)
-                    else e,
-                    marker=dict(size=8, symbol=i),
-                    mode="markers",
-                )
-            )
-            i += 1
+    if en == "All":
+        fig = make_subplots(
+            rows = int(round_half_up(len(energies)/3, 0))+1, 
+            cols = 3, 
+            horizontal_spacing=0.1,
+            subplot_titles= [ f"{i} MeV" for i in energies ]
+        )
 
-            if i == 30:
-                i = 1
+        i = 1
+        j = 1
+        if not df.empty:
+            for en in energies:
+                df2 = df[ df["en_inc_int"] == en] 
 
-    return fig, df.to_dict("records")
+                for e in list(legends.keys()):
+                    
+                    if e == "total_points":
+                        continue
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=df2[df2["entry_id"] == e]["angle"],
+                            y=df2[df2["entry_id"] == e]["data"],
+                            error_x=dict(type="data", array=df2[df2["entry_id"] == e]["dangle"]),
+                            error_y=dict(type="data", array=df2[df2["entry_id"] == e]["ddata"]),
+                            showlegend=True,
+                            name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
+                            if legends.get(e)
+                            and legends[e].get("author")
+                            and legends[e].get("year")
+                            else f"{legends[e]['author']}, 1900 [{e}]"
+                            if legends.get(e)
+                            else e,
+                            marker=dict(size=8, symbol=i),
+                            mode="markers",
+                        ),
+                        col = i,
+                        row = j,
+                    )
+
+                if i == 3:
+                    i = 1
+                    j += 1
+                else:
+                    i += 1
+        fig.update_yaxes(automargin=True)
+
+    else:
+        fig = figure_da()
+        df2 = df[ df["en_inc_int"] == en] 
+        # for e in list(legends.keys()):
+            
+            # if e == "total_points":
+            #     continue
+
+        fig.add_trace(
+            go.Scatter(
+                x=df2["angle"],
+                y=df2["data"],
+                error_x=dict(type="data", array=df2["dangle"]),
+                error_y=dict(type="data", array=df2["ddata"]),
+                showlegend=True,
+                # name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
+                # if legends.get(e)
+                # and legends[e].get("author")
+                # and legends[e].get("year")
+                # else f"{legends[e]['author']}, 1900 [{e}]"
+                # if legends.get(e)
+                # else e,
+                marker=dict(size=8),#, symbol=i),
+                mode="markers",
+            ),
+        )
+
+    return [{"label": f"{i} MeV", "value": i} for i in energies] + [{"label": "All", "value": "All"}] , fig, df.to_dict("records")
+
+
+
+
+# @callback(
+#     Output("main_fig_da", "figure", allow_duplicate=True),
+#     [
+#         Input("energy_list_da", "value"),
+#         Input("exfor_table_da", "rowData"),
+#     ],
+#     prevent_initial_call=True,
+# )
+# def update_fig_da(en, data):
+
+#     df = pd.DataFrame(data)
+#     i = 1
+#     j = 1
+#     fig = figure_da()
+#     if en == "All":
+#         return no_update
+#     else:
+#         df2 = df[ df["en_inc_int"] == en] 
+#         # for e in list(legends.keys()):
+            
+#             # if e == "total_points":
+#             #     continue
+
+#         fig.add_trace(
+#             go.Scatter(
+#                 x=df2["angle"],
+#                 y=df2["data"],
+#                 error_x=dict(type="data", array=df2["dangle"]),
+#                 error_y=dict(type="data", array=df2["ddata"]),
+#                 showlegend=True,
+#                 # name=f"{legends[e]['author']}, {legends[e]['year']} [{e}]"
+#                 # if legends.get(e)
+#                 # and legends[e].get("author")
+#                 # and legends[e].get("year")
+#                 # else f"{legends[e]['author']}, 1900 [{e}]"
+#                 # if legends.get(e)
+#                 # else e,
+#                 marker=dict(size=8, symbol=i),
+#                 mode="markers",
+#             ),
+#         )
+
+#         return fig
+
+
+
+
 
 
 @callback(
@@ -485,31 +574,6 @@ def update_axis(xaxis_type, yaxis_type, fig):
 
     return fig
 
-
-@callback(
-    [
-        Output("main_fig_da", "figure", allow_duplicate=True),
-        Output("index_table_da", "filter_query"),
-    ],
-    Input("energy_range_da", "value"),
-    State("main_fig_da", "figure"),
-    prevent_initial_call=True,
-)
-def fileter_by_range_lib(energy_range, fig):
-    return fileter_by_en_range(energy_range, fig)
-
-
-@callback(
-    [
-        Output("main_fig_da", "figure", allow_duplicate=True),
-        Output("index_table_da", "filterModel", allow_duplicate=True),
-    ],
-    Input("year_range_da", "value"),
-    State("main_fig_da", "figure"),
-    prevent_initial_call=True,
-)
-def fileter_by_year_range_lib(year_range, fig):
-    return filter_by_year_range(year_range, fig)
 
 
 @callback(
@@ -564,7 +628,6 @@ def del_rows_da(n1, fig, selected):
     prevent_initial_call=True,
 )
 def export_index_xs(n1, n2, input_store):
-    # return export_index(n_clicks_all, n_clicks_slctd, input_store)
     if not input_store:
         raise PreventUpdate
 
@@ -637,3 +700,32 @@ def generate_file_links(input_store):
     dir_lib, files_lib = generate_endftables_file_path(input_store)
 
     return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)
+
+
+
+
+# @callback(
+#     [
+#         Output("main_fig_da", "figure", allow_duplicate=True),
+#         Output("index_table_da", "filter_query"),
+#     ],
+#     Input("energy_range_da", "value"),
+#     State("main_fig_da", "figure"),
+#     prevent_initial_call=True,
+# )
+# def fileter_by_range_lib(energy_range, fig):
+#     return fileter_by_en_range(energy_range, fig)
+
+
+# @callback(
+#     [
+#         Output("main_fig_da", "figure", allow_duplicate=True),
+#         Output("index_table_da", "filterModel", allow_duplicate=True),
+#     ],
+#     Input("year_range_da", "value"),
+#     State("main_fig_da", "figure"),
+#     prevent_initial_call=True,
+# )
+# def fileter_by_year_range_lib(year_range, fig):
+#     return filter_by_year_range(year_range, fig)
+

@@ -19,7 +19,7 @@ def default_axis(mt):
         "019",
         "102",
         # "103",
-        "104",
+        # "104",
         "201",
         "202",
         "203",
@@ -48,8 +48,8 @@ def default_chart(xaxis_type, yaxis_type, reaction):
             xaxis={
                 "title": "Incident energy [MeV]",
                 "type": xaxis_type,
-                "range": [0, 30] if xaxis_type == "linear" else [-8, 1.2],
-                "autorange": True if reaction[0] != "n" else False,
+                "range": [0, 50] if xaxis_type == "linear" else [-8, 1.2],
+                # "autorange": True if reaction[0] != "n" else False,
                 "rangeslider": {
                     "bgcolor": "White",
                     "visible": True,

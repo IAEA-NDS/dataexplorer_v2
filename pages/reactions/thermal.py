@@ -163,7 +163,7 @@ download_opts = html.Div(
                         "  ",
                         dbc.Badge(
                             "API",
-                            id="".join(["btn_api_", pageparam]),
+                            id="".join(["btn_api_data_", pageparam]),
                             href=f"api/",
                             color="info",
                             className="me-1",
@@ -473,7 +473,7 @@ def create_fig_th(input_store, legends, libs, r_click):
                 html.Br(),
                 "No data",
                 html.Br(),
-                f"# EXFOR MXW/SPA data mean",
+                f"# EXFOR MXW and SPA data mean",
                 html.Br(),
                 "No data",
                 html.Br(),
@@ -596,6 +596,26 @@ def create_fig_th(input_store, legends, libs, r_click):
 
 
 
+@callback(
+    Output("main_fig_th", "figure", allow_duplicate=True),
+    [
+        Input("xaxis_type_th", "value"),
+        Input("yaxis_type_th", "value"),
+    ],
+    State("main_fig_th", "figure"),
+    prevent_initial_call=True,
+)
+def update_axis(xaxis_type, yaxis_type, fig):
+    # if xaxis_type and yaxis_type and fig:
+    fig.get("layout").get("yaxis").update({"type": yaxis_type})
+    fig.get("layout").get("xaxis").update({"type": xaxis_type})
+
+    return fig
+
+
+
+
+
 
 @callback(
     Output("main_fig_th", "figure", allow_duplicate=True),
@@ -684,14 +704,11 @@ def export_data_xs(n1, n2, input_store):
 
 
 @callback(
-    [
-        Output("btn_api_th", "href"),
-        Output("btn_api_data_th", "href"),
-    ],
-    Input("location", "search"),
+    Output("btn_api_data_th", "href"),
+    Input("location_th", "search"),
 )
 def generate_api_links(search_str):
-    return generate_api_link(pageparam, search_str)
+    return generate_api_link(pageparam, search_str)[1]
 
 
 
