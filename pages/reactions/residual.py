@@ -107,9 +107,6 @@ def input_lib(**query_strings):
     ]
 
 
-## main figure
-
-
 ## Layout of right panel
 right_layout_lib = [
     libs_navbar,
@@ -261,7 +258,6 @@ def list_rp(elem, mass, inc_pt, rp_elem_rp):
             if rp_dict.get(rp_elem_rp)
             else "",
         )
-        # return list( rp_dict.keys() ) , [ m.lstrip("0") for m in rp_dict[rp_elem_rp] ]
 
     else:
         return "e.g, " + ", ".join(rp_dict.keys()), ""

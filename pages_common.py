@@ -111,17 +111,18 @@ page_urls = {
 }
 
 
+
 lib_selections = [
     {
-        "label": "Cross Section (XS)",
+        "label": "Cross Section (SIG)",
         "value": "XS",
     },
     {
-        "label": "Thernal Neutron Cross Section",
+        "label": "Thermal Neutron CS (SIG)",
         "value": "TH",
     },
     {
-        "label": "Residual Production XS",
+        "label": "Residual Production CS (SIG)",
         "value": "RP",
     },
     {"label": "Fission Yield (FY)", "value": "FY"},
@@ -142,7 +143,7 @@ lib_page_urls = {
 ## based on pageparam
 def_inp_values = {
     "XS": {"elem": "Al", "mass": "27", "inc_pt": "N", "reaction": "n,p"},
-    "TH": {"elem": "Cl", "mass": "35", "inc_pt": "N", "reaction": "n,p"},
+    "TH": {"elem": "Au", "mass": "197", "inc_pt": "N", "reaction": "n,g"},
     "RP": {"elem": "Ti", "mass": "0", "inc_pt": "A", "rp_elem": "Cr", "rp_mass": "51"},
     "FY": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
     "DA": {"elem": "Fe", "mass": "56", "inc_pt": "N", "reaction": "n,2n"},

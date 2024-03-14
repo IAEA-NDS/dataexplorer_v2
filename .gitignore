@@ -130,7 +130,6 @@ Python-bk/
 Python/__pycache__/
 Python/back/
 
-
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -162,6 +161,13 @@ examples/
 .vscode/
 _*
 requirements_old.txt
+pages/reactions/ion.py
+pages/reactions/da.py
+pages/reactions/de.py
+pages/reactions/fission.py
+pages/reactions/trans_reacyield.py
+pages/reactions/resonance.py
+pages/endf/
 
 # other packages
 exfor_dictionary/
