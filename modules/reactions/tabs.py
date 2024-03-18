@@ -52,18 +52,6 @@ def create_tabs(pageparam):
                                     ),
                                     dbc.Col(
                                         [
-                                            # dcc.Clipboard(
-                                            #     id="".join(
-                                            #         ["cb_state_index_", pageparam]
-                                            #     ),
-                                            #     # target_id="index_table_xs",
-                                            #     title="Copy Selected ",
-                                            #     style={
-                                            #         "display": "inline-block",
-                                            #         "fontSize": 20,
-                                            #         # "verticalAlign": "top",
-                                            #     },
-                                            # ),
                                             dbc.Badge(
                                                 "Download CSV",
                                                 id="".join(
@@ -113,16 +101,6 @@ def create_tabs(pageparam):
                     html.Br(),
                     html.Div(
                         [
-                            # dcc.Clipboard(
-                            #     id="".join(["cb_state_exfor_", pageparam]),
-                            #     title="Copy Selected ",
-                            #     style={
-                            #         "display": "inline-block",
-                            #         "fontSize": 20,
-                            #         "verticalAlign": "top",
-                            #     },
-                            # ),
-                            # html.P("   "),
                             dbc.Badge(
                                 "Download CSV",
                                 id="".join(["btn_csv_exfor_", pageparam]),
@@ -163,17 +141,23 @@ def create_tabs(pageparam):
                         children=[
                             "Files in ",
                             html.A(
-                                "EXFORTABLES",
-                                href="https://github.com/shinokumura/endftables_py",
+                                "EXFORTABLES_py",
+                                href="https://github.com/IAEA-NDS/endftables_py",
                                 className="text-dark",
                             ),
                             " by ",
                             html.A(
-                                "exforparser",
-                                href="https://github.com/shinokumura/exforparser",
+                                "EXFOR Parser",
+                                href="https://github.com/IAEA-NDS/exforparser",
                                 className="text-dark",
                             ),
                             ":",
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            html.Button("Download zip", id="".join(["btn_zip_ex_", pageparam.lower()])), 
+                            dcc.Download(id="".join(["dl_zip_ex_", pageparam.lower()]))
                         ]
                     ),
                     html.Div(id="".join(["exfiles_link_", pageparam.lower()])),
@@ -188,6 +172,12 @@ def create_tabs(pageparam):
                                 className="text-dark",
                             ),
                             ":",
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            html.Button("Download zip", id="".join(["btn_zip_lib_", pageparam.lower()])), 
+                            dcc.Download(id="".join(["dl_zip_lib_", pageparam.lower()]))
                         ]
                     ),
                     html.Div(id="".join(["libfiles_link_", pageparam.lower()])),

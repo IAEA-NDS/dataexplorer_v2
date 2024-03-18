@@ -47,12 +47,13 @@ from pages_common import (
     export_data,
     list_link_of_files,
     generate_api_link,
+    generate_archive,
 )
 
 # from config import BASE_URL
 from modules.reactions.list import color_libs
 from modules.reactions.tabs import create_tabs
-from modules.reactions.figs import default_chart, default_axis
+from modules.reactions.figs import default_chart, default_axis, update_axis
 from submodules.common import (
     generate_exfortables_file_path,
     generate_endftables_file_path,
@@ -201,7 +202,6 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages(type):
-    # print("redirect_to_subpages")
     if type:
         return lib_page_urls[type], True  # , dict({"type": type})
 
@@ -214,8 +214,6 @@ def redirect_to_subpages(type):
     Input("incident_particle_xs", "value"),
 )
 def update_reaction_list(proj):
-    # print("update_reaction_list")
-
     if not proj:
         raise PreventUpdate
 
@@ -231,7 +229,6 @@ def update_reaction_list(proj):
     ],
 )
 def update_branch_list(type, reaction):
-    # print("update_branch_list")
     if type != "XS":
         raise PreventUpdate
 
@@ -251,10 +248,8 @@ def update_branch_list(type, reaction):
         Input("reac_branch_xs", "value"),
         Input("exclude_mxw_switch_xs", "value"),
     ],
-    # prevent_initial_call=True,
 )
 def input_store_xs(type, elem, mass, reaction, branch, excl_junk_switch):
-    # print("input_store_xs", type)
     if type != "XS":
         return dict({"type": type})
 
@@ -293,8 +288,6 @@ def input_store_xs(type, elem, mass, reaction, branch, excl_junk_switch):
     prevent_initial_call=True,
 )
 def update_url(input_store):
-    # print("update_url")
-
     if input_store:
         type = input_store.get("type").upper()
         elem = input_store.get("target_elem")
@@ -349,7 +342,6 @@ def update_url(input_store):
     prevent_initial_call=True,
 )
 def initial_data_xs(input_store, r_click):
-    # print("initial_data_xs")
     if input_store:
         if ctx.triggered_id != "rest_btn_xs":
             no_update
@@ -420,6 +412,17 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
     if legends:
         df = data_query(input_store, legends.keys())
 
+        if switcher:
+            for e in list(legends.keys()):
+                if e == "total_points":
+                    continue
+                
+                if legends[e]["points"] > 100:
+                    index = limit_number_of_datapoints(
+                        legends[e]["points"], df[df["entry_id"] == e]
+                    )
+                    df.drop(index, inplace=True)
+
         df["bib"] = df["entry_id"].map(legends)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
@@ -439,15 +442,9 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
             if e == "total_points":
                 continue
 
-            if switcher:
-                df2 = limit_number_of_datapoints(
-                    legends[e]["points"], df[df["entry_id"] == e]
-                )
+            df2 = df[df["entry_id"] == e]
 
-            else:
-                df2 = df[df["entry_id"] == e]
-
-            if legends["total_points"] > 500 and not switcher:
+            if legends["total_points"] > 1000 and not switcher:
                 fig.add_trace(
                     go.Scattergl(
                         x=df2["en_inc"],
@@ -501,15 +498,18 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
         Input("xaxis_type_xs", "value"),
         Input("yaxis_type_xs", "value"),
     ],
-    State("main_fig_xs", "figure"),
+    [
+        State("main_fig_xs", "figure"),
+        State("input_store_xs", "data"),
+    ],
     prevent_initial_call=True,
 )
-def update_axis(xaxis_type, yaxis_type, fig):
-    # if xaxis_type and yaxis_type and fig:
-    fig.get("layout").get("yaxis").update({"type": yaxis_type})
-    fig.get("layout").get("xaxis").update({"type": xaxis_type})
-
-    return fig
+def update_axis_xs(xaxis_type, yaxis_type, fig, input_store):
+    if input_store:
+        mt = input_store.get("mt")
+    else:
+        return no_update
+    return update_axis(mt, xaxis_type, yaxis_type, fig)
 
 
 @callback(
@@ -609,27 +609,6 @@ def export_index_xs(n1, n2, input_store):
         return no_update, no_update
 
 
-@callback(
-    Output("cb_state_exfor_xs", "content"),
-    Input("cb_state_exfor_xs", "n_clicks"),
-    Input("index_table_xs", "columnState"),
-    State("index_table_xs", "selectedRows"),
-    prevent_initial_call=True,
-)
-def selected(n, col_state, selected):
-    if selected is None:
-        return "No selections"
-    if col_state is None:
-        return no_update
-
-    dff = pd.DataFrame(selected)
-
-    # get current column order in grid
-    columns = [row["colId"] for row in col_state]
-    dff = dff[columns]
-
-    return dff.to_string()
-
 
 @callback(
     [
@@ -669,18 +648,47 @@ def generate_api_links(search_str):
     return generate_api_link(pageparam, search_str)
 
 
+
 @callback(
     [
+        Output("dl_zip_ex_xs", "data"),
+        Output("dl_zip_lib_xs", "data"),
         Output("exfiles_link_xs", "children"),
         Output("libfiles_link_xs", "children"),
     ],
-    Input("input_store_xs", "data"),
+    [
+        Input("input_store_xs", "data"),
+        Input("btn_zip_ex_xs", "n_clicks"),
+        Input("btn_zip_lib_xs", "n_clicks"),
+    ]
 )
-def generate_file_links(input_store):
+def generate_file_links(input_store, n_clicks_ex, n_clicks_lib):
     if not input_store:
         raise PreventUpdate
 
     dir_ex, files_ex = generate_exfortables_file_path(input_store)
     dir_lib, files_lib = generate_endftables_file_path(input_store)
 
-    return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)
+    if n_clicks_ex:
+        return (
+            generate_archive(dir_ex, files_ex), 
+            no_update, 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+            )
+
+    elif n_clicks_lib:
+        return (
+            no_update, 
+            generate_archive(dir_lib, files_lib), 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+        )
+
+    else:
+        return (
+            no_update, 
+            no_update, 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+        )

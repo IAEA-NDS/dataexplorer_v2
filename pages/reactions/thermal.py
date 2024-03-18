@@ -24,33 +24,24 @@ from pages_common import (
     lib_page_urls,
     def_inp_values,
     URL_PATH,
-    # main_fig,
     input_check,
     input_obs,
     input_target,
-    input_general,
-    input_partial,
     highlight_data,
     generate_reactions,
     export_data,
     input_lin_log_switch,
     del_rows_fig,
     get_indexes,
-    export_index,
     generate_api_link,
 )
 from man import table_desc_thermal
 
 # from config import BASE_URL
 from modules.reactions.thermal_table import thermal_data_table_ag
-from submodules.common import (
-    generate_exfortables_file_path,
-    generate_endftables_file_path,
-)
 from submodules.utilities.reaction import get_mt
 from submodules.reactions.queries import lib_th_data_query
 from submodules.exfor.queries import data_query
-from submodules.utilities.util import get_number_from_string
 
 
 ## Registration of page
@@ -83,15 +74,7 @@ def input_lib(**query_strings):
             style={"font-size": "small", "width": "100%"},
             multi=True if pageparam == "geo" or pageparam == "sch" else False,
         ),
-        # html.Div(children=input_partial(pageparam, **query_strings)),
         html.Br(),
-        # html.Div(children=exfor_filter_opt(pageparam)),
-        # html.Br(),
-        # html.Div(children=reduce_data_switch(pageparam)),
-        # html.Div(children=excl_mxw_switch(pageparam)),
-        # html.Br(),
-        # html.Br(),
-        # html.Div(children=libs_filter_opt(pageparam)),
         dcc.Store(id="input_store_th"),
     ]
 
@@ -192,23 +175,23 @@ right_layout_lib = [
         }
     ),
     html.Div(id="search_result_txt_th"),
-    # Log/Linear switch
+    ## Log/Linear switch
     html.Div(children=input_lin_log_switch(pageparam)),
+    ## Main figure
     main_fig_thermal,
     html.Div(id="thermal_stats"),
     download_opts,
     thermal_data_table_ag,
     table_desc_thermal,
+    ## Not shown in the page
     dcc.Store(id="entries_store_th"),
     dcc.Store(id="libs_store_th"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    # create_tabs(pageparam),
     footer,
 ]
 
 
-## Main layout of libraries-2023 page
-# layout = html.Div(
+## Main layout
 def layout(**query_strings):
     return html.Div(
         [
@@ -286,7 +269,6 @@ def redirect_to_pages(dataset):
     prevent_initial_call=True,
 )
 def redirect_to_subpages_th(type):
-    # print("redirect_to_subpages")
     if type:
         return lib_page_urls[type], True  # , dict({"type": type})
 
@@ -299,8 +281,6 @@ def redirect_to_subpages_th(type):
     Input("incident_particle_th", "value"),
 )
 def update_reaction_list_th(proj):
-    # print("update_reaction_list")
-
     if not proj:
         raise PreventUpdate
 
@@ -387,10 +367,8 @@ def update_url_th(input_store):
         Output("libs_store_th", "data"),
     ],
     Input("input_store_th", "data"),
-    # prevent_initial_call=True,
 )
 def initial_data_th(input_store):
-    # print("initial_data_th", input_store)
     if input_store:
         return get_indexes(input_store)
 
@@ -457,7 +435,6 @@ def create_fig_th(input_store, legends, libs, r_click):
     )
 
     df = pd.DataFrame()
-    # print(legends)
     monoen_stats = ""
     mxw_stats = ""
     thermal_stat_content = ""
@@ -480,7 +457,6 @@ def create_fig_th(input_store, legends, libs, r_click):
                 f"",
             ]
         )
-        # return no_update, thermal_stat_content, no_update, no_update, no_update
 
     else:
         df["bib"] = df["entry_id"].map(legends)
@@ -611,9 +587,6 @@ def update_axis(xaxis_type, yaxis_type, fig):
     fig.get("layout").get("xaxis").update({"type": xaxis_type})
 
     return fig
-
-
-
 
 
 

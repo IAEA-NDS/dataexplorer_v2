@@ -46,11 +46,12 @@ from pages_common import (
     export_data,
     list_link_of_files,
     generate_api_link,
+    generate_archive,
 )
 
 from modules.reactions.list import color_libs
 from modules.reactions.tabs import create_tabs
-from modules.reactions.figs import default_chart
+from modules.reactions.figs import default_chart, update_axis
 
 from submodules.utilities.util import split_by_number
 from submodules.common import (
@@ -130,8 +131,6 @@ right_layout_lib = [
 ]
 
 
-## Main layout of libraries-2023 page
-# layout = html.Div(
 def layout(**query_strings):
     return html.Div(
         [
@@ -220,8 +219,6 @@ def redirect_to_subpages_rp(type):
     [
         Output("rp_elem_rp", "placeholder"),
         Output("rp_mass_rp", "placeholder"),
-        # Output('list-suggested-inputs', 'children'),
-        # Output('list-suggested-inputs2', 'children'),
     ],
     [
         Input("target_elem_rp", "value"),
@@ -275,11 +272,9 @@ def list_rp(elem, mass, inc_pt, rp_elem_rp):
         Input("rp_mass_rp", "value"),
         Input("exclude_mxw_switch_rp", "value"),
     ],
-    # prevent_initial_call=True,
 )
 def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch):
     elem, mass, _ = input_check(type, elem, mass, f"{inc_pt.lower()},x")
-
     rp_elem, rp_mass, _ = input_check(type, rp_elem, rp_mass, f"{inc_pt.lower()},x")
 
     if type != "RP":
@@ -372,7 +367,6 @@ def update_url_rp(input_store):
     prevent_initial_call=True,
 )
 def initial_data_rp(input_store, r_click):
-    # print("initial_data_rp", input_store)
     if input_store:
         if ctx.triggered_id != "rest_btn_rp":
             no_update
@@ -442,6 +436,19 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
     df = pd.DataFrame()
     if legends:
         df = data_query(input_store, legends.keys())
+
+        if switcher:
+            for e in list(legends.keys()):
+                if e == "total_points":
+                    continue
+                
+                if legends[e]["points"] > 100:
+                    index = limit_number_of_datapoints(
+                        legends[e]["points"], df[df["entry_id"] == e]
+                    )
+                    df.drop(index, inplace=True)
+
+
         df["bib"] = df["entry_id"].map(legends)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
@@ -460,13 +467,7 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
             if e == "total_points":
                 continue
 
-            if switcher:
-                df2 = limit_number_of_datapoints(
-                    legends[e]["points"], df[df["entry_id"] == e]
-                )
-
-            else:
-                df2 = df[df["entry_id"] == e]
+            df2 = df[df["entry_id"] == e]
 
             fig.add_trace(
                 go.Scatter(
@@ -501,15 +502,19 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
         Input("xaxis_type_rp", "value"),
         Input("yaxis_type_rp", "value"),
     ],
-    State("main_fig_rp", "figure"),
+    [
+        State("main_fig_rp", "figure"),
+        State("input_store_rp", "data"),
+    ],
     prevent_initial_call=True,
 )
-def update_axis_rp(xaxis_type, yaxis_type, fig):
-    ## Switch the axis type
-    fig.get("layout").get("yaxis").update({"type": yaxis_type})
-    fig.get("layout").get("xaxis").update({"type": xaxis_type})
+def update_axis_rp(xaxis_type, yaxis_type, fig, input_store):
+    if input_store:
+        mt = input_store.get("mt")
+    else:
+        return no_update
+    return update_axis(mt, xaxis_type, yaxis_type, fig)
 
-    return fig
 
 
 
@@ -545,6 +550,8 @@ def fileter_by_year_range_rp(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
+
+
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     Input("index_table_rp", "selectedRows"),
@@ -553,6 +560,8 @@ def fileter_by_year_range_rp(year_range, fig):
 )
 def highlight_data_rp(selected, fig):
     return highlight_data(selected, fig)
+
+
 
 
 @callback(
@@ -656,20 +665,45 @@ def generate_api_links_rp(search_str):
 
 @callback(
     [
+        Output("dl_zip_ex_rp", "data"),
+        Output("dl_zip_lib_rp", "data"),
         Output("exfiles_link_rp", "children"),
         Output("libfiles_link_rp", "children"),
     ],
-    Input("input_store_rp", "data"),
+    [
+        Input("input_store_rp", "data"),
+        Input("btn_zip_ex_rp", "n_clicks"),
+        Input("btn_zip_lib_rp", "n_clicks"),
+    ]
 )
-def generate_file_links_rp(input_store):
+def generate_file_links(input_store, n_clicks_ex, n_clicks_lib):
     if not input_store:
         raise PreventUpdate
 
     dir_ex, files_ex = generate_exfortables_file_path(input_store)
     dir_lib, files_lib = generate_endftables_file_path(input_store)
 
-    return list_link_of_files(dir_ex, files_ex), list_link_of_files(dir_lib, files_lib)
+    if n_clicks_ex:
+        return (
+            generate_archive(dir_ex, files_ex), 
+            no_update, 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+            )
 
+    elif n_clicks_lib:
+        return (
+            no_update, 
+            generate_archive(dir_lib, files_lib), 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+        )
 
-
+    else:
+        return (
+            no_update, 
+            no_update, 
+            list_link_of_files(dir_ex, files_ex), 
+            list_link_of_files(dir_lib, files_lib)
+        )
 

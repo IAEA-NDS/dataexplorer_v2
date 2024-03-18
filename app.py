@@ -15,11 +15,11 @@ import dash
 from dash import html
 import dash_bootstrap_components as dbc
 
-from config import DEVENV
+from config import ENV
 
 # see dash API reference: https://dash.plotly.com/reference
 # Style selection [CERULEAN, COSMO, CYBORG, DARKLY, FLATLY, JOURNAL, LITERA, LUMEN, LUX, MATERIA, MINTY, PULSE, SANDSTONE, SIMPLEX, SKETCHY, SLATE, SOLAR, SPACELAB, SUPERHERO, UNITED, YETI, ZEPHYR]
-if DEVENV:
+if ENV == "dev":
     app = dash.Dash(
         __name__,
         external_stylesheets=[dbc.themes.CERULEAN],
@@ -62,7 +62,7 @@ app.title = "IAEA Nuclear Reaction Data Explorer"
 app.layout = html.Div([dash.page_container])
 
 if __name__ == "__main__":
-    if DEVENV:
+    if ENV == "int":
         app.run_server(host="0.0.0.0", use_reloader=True, debug=True)
         # app.run_server(
         #     host="127.0.0.1", debug=True, dev_tools_prune_errors=False, use_reloader=True

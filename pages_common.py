@@ -16,6 +16,7 @@ import os
 import re
 import pandas as pd
 import urllib.parse
+import zipfile
 import dash
 import dash_bootstrap_components as dbc
 from dash import  html, dcc, Input, Output, ctx, no_update, callback
@@ -306,7 +307,7 @@ exfor_navbar = html.Div(
                                href="https://nds.iaea.org/nrdc"),
                         "under the auspices of the International Atomic Energy Agency. ",
                         html.Br(),
-                        f"Number of entry: {number_of_entries}. ",
+                        f"Number of EXFOR datasets: {number_of_entries}. ",
                         f"Last update EXFOR master repository: {get_latest_master_release()}.",
                         # ]),
                     ],
@@ -615,7 +616,7 @@ def input_lin_log_switch(pageparam):
                         options=[
                             {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
                         ],
-                        value="log",
+                        value="log" if pageparam != "th" else "linear",
                         persistence=True,
                         persistence_type="memory",
                         labelStyle={"display": "inline-block"},
@@ -703,25 +704,23 @@ def excl_mxw_switch(pageparam):
     ]
 
 
-def limit_number_of_datapoints(points, df):
+def limit_number_of_datapoints_v1(points, df):
     if points <= 100:
         return df
 
-    elif 100 < points <= 1000:
-        nskip = int(points / 100)
-
+    elif points > 100:
+        nskip = int ( 0.05 * points )
         return df.iloc[::nskip, :]
 
-    elif 1000 < points <= 5000:
-        nskip = int(points / 100)
-        return df.iloc[::nskip, :]
 
-    elif points > 5000:
-        nskip = int(points / 100)
-        return df.iloc[::nskip, :]
+def limit_number_of_datapoints(points, df):
+    ## Factor to load data points are:
+    ##  20 points: 0.05, 
+    ##  50 points: 0.02,
+    ##  100 points: 0.01
+    nskip = int ( 0.01 * points )
+    return set(df.index) - set(df.iloc[::nskip, :].index)
 
-    else:
-        return df
 
 
 def remove_query_parameter(url, param):
@@ -858,7 +857,7 @@ def get_indexes(input_store):
                     html.B(
                         f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
                     ),
-                    f"Number of experimental datasets in EXFOR: {len(entries)}. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                    f"Number of EXFOR datasets: {len(entries)}. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
                 ]
             )
         else:
@@ -867,7 +866,7 @@ def get_indexes(input_store):
                     html.B(
                         f"Search results for {type} {elem}-{mass}({reaction}), MT={str(int(mt)) if mt else '?'}: "
                     ),
-                    f"Number of EXFOR data: {len(entries)} datasets with {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                    f"Number of EXFOR datasets: {len(entries)} with {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
                 ]
             )
 
@@ -882,14 +881,11 @@ def get_indexes(input_store):
         search_result = html.Div(
             [
                 html.B(
-                    f"Search results for {type} {elem}-{mass}({reaction})-->{rp_elem}-{rp_mass}: "
+                    f"Search results for {type} {elem}-{mass}({reaction}){rp_elem}-{rp_mass}: "
                 ),
-                f"Number of EXFOR data: {len(entries)} datasets wtih {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
+                f"Number of EXFOR datasets: {len(entries)} wtih {total_points if entries else 0} data points. Number of Evaluated Data Libraries: {len(libs) if libs else 0}.",
             ]
         )
-
-    # if not entries and not libs:
-    #     return search_result, None, None, None
 
     if entries:
         legends = get_entry_bib(e[:5] for e in entries.keys())
@@ -1038,7 +1034,6 @@ def filter_by_year_range(year_range, fig):
 
 
 def fileter_by_en_range(energy_range, fig):
-    # print(json.dumps(fig, indent=1))
     filter_model = {}
     if energy_range and fig:
         for record in fig.get("data"):
@@ -1060,12 +1055,6 @@ def fileter_by_en_range(energy_range, fig):
 
                     elif max_x < lower:
                         record.update({"visible": "legendonly"})
-
-                    # elif not lower < sum_x / len(record["x"]) < upper:
-                    #     record.update({"visible": "legendonly"})
-
-                    # elif lower < sum_x / len(record["x"]) < upper:
-                    #     record.update({"visible": "true"})
 
                     filter_model = {
                         "e_inc_min": {
@@ -1159,6 +1148,9 @@ def export_data(onlySelected, input_store):
     if type.upper() == "SIG":
         data["columnKeys"].append(["residual", "level_num"])
 
+    elif type.upper() == "TH":
+        data["columnKeys"].append(["e_out", "de_out", "sf4", "sf8", "sf9"])
+
     elif type.upper() == "RP":
         data["columnKeys"].append(["residual"])
 
@@ -1172,6 +1164,23 @@ def export_data(onlySelected, input_store):
         data["columnKeys"].append(["energy", "denergy"])
 
     return True, data
+
+
+def generate_archive(dir, files):
+    if "libraries" in dir:
+        fname = "ENDFTABLES"
+    elif "exfortables" in dir:
+        fname = "exfortables_py"
+
+    def write_archive(bytes_io):
+        with zipfile.ZipFile(bytes_io, mode="w") as zo:
+            f = []
+            for f in sorted(files):
+                fullpath = os.path.join(dir, f)
+                if os.path.exists(fullpath):
+                    zo.write(fullpath, arcname="".join([fname,"/", f]))
+    return dcc.send_bytes(write_archive, f"{fname}.zip")
+
 
 
 def list_link_of_files(dir, files):

@@ -19,7 +19,7 @@ def default_axis(mt):
         "019",
         "102",
         # "103",
-        "104",
+        # "104",
         "201",
         "202",
         "203",
@@ -48,8 +48,8 @@ def default_chart(xaxis_type, yaxis_type, reaction):
             xaxis={
                 "title": "Incident energy [MeV]",
                 "type": xaxis_type,
-                "range": [0, 30] if xaxis_type == "linear" else [-8, 1.2],
-                "autorange": True if reaction[0] != "n" else False,
+                "range": [0, 50] if xaxis_type == "linear" else [-8, 1.2],
+                # "autorange": True if reaction[0] != "n" else False,
                 "rangeslider": {
                     "bgcolor": "White",
                     "visible": True,
@@ -68,9 +68,54 @@ def default_chart(xaxis_type, yaxis_type, reaction):
 
     # Expornential format
     if xaxis_type == "log":
-        fig.update_xaxes(exponentformat="power", range=[-8, 1.2])
+        fig.update_xaxes(showexponent = 'all', exponentformat="E", range=[-8, 2.5])
 
     if yaxis_type == "log":
-        fig.update_yaxes(exponentformat="power")
+        fig.update_yaxes(showexponent = 'all', exponentformat="E", autorange=True)
+
+    return fig
+
+
+
+def update_axis(mt, xaxis_type, yaxis_type, fig):
+
+    if mt in [
+        "001",
+        "002",
+        "018",
+        "019",
+        "102",
+        # "103",
+        # "104",
+        "201",
+        "202",
+        "203",
+        "204",
+        "205",
+        "206",
+        "207",
+        "600",
+    ]:
+        def_range_x_log = (-8,2.5)
+        def_range_x_lin = (0,50)
+
+    else:
+        def_range_x_log = (0, 3)
+        def_range_x_lin = (0,50)
+
+
+    if xaxis_type == "linear":
+        print("update_axis, lin")
+        fig.get("layout").get("xaxis").update({"type": xaxis_type, "showexponent":"none", "range": def_range_x_lin})
+
+    elif xaxis_type == "log":
+        fig.get("layout").get("xaxis").update({"type": xaxis_type, "showexponent":"all", "exponentformat":"E", "range":def_range_x_log })
+
+
+    if yaxis_type == "linear":
+        fig.get("layout").get("yaxis").update({"type": yaxis_type, "showexponent ":"none", "autorange":True})
+
+    elif yaxis_type == "log":
+        fig.get("layout").get("yaxis").update({"type": yaxis_type, "showexponent":"all", "exponentformat":"E", "autorange":True}) #"autorange":True})
 
     return fig
