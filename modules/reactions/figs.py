@@ -68,17 +68,15 @@ def default_chart(xaxis_type, yaxis_type, reaction):
 
     # Expornential format
     if xaxis_type == "log":
-        fig.update_xaxes(showexponent = 'all', exponentformat="E", range=[-8, 2.5])
+        fig.update_xaxes(showexponent="all", exponentformat="E")  # , range=[-8, 2.5])
 
     if yaxis_type == "log":
-        fig.update_yaxes(showexponent = 'all', exponentformat="E", autorange=True)
+        fig.update_yaxes(showexponent="all", exponentformat="E")  # , autorange=True)
 
     return fig
 
 
-
 def update_axis(mt, xaxis_type, yaxis_type, fig):
-
     if mt in [
         "001",
         "002",
@@ -96,26 +94,41 @@ def update_axis(mt, xaxis_type, yaxis_type, fig):
         "207",
         "600",
     ]:
-        def_range_x_log = (-8,2.5)
-        def_range_x_lin = (0,50)
+        def_range_x_log = (-8, 2.5)
+        def_range_x_lin = (0, 50)
 
     else:
         def_range_x_log = (0, 3)
-        def_range_x_lin = (0,50)
-
+        def_range_x_lin = (0, 50)
 
     if xaxis_type == "linear":
-        print("update_axis, lin")
-        fig.get("layout").get("xaxis").update({"type": xaxis_type, "showexponent":"none", "range": def_range_x_lin})
+        fig.get("layout").get("xaxis").update(
+            {"type": xaxis_type, "showexponent": "none", "range": def_range_x_lin}
+        )
 
     elif xaxis_type == "log":
-        fig.get("layout").get("xaxis").update({"type": xaxis_type, "showexponent":"all", "exponentformat":"E", "range":def_range_x_log })
-
+        fig.get("layout").get("xaxis").update(
+            {
+                "type": xaxis_type,
+                "showexponent": "all",
+                "exponentformat": "E",
+                "range": def_range_x_log,
+            }
+        )
 
     if yaxis_type == "linear":
-        fig.get("layout").get("yaxis").update({"type": yaxis_type, "showexponent ":"none", "autorange":True})
+        fig.get("layout").get("yaxis").update(
+            {"type": yaxis_type, "showexponent ": "none", "autorange": True}
+        )
 
     elif yaxis_type == "log":
-        fig.get("layout").get("yaxis").update({"type": yaxis_type, "showexponent":"all", "exponentformat":"E", "autorange":True}) #"autorange":True})
+        fig.get("layout").get("yaxis").update(
+            {
+                "type": yaxis_type,
+                "showexponent": "all",
+                "exponentformat": "E",
+                "autorange": True,
+            }
+        )  # "autorange":True})
 
     return fig

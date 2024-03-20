@@ -19,7 +19,7 @@ import urllib.parse
 import zipfile
 import dash
 import dash_bootstrap_components as dbc
-from dash import  html, dcc, Input, Output, ctx, no_update, callback
+from dash import html, dcc, Input, Output, ctx, no_update, callback
 import dash_daq as daq
 from dash.exceptions import PreventUpdate
 from datetime import date
@@ -27,8 +27,17 @@ from datetime import date
 from config import DATA_DIR, API_BASE_URL
 from man import manual
 
-from modules.exfor.list import MAPPING, bib_df, number_of_entries, get_latest_master_release
-from submodules.common import LIB_LIST_MAX
+from modules.exfor.list import (
+    MAPPING,
+    bib_df,
+    number_of_entries,
+    get_latest_master_release,
+)
+from submodules.common import (
+    LIB_LIST_MAX,
+    generate_exfortables_file_path,
+    generate_endftables_file_path,
+)
 from submodules.utilities.elem import ELEMS, elemtoz_nz, ztoelem
 from submodules.utilities.mass import mass_range
 from submodules.utilities.util import get_number_from_string, get_str_from_string
@@ -112,7 +121,6 @@ page_urls = {
 }
 
 
-
 lib_selections = [
     {
         "label": "Cross Section (SIG)",
@@ -143,7 +151,7 @@ lib_page_urls = {
 
 ## based on pageparam
 def_inp_values = {
-    "XS": {"elem": "Al", "mass": "27", "inc_pt": "N", "reaction": "n,p"},
+    "XS": {"elem": "Zr", "mass": "90", "inc_pt": "N", "reaction": "n,g"},
     "TH": {"elem": "Au", "mass": "197", "inc_pt": "N", "reaction": "n,g"},
     "RP": {"elem": "Ti", "mass": "0", "inc_pt": "A", "rp_elem": "Cr", "rp_mass": "51"},
     "FY": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
@@ -251,7 +259,7 @@ libs_navbar = html.Div(
                                 href="https://nds.iaea.org/dataexplorer-2022/",
                                 # className="text-dark",
                             ),
-                            f"."
+                            f".",
                         ],
                         style={
                             "font-size": "smaller",
@@ -303,8 +311,10 @@ exfor_navbar = html.Div(
                     [
                         # html.Div([
                         "Experimental Nuclear Reaction Experimental Data (EXFOR) is compiled by the ",
-                        html.A("International Network of Nuclear Reaction Data Centres (NRDC) ", 
-                               href="https://nds.iaea.org/nrdc"),
+                        html.A(
+                            "International Network of Nuclear Reaction Data Centres (NRDC) ",
+                            href="https://nds.iaea.org/nrdc",
+                        ),
                         "under the auspices of the International Atomic Energy Agency. ",
                         html.Br(),
                         f"Number of EXFOR datasets: {number_of_entries}. ",
@@ -592,7 +602,8 @@ def libs_filter_opt(pageparam):
 
 
 def input_lin_log_switch(pageparam):
-    return (
+    pageparam = pageparam.lower()
+    return [
         dbc.Row(
             [
                 dbc.Col(html.Label("X:"), width="auto"),
@@ -603,8 +614,8 @@ def input_lin_log_switch(pageparam):
                             {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
                         ],
                         value="log",
-                        persistence=True,
-                        persistence_type="memory",
+                        # persistence=True,
+                        # persistence_type="memory",
                         labelStyle={"display": "inline-block"},
                     ),
                     width="auto",
@@ -617,15 +628,15 @@ def input_lin_log_switch(pageparam):
                             {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
                         ],
                         value="log" if pageparam != "th" else "linear",
-                        persistence=True,
-                        persistence_type="memory",
+                        # persistence=True,
+                        # persistence_type="memory",
                         labelStyle={"display": "inline-block"},
                     ),
                     width="auto",
                 ),
             ]
         ),
-    )
+    ]
 
 
 def reduce_data_switch(pageparam):
@@ -709,18 +720,17 @@ def limit_number_of_datapoints_v1(points, df):
         return df
 
     elif points > 100:
-        nskip = int ( 0.05 * points )
+        nskip = int(0.05 * points)
         return df.iloc[::nskip, :]
 
 
 def limit_number_of_datapoints(points, df):
     ## Factor to load data points are:
-    ##  20 points: 0.05, 
+    ##  20 points: 0.05,
     ##  50 points: 0.02,
     ##  100 points: 0.01
-    nskip = int ( 0.01 * points )
+    nskip = int(0.01 * points)
     return set(df.index) - set(df.iloc[::nskip, :].index)
-
 
 
 def remove_query_parameter(url, param):
@@ -1008,7 +1018,6 @@ def filter_by_year_range(year_range, fig):
 
             if len(record.get("name").split(",")) > 1:
                 legend = re.split(",|\[", record.get("name"))
-                # print(record)
 
                 if year_range:
                     if not year_range[0] < int(legend[1].strip()) < year_range[1]:
@@ -1178,9 +1187,9 @@ def generate_archive(dir, files):
             for f in sorted(files):
                 fullpath = os.path.join(dir, f)
                 if os.path.exists(fullpath):
-                    zo.write(fullpath, arcname="".join([fname,"/", f]))
-    return dcc.send_bytes(write_archive, f"{fname}.zip")
+                    zo.write(fullpath, arcname="".join([fname, "/", f]))
 
+    return dcc.send_bytes(write_archive, f"{fname}.zip")
 
 
 def list_link_of_files(dir, files):
@@ -1203,6 +1212,35 @@ def generate_api_link(pageparam, search_str):
         )
     else:
         return no_update, no_update
+
+
+def generate_file_link(input_store, n_clicks_ex, n_clicks_lib):
+    dir_ex, files_ex = generate_exfortables_file_path(input_store)
+    dir_lib, files_lib = generate_endftables_file_path(input_store)
+
+    if n_clicks_ex:
+        return (
+            generate_archive(dir_ex, files_ex),
+            no_update,
+            list_link_of_files(dir_ex, files_ex),
+            list_link_of_files(dir_lib, files_lib),
+        )
+
+    elif n_clicks_lib:
+        return (
+            no_update,
+            generate_archive(dir_lib, files_lib),
+            list_link_of_files(dir_ex, files_ex),
+            list_link_of_files(dir_lib, files_lib),
+        )
+
+    else:
+        return (
+            no_update,
+            no_update,
+            list_link_of_files(dir_ex, files_ex),
+            list_link_of_files(dir_lib, files_lib),
+        )
 
 
 @callback(

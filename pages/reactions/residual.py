@@ -9,8 +9,7 @@
 
 import pandas as pd
 import dash
-import re
-from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
+from dash import html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -44,9 +43,8 @@ from pages_common import (
     fileter_by_en_range,
     export_index,
     export_data,
-    list_link_of_files,
+    generate_file_link,
     generate_api_link,
-    generate_archive,
 )
 
 from modules.reactions.list import color_libs
@@ -54,10 +52,6 @@ from modules.reactions.tabs import create_tabs
 from modules.reactions.figs import default_chart, update_axis
 
 from submodules.utilities.util import split_by_number
-from submodules.common import (
-    generate_exfortables_file_path,
-    generate_endftables_file_path,
-)
 from submodules.reactions.queries import (
     lib_residual_data_query,
     lib_residual_nuclide_list,
@@ -260,7 +254,6 @@ def list_rp(elem, mass, inc_pt, rp_elem_rp):
         return "e.g, " + ", ".join(rp_dict.keys()), ""
 
 
-
 @callback(
     Output("input_store_rp", "data"),
     [
@@ -304,8 +297,6 @@ def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch)
         )
 
 
-
-
 @callback(
     [
         Output("location_rp", "search"),
@@ -315,7 +306,6 @@ def input_store_rp(type, elem, mass, inc_pt, rp_elem, rp_mass, excl_junk_switch)
     prevent_initial_call=True,
 )
 def update_url_rp(input_store):
-
     if input_store:
         type = input_store.get("type").upper()
         elem = input_store.get("target_elem")
@@ -351,8 +341,6 @@ def update_url_rp(input_store):
         # raise PreventUpdate
 
 
-
-
 @callback(
     [
         Output("search_result_txt_rp", "children"),
@@ -381,8 +369,6 @@ def initial_data_rp(input_store, r_click):
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
         Output("exfor_table_rp", "rowData"),
-        Output("xaxis_type_rp", "value"),
-        Output("yaxis_type_rp", "value"),
     ],
     [
         Input("input_store_rp", "data"),
@@ -441,13 +427,12 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
             for e in list(legends.keys()):
                 if e == "total_points":
                     continue
-                
+
                 if legends[e]["points"] > 100:
                     index = limit_number_of_datapoints(
                         legends[e]["points"], df[df["entry_id"] == e]
                     )
                     df.drop(index, inplace=True)
-
 
         df["bib"] = df["entry_id"].map(legends)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
@@ -492,8 +477,7 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
             if i == 30:
                 i = 1
 
-    return fig, df.to_dict("records"), xaxis_type, yaxis_type
-
+    return fig, df.to_dict("records")
 
 
 @callback(
@@ -511,11 +495,9 @@ def create_fig_rp(input_store, legends, libs, endf_selct, switcher):
 def update_axis_rp(xaxis_type, yaxis_type, fig, input_store):
     if input_store:
         mt = input_store.get("mt")
+        return update_axis(mt, xaxis_type, yaxis_type, fig)
     else:
         return no_update
-    return update_axis(mt, xaxis_type, yaxis_type, fig)
-
-
 
 
 @callback(
@@ -536,7 +518,6 @@ def fileter_by_en_range_rp(energy_range, fig):
     return fig, filter_model, range_text
 
 
-
 @callback(
     [
         Output("main_fig_rp", "figure", allow_duplicate=True),
@@ -550,8 +531,6 @@ def fileter_by_year_range_rp(year_range, fig):
     return filter_by_year_range(year_range, fig)
 
 
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     Input("index_table_rp", "selectedRows"),
@@ -562,8 +541,6 @@ def highlight_data_rp(selected, fig):
     return highlight_data(selected, fig)
 
 
-
-
 @callback(
     Output("main_fig_rp", "figure", allow_duplicate=True),
     Input("index_table_rp", "cellValueChanged"),
@@ -572,7 +549,6 @@ def highlight_data_rp(selected, fig):
 )
 def scale_data_rp(selected, fig):
     return scale_data(selected, fig)
-
 
 
 @callback(
@@ -592,7 +568,6 @@ def del_rows_rp(n1, fig, selected):
         if selected is None:
             return no_update
         return del_rows_fig(selected, fig)
-
 
 
 @callback(
@@ -622,7 +597,6 @@ def export_index_rp(n1, n2, input_store):
         return no_update, no_update
 
 
-
 @callback(
     [
         Output("exfor_table_rp", "exportDataAsCsv"),
@@ -650,7 +624,6 @@ def export_data_rp(n1, n2, input_store):
         return no_update, no_update
 
 
-
 @callback(
     [
         Output("btn_api_rp", "href"),
@@ -660,7 +633,6 @@ def export_data_rp(n1, n2, input_store):
 )
 def generate_api_links_rp(search_str):
     return generate_api_link(pageparam, search_str)
-
 
 
 @callback(
@@ -674,36 +646,11 @@ def generate_api_links_rp(search_str):
         Input("input_store_rp", "data"),
         Input("btn_zip_ex_rp", "n_clicks"),
         Input("btn_zip_lib_rp", "n_clicks"),
-    ]
+    ],
 )
 def generate_file_links(input_store, n_clicks_ex, n_clicks_lib):
     if not input_store:
         raise PreventUpdate
 
-    dir_ex, files_ex = generate_exfortables_file_path(input_store)
-    dir_lib, files_lib = generate_endftables_file_path(input_store)
-
-    if n_clicks_ex:
-        return (
-            generate_archive(dir_ex, files_ex), 
-            no_update, 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-            )
-
-    elif n_clicks_lib:
-        return (
-            no_update, 
-            generate_archive(dir_lib, files_lib), 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-        )
-
     else:
-        return (
-            no_update, 
-            no_update, 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-        )
-
+        return generate_file_link(input_store, n_clicks_ex, n_clicks_lib)

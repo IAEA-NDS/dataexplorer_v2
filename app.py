@@ -44,7 +44,7 @@ else:
         external_stylesheets=[dbc.themes.CERULEAN],
         # url_base_pathname="/dataexplorer2/",
         routes_pathname_prefix="/",  # if Prod
-        requests_pathname_prefix="/dataexplorer2/",  # if Prod
+        requests_pathname_prefix="/dataexplorer/",  # if Prod
         suppress_callback_exceptions=True,
         meta_tags=[
             {
@@ -62,7 +62,7 @@ app.title = "IAEA Nuclear Reaction Data Explorer"
 app.layout = html.Div([dash.page_container])
 
 if __name__ == "__main__":
-    if ENV == "int":
+    if ENV == "dev":
         app.run_server(host="0.0.0.0", use_reloader=True, debug=True)
         # app.run_server(
         #     host="127.0.0.1", debug=True, dev_tools_prune_errors=False, use_reloader=True

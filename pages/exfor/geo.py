@@ -99,7 +99,10 @@ geo_right_layout = [
     ),
     dcc.Store(id="entries_store_geo"),
     html.Hr(style={"border": "3px", "border-top": "1px solid"}),
-    html.Label(id="result_bib", children=f"Click the bubble chart to show EXFOR entries from selected facility."),
+    html.Label(
+        id="result_bib",
+        children=f"Click the bubble chart to show EXFOR entries from selected facility.",
+    ),
     dbc.Row(aggrid_layout_bib),
     html.Br(),
     html.Label("Reactions in selected entries"),
@@ -215,7 +218,7 @@ def input_store_geo(
 ):
     # print("input_store_geo")
     df = geo_df
-    
+
     reactions_exfor_format = []
     level_num = None
     # df = df[ df["projectile"] == "D"]
@@ -231,19 +234,14 @@ def input_store_geo(
 
         df = df[df["sf6"].isin(sf6s)]
 
-
     if elem:
-        df = df[
-            (df["target"].str.contains(f"-{elem.upper()}-"))
-        ]
-
+        df = df[(df["target"].str.contains(f"-{elem.upper()}-"))]
 
     if elem and mass:
-        elem, mass, reaction = input_check(type if type else "SIG", elem, mass, reactions[0] if reactions else "N,G")
-        df = df[
-            (df["target"] == x4style_nuclide_expression(elem, mass))
-        ]
-
+        elem, mass, reaction = input_check(
+            type if type else "SIG", elem, mass, reactions[0] if reactions else "N,G"
+        )
+        df = df[(df["target"] == x4style_nuclide_expression(elem, mass))]
 
     if inc_pt:
         df = df[
@@ -273,7 +271,6 @@ def input_store_geo(
 
         df = df[df["process"].isin([r.upper() for r in reactions_exfor_format])]
 
-
     if energy_range:
         df = df[
             (df["e_inc_min"] > energy_range[0]) & (df["e_inc_max"] < energy_range[1])
@@ -281,7 +278,6 @@ def input_store_geo(
 
     if year_range:
         df = df[(df["year"] > year_range[0]) & (df["year"] < year_range[1])]
-
 
     input_dict = {
         "type": type,
@@ -297,8 +293,6 @@ def input_store_geo(
     return input_dict, df.to_dict("records")
 
 
-
-
 @callback(
     Output("geo_map", "figure", allow_duplicate=True),
     [
@@ -310,7 +304,6 @@ def input_store_geo(
 )
 def change_grouping(grouping, entries_store):
     if grouping:
-
         if entries_store:
             df = pd.DataFrame(entries_store)
 
@@ -320,9 +313,6 @@ def change_grouping(grouping, entries_store):
         return geo_fig(grouping, df)
 
     raise PreventUpdate
-
-
-
 
 
 @callback(
@@ -339,7 +329,10 @@ def change_grouping(grouping, entries_store):
 def select_geo_node(entries_store, selected_data):
     if not entries_store and not selected_data:
         # raise PreventUpdate
-        return f"Click the bubble chart to show EXFOR entries from selected facility:", no_update
+        return (
+            f"Click the bubble chart to show EXFOR entries from selected facility:",
+            no_update,
+        )
 
     if selected_data:
         if entries_store:
@@ -387,8 +380,10 @@ def select_geo_node(entries_store, selected_data):
         )
 
     else:
-        return f"Click the bubble chart to show EXFOR entries from selected facility:", no_update
-
+        return (
+            f"Click the bubble chart to show EXFOR entries from selected facility:",
+            no_update,
+        )
 
 
 @callback(

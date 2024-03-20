@@ -104,11 +104,8 @@ mail: <nds.contact-point@iaea.org>
 )
 
 
-
-
-
 table_desc_thermal = dcc.Markdown(
-"""
+    """
 ##### **Column descriptions **
 This table contains cross-section data near thermal energy (2.53E-8 MeV). 
 - **Entry Id**: The entry (5 digits), subentry (3 digits), and pointer (1 digit) number taken from EXFOR, formatted as EEEEE-SSS-P.

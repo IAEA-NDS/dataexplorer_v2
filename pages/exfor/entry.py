@@ -208,7 +208,6 @@ def redirect_to_pages(dataset):
 )
 def redirect_to_url(entry_id):
     ## if the entry_id changes, redirect to the url
-    print("redirect_to_url")
     entry_id = entry_id_check(entry_id)
     return f"{URL_PATH}exfor/entry/{entry_id}", True
 
@@ -223,7 +222,6 @@ def redirect_to_url(entry_id):
 )
 def update_url_ex(entry_id):
     ## if change the subentry from the list, only the path should be changed
-    print("update_url_ex", entry_id)
     entry_id = entry_id_check(entry_id)
     return entry_id, False
 
@@ -231,7 +229,6 @@ def update_url_ex(entry_id):
 ## Get JSON and store it
 @callback(Output("entry_store", "data"), Input("entid_ex", "value"))
 def entry_store(entry_id):
-    print("entry_store", entry_id)
     entry_id = entry_id_check(entry_id)
     return get_record(entry_id[0:5])
 
@@ -242,7 +239,6 @@ def entry_store(entry_id):
     [Input("entid_ex", "value"), Input("entry_store", "data")],
 )
 def entnumentid_ex(entry_id, entry_json):
-    print("entnumentid_ex")
     entry_id = entry_id_check(entry_id)
     if entry_json:
         return show_entry_links(entry_id[0:5], entry_json)

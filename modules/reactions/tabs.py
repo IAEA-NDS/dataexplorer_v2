@@ -156,8 +156,11 @@ def create_tabs(pageparam):
                     ),
                     html.Div(
                         [
-                            html.Button("Download zip", id="".join(["btn_zip_ex_", pageparam.lower()])), 
-                            dcc.Download(id="".join(["dl_zip_ex_", pageparam.lower()]))
+                            html.Button(
+                                "Download zip",
+                                id="".join(["btn_zip_ex_", pageparam.lower()]),
+                            ),
+                            dcc.Download(id="".join(["dl_zip_ex_", pageparam.lower()])),
                         ]
                     ),
                     html.Div(id="".join(["exfiles_link_", pageparam.lower()])),
@@ -176,8 +179,13 @@ def create_tabs(pageparam):
                     ),
                     html.Div(
                         [
-                            html.Button("Download zip", id="".join(["btn_zip_lib_", pageparam.lower()])), 
-                            dcc.Download(id="".join(["dl_zip_lib_", pageparam.lower()]))
+                            html.Button(
+                                "Download zip",
+                                id="".join(["btn_zip_lib_", pageparam.lower()]),
+                            ),
+                            dcc.Download(
+                                id="".join(["dl_zip_lib_", pageparam.lower()])
+                            ),
                         ]
                     ),
                     html.Div(id="".join(["libfiles_link_", pageparam.lower()])),

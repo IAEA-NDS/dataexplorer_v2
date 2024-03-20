@@ -8,9 +8,8 @@
 ####################################################################
 
 import pandas as pd
-import numpy as np
 import dash
-from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
+from dash import html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
@@ -45,19 +44,14 @@ from pages_common import (
     fileter_by_en_range,
     export_index,
     export_data,
-    list_link_of_files,
     generate_api_link,
-    generate_archive,
+    generate_file_link,
 )
 
 # from config import BASE_URL
 from modules.reactions.list import color_libs
 from modules.reactions.tabs import create_tabs
 from modules.reactions.figs import default_chart, default_axis, update_axis
-from submodules.common import (
-    generate_exfortables_file_path,
-    generate_endftables_file_path,
-)
 from submodules.utilities.reaction import get_mt
 from submodules.reactions.queries import lib_xs_data_query
 from submodules.exfor.queries import data_query
@@ -145,7 +139,7 @@ def layout(**query_strings):
                                         persistence=True,
                                         persistence_type="memory",
                                     ),
-                                    html.Div(input_lib(**query_strings)),
+                                    html.Div(children=input_lib(**query_strings)),
                                 ],
                                 style={"margin-left": "10px"},
                             ),
@@ -190,7 +184,6 @@ def redirect_to_pages(dataset):
 
     else:
         raise PreventUpdate
-
 
 
 @callback(
@@ -355,8 +348,6 @@ def initial_data_xs(input_store, r_click):
     [
         Output("main_fig_xs", "figure", allow_duplicate=True),
         Output("exfor_table_xs", "rowData"),
-        Output("xaxis_type_xs", "value"),
-        Output("yaxis_type_xs", "value"),
     ],
     [
         Input("input_store_xs", "data"),
@@ -368,7 +359,6 @@ def initial_data_xs(input_store, r_click):
     prevent_initial_call=True,
 )
 def create_fig(input_store, legends, libs, endf_selct, switcher):
-    # print("create_fig")
     if input_store:
         reaction = input_store.get("reaction")
         mt = input_store.get("mt")
@@ -378,6 +368,7 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
 
     if reaction.split(",")[0] == "n":
         xaxis_type, yaxis_type = default_axis(str(mt).zfill(3))
+
     else:
         xaxis_type = "linear"
         yaxis_type = "linear"
@@ -416,7 +407,7 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
             for e in list(legends.keys()):
                 if e == "total_points":
                     continue
-                
+
                 if legends[e]["points"] > 100:
                     index = limit_number_of_datapoints(
                         legends[e]["points"], df[df["entry_id"] == e]
@@ -489,7 +480,7 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
             if i > 30:
                 i = 1
 
-    return fig, df.to_dict("records"), xaxis_type, yaxis_type
+    return fig, df.to_dict("records")  # , xaxis_type, yaxis_type
 
 
 @callback(
@@ -505,11 +496,11 @@ def create_fig(input_store, legends, libs, endf_selct, switcher):
     prevent_initial_call=True,
 )
 def update_axis_xs(xaxis_type, yaxis_type, fig, input_store):
-    if input_store:
+    if input_store and xaxis_type and yaxis_type:
         mt = input_store.get("mt")
+        return update_axis(mt, xaxis_type, yaxis_type, fig)
     else:
         return no_update
-    return update_axis(mt, xaxis_type, yaxis_type, fig)
 
 
 @callback(
@@ -609,7 +600,6 @@ def export_index_xs(n1, n2, input_store):
         return no_update, no_update
 
 
-
 @callback(
     [
         Output("exfor_table_xs", "exportDataAsCsv"),
@@ -648,7 +638,6 @@ def generate_api_links(search_str):
     return generate_api_link(pageparam, search_str)
 
 
-
 @callback(
     [
         Output("dl_zip_ex_xs", "data"),
@@ -660,35 +649,11 @@ def generate_api_links(search_str):
         Input("input_store_xs", "data"),
         Input("btn_zip_ex_xs", "n_clicks"),
         Input("btn_zip_lib_xs", "n_clicks"),
-    ]
+    ],
 )
 def generate_file_links(input_store, n_clicks_ex, n_clicks_lib):
     if not input_store:
         raise PreventUpdate
 
-    dir_ex, files_ex = generate_exfortables_file_path(input_store)
-    dir_lib, files_lib = generate_endftables_file_path(input_store)
-
-    if n_clicks_ex:
-        return (
-            generate_archive(dir_ex, files_ex), 
-            no_update, 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-            )
-
-    elif n_clicks_lib:
-        return (
-            no_update, 
-            generate_archive(dir_lib, files_lib), 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-        )
-
     else:
-        return (
-            no_update, 
-            no_update, 
-            list_link_of_files(dir_ex, files_ex), 
-            list_link_of_files(dir_lib, files_lib)
-        )
+        return generate_file_link(input_store, n_clicks_ex, n_clicks_lib)

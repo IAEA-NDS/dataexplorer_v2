@@ -538,9 +538,6 @@ def create_fig_th(input_store, legends, libs, r_click):
             ]
         )
 
-
-
-
         """
         Update figure
         """
@@ -550,7 +547,7 @@ def create_fig_th(input_store, legends, libs, r_click):
                     x=[row["year"]],
                     y=[row["data"]],
                     # error_x=dict(type="data", array=[row["den_inc"]]),
-                    error_y=dict(type="data", array=[ row["ddata"] ]),
+                    error_y=dict(type="data", array=[row["ddata"]]),
                     showlegend=True,
                     name=f"{row['author']}, {row['year']} [{row['entry_id']}]",
                     marker=dict(
@@ -566,10 +563,9 @@ def create_fig_th(input_store, legends, libs, r_click):
                 i = 1
 
     if libs:
-        lib_df = lib_th_data_query( libs.keys() )
+        lib_df = lib_th_data_query(libs.keys())
 
     return fig, thermal_stat_content, df.to_dict("records"), xaxis_type, yaxis_type
-
 
 
 @callback(
@@ -589,7 +585,6 @@ def update_axis(xaxis_type, yaxis_type, fig):
     return fig
 
 
-
 @callback(
     Output("main_fig_th", "figure", allow_duplicate=True),
     Input("thermal_data_table", "selectedRows"),
@@ -598,8 +593,6 @@ def update_axis(xaxis_type, yaxis_type, fig):
 )
 def highlight_data_th(selected, fig):
     return highlight_data(selected, fig)
-
-
 
 
 @callback(
@@ -619,8 +612,6 @@ def del_rows_th(n1, fig, selected):
         if selected is None:
             return no_update, no_update
         return del_rows_fig(selected, fig)
-
-
 
 
 @callback(
@@ -643,8 +634,6 @@ def selected_th(n, col_state, selected):
     dff = dff[columns]
 
     return dff.to_string()
-
-
 
 
 @callback(
@@ -672,8 +661,6 @@ def export_data_xs(n1, n2, input_store):
 
     else:
         return no_update, no_update
-
-
 
 
 @callback(
