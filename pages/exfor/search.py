@@ -31,7 +31,8 @@ from pages_common import (
     input_entry,
     input_target,
     input_general,
-    exfor_filter_opt,
+    exfor_energy_filter,
+    exfor_year_filter,
     energy_range_conversion,
 )
 from modules.exfor.list import (
@@ -219,7 +220,9 @@ def input_sch(**query_strings):
         ),
         html.Br(),
         html.Br(),
-        html.Div(children=exfor_filter_opt(pageparam)),
+        html.P("EXFOR Filter Options"),
+        html.Div(children=exfor_energy_filter(pageparam)),
+        html.Div(children=exfor_year_filter(pageparam)),
         dcc.Store(id="input_store_sch"),
         html.Br(),
         html.Br(),

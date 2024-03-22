@@ -55,6 +55,18 @@ current_year = date.today().year
 PARTICLE = ["N", "P", "D", "T", "A", "H", "G"]
 PARTICLE_FY = ["N", "0", "P", "D", "T", "A", "H", "G"]
 
+# ------------------------------------------------------------------------------
+# Incident Energy
+# ------------------------------------------------------------------------------
+ENERGIES = {"Thermal" : [0.0, 2.54E-8], 
+            "Fast": [0.1, 0.6],
+            "14MeV": [13.0, 15.0],
+            "eV": [1.0E-8, 1.0E-3],
+            "keV": [1.0E-3, 1.0],
+            "MeV": [1.0, 1.0E+3],
+            "All": [0,1E+9]
+    }
+
 
 # ------------------------------------------------------------------------------
 # Isomeric state
@@ -118,6 +130,7 @@ sidehead = dbc.Row(
 page_urls = {
     "Libraries-2023": URL_PATH + "reactions/xs",
     "EXFOR Viewer": URL_PATH + "exfor/geo",
+    # "ENDF-6 Viewer": URL_PATH + "endf/dece",
 }
 
 
@@ -134,7 +147,14 @@ lib_selections = [
         "label": "Residual Production CS (SIG)",
         "value": "RP",
     },
-    {"label": "Fission Yield (FY)", "value": "FY"},
+    {
+        "label": "Fission Yield (FY)", 
+        "value": "FY"
+     },
+    # {
+    #     "label": "Angular Distribution", 
+    #     "value": "DA"
+    #  },
 ]
 
 
@@ -143,8 +163,8 @@ lib_page_urls = {
     "TH": URL_PATH + "reactions/thermal",
     "RP": URL_PATH + "reactions/residual",
     "FY": URL_PATH + "reactions/fy",
-    "DA": URL_PATH + "reactions/da",
-    "DE": URL_PATH + "reactions/de",
+    "DA": URL_PATH + "reactions/angle",
+    "DE": URL_PATH + "reactions/energy",
     "FIS": URL_PATH + "reactions/fission",
 }
 
@@ -175,6 +195,8 @@ def_inp_values = {
         "rp_elem": None,
         "rp_mass": None,
     },
+    "ENDFTK": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
+    "DECE": {"elem": "U", "mass": "235", "inc_pt": "N", "reaction": "n,f"},
 }
 
 
@@ -322,6 +344,62 @@ exfor_navbar = html.Div(
                         # ]),
                     ],
                     style={"font-size": "smaller"},
+                ),
+            ]
+        ),
+    ]
+)
+
+
+endftk_navbar = html.Div(
+    [
+        html.H5(
+            html.A(
+                html.B("IAEA Nuclear Reaction Data Explorer"),
+                href="https://nds.iaea.org/dataexplorer/",
+            )
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.Div(
+                        [
+                            html.A(
+                                [
+                                    html.Img(
+                                        src=dash.get_asset_url("logo.png"),
+                                        height="20px",
+                                    ),
+                                ],
+                                href=URL_PATH,
+                            ),
+                            " ",
+                            html.A(
+                                "ENDF-6 Format Viewer",
+                                href=f"{URL_PATH}endf",
+                                className="text-dark",
+                            ),
+                        ],
+                    ),
+                    width=2,
+                    style={"font-size": "small"},
+                ),
+                dbc.Col(
+                    [
+                        # html.Div([
+                        "Data viewer in ENDF-6 format. Powered by ",
+                        # html.A("ENDF Toolkit (ENDFtk)", 
+                        #        href="https://github.com/njoy/ENDFtk"),
+                        # " and ",
+                        html.A("DeCE", 
+                               href="https://github.com/toshihikokawano/DeCE/"),
+                        " developed in Los Alamos National Laboratory, NM, US.",
+                        html.Br(),
+                        # f"Number of entry: {number_of_entries}. ",
+                        # f"Last update EXFOR master repository: {get_latest_master_release()}.",
+                        # ]),
+                    ],
+                    style={"font-size": "small"},
                 ),
             ]
         ),
@@ -535,10 +613,28 @@ def input_entry(pageparam, entry_id):
     ]
 
 
-def exfor_filter_opt(pageparam):
+
+def exfor_energy_selector(pageparam):
     pageparam = pageparam.lower()
     return [
-        html.P("EXFOR Filter Options"),
+        html.Label("Energy Range", style={"font-size": "small"}),
+        dcc.Dropdown(
+            id="energy_unit_" + pageparam,
+            multi=False,
+            clearable=True,
+            persistence=True,
+            persistence_type="memory",
+            options=[e for e in ENERGIES.keys()],
+            value="Thermal",
+            ),
+
+    ]
+
+
+
+def exfor_energy_filter(pageparam):
+    pageparam = pageparam.lower()
+    return [
         html.Label("Energy Range", style={"font-size": "small"}),
         dcc.RangeSlider(
             id="energy_range_" + pageparam,
@@ -554,6 +650,13 @@ def exfor_filter_opt(pageparam):
             id="output_energy_slider_" + pageparam,
             style={"font-size": "small", "text-align": "center", "color": "DimGray"},
         ),
+    ]
+
+
+
+def exfor_year_filter(pageparam):
+    pageparam = pageparam.lower()
+    return [
         html.Label("Year Range", style={"font-size": "small"}),
         dcc.RangeSlider(
             id="year_range_" + pageparam,
@@ -581,7 +684,7 @@ def libs_filter_opt(pageparam):
             persistence=True,
             persistence_type="memory",
             multi=True,
-            value=["endfb8.0", "tendl.2021", "jeff3.3", "jendl5.0"],
+            value=["endfb8.0", "tendl.2021", "jeff3.3", "jendl4.0"],
             style={"font-size": "small", "width": "100%"},
         ),
         html.Label("Groupwise data", style={"font-size": "small"}),
@@ -614,8 +717,8 @@ def input_lin_log_switch(pageparam):
                             {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
                         ],
                         value="log",
-                        # persistence=True,
-                        # persistence_type="memory",
+                        persistence=True,
+                        persistence_type="memory",
                         labelStyle={"display": "inline-block"},
                     ),
                     width="auto",
@@ -628,8 +731,8 @@ def input_lin_log_switch(pageparam):
                             {"label": i, "value": i.lower()} for i in ["Linear", "Log"]
                         ],
                         value="log" if pageparam != "th" else "linear",
-                        # persistence=True,
-                        # persistence_type="memory",
+                        persistence=True,
+                        persistence_type="memory",
                         labelStyle={"display": "inline-block"},
                     ),
                     width="auto",
@@ -683,7 +786,7 @@ def excl_mxw_switch(pageparam):
             [
                 dbc.Col(
                     daq.ToggleSwitch(
-                        id="exclude_mxw_switch_" + pageparam, size=30, value=True
+                        id="exclude_mxw_switch_" + pageparam, size=30, value=True if pageparam != "fy" else False
                     ),
                     width=3,
                 ),
@@ -1050,8 +1153,7 @@ def fileter_by_en_range(energy_range, fig):
             if len(record.get("name").split(",")) > 1:
                 if energy_range:
                     ## get the average energy of the dataset
-
-                    sum_x = sum([float(x) for x in record["x"] if x is not None])
+                    #  sum_x = sum([float(x) for x in record["x"] if x is not None])
                     min_x = min(record["x"])
                     max_x = max(record["x"])
                     lower, upper = energy_range_conversion(energy_range)
@@ -1059,21 +1161,25 @@ def fileter_by_en_range(energy_range, fig):
                     if lower < min_x and max_x < upper:
                         record.update({"visible": "true"})
 
-                    elif min_x > upper:
+                    elif min_x < lower and max_x < upper:
                         record.update({"visible": "legendonly"})
 
-                    elif max_x < lower:
+                    elif lower < min_x and upper < max_x:
                         record.update({"visible": "legendonly"})
+
+                    else:
+                        record.update({"visible": "legendonly"})
+
 
                     filter_model = {
                         "e_inc_min": {
                             "filterType": "number",
-                            "type": "greaterThan",
+                            "type": "greaterThanOrEqual",
                             "filter": lower,
                         },
                         "e_inc_max": {
                             "filterType": "number",
-                            "type": "lessThan",
+                            "type": "lessThanOrEqual",
                             "filter": upper,
                         },
                     }
@@ -1127,6 +1233,7 @@ def export_index(onlySelected, input_store):
 
 
 def export_data(onlySelected, input_store):
+    print(input_store)
     type = input_store.get("type").upper()
     elem = input_store.get("target_elem")
     mass = input_store.get("target_mass")
@@ -1154,23 +1261,25 @@ def export_data(onlySelected, input_store):
         "onlySelectedAllPages": onlySelected,
     }
 
-    if type.upper() == "SIG":
-        data["columnKeys"].append(["residual", "level_num"])
+    if type.upper() == "XS":
+        data["columnKeys"] += ["residual", "level_num"]
 
     elif type.upper() == "TH":
-        data["columnKeys"].append(["e_out", "de_out", "sf4", "sf8", "sf9"])
+        data["columnKeys"] += ["residual", "sf8", "sf9"]
 
     elif type.upper() == "RP":
-        data["columnKeys"].append(["residual"])
+        data["columnKeys"] += ["residual"]
 
     elif type.upper() == "FY":
-        data["columnKeys"].append(["mass", "charge", "isomer"])
+        data["columnKeys"] += ["mass", "charge", "isomer"]
 
     elif type.upper() == "DA":
-        data["columnKeys"].append(["angle", "dangle"])
+        data["columnKeys"] += ["angle", "dangle"]
 
     elif type.upper() == "DE":
-        data["columnKeys"].append(["energy", "denergy"])
+        data["columnKeys"] += ["energy", "denergy"]
+
+    print(data["columnKeys"])
 
     return True, data
 
@@ -1207,8 +1316,8 @@ def list_link_of_files(dir, files):
 def generate_api_link(pageparam, search_str):
     if search_str:
         return (
-            f"{API_BASE_URL}reactions/{pageparam}{search_str}&page=1",
-            f"{API_BASE_URL}reactions/{pageparam}{search_str}&table=True&page=1",
+            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()]}{search_str}&page=1",
+            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()]}{search_str}&table=True&page=1",
         )
     else:
         return no_update, no_update

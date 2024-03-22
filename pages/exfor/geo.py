@@ -25,7 +25,8 @@ from pages_common import (
     input_general,
     input_target,
     generate_exfor_reactions,
-    exfor_filter_opt,
+    exfor_energy_filter,
+    exfor_year_filter,
 )
 from submodules.exfor.queries import reaction_query_by_id
 from modules.exfor.list import MAPPING, reactions_df, get_facility_type
@@ -63,7 +64,9 @@ def input_ge(**query_strings):
         ),
         html.Br(),
         html.Br(),
-        html.Div(children=exfor_filter_opt(pageparam)),
+        html.P("EXFOR Filter Options"),
+        html.Div(children=exfor_energy_filter(pageparam)),
+        html.Div(children=exfor_year_filter(pageparam)),
         dcc.Store(id="input_store_geo"),
         html.Br(),
         html.Br(),

@@ -300,7 +300,7 @@ def update_reaction_list_th(proj):
     # prevent_initial_call=True,
 )
 def input_store_th(type, elem, mass, reaction):
-    print("input_store_th", type)
+    # print("input_store_th", type)
     if type != "TH":
         return dict({"type": type})
 

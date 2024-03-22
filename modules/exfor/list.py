@@ -7,10 +7,8 @@
 #
 ####################################################################
 
-import json
 import os
 import pandas as pd
-import requests
 
 from exfor_dictionary.exfor_dictionary import Diction
 from config import EXFOR_DICTIONARY, MASTER_GIT_REPO_PATH, MASTER_GIT_REPO_URL, HEADERS
@@ -176,12 +174,14 @@ MAPPING = {
 
 
 def get_latest_master_release():
-    response = requests.get(
-        f"{MASTER_GIT_REPO_URL.replace('github.com','api.github.com/repos')}releases/latest",
-        verify=False,
-        headers=HEADERS,
-    )
-    return response.json()["name"]
+    ### temporary disabled because no update of EXFOR Master repository so far since Oct. 2023
+    # response = requests.get(
+    #     f"{MASTER_GIT_REPO_URL.replace('github.com','api.github.com/repos')}releases/latest",
+    #     verify=False,
+    #     headers=HEADERS,
+    # )
+    # return response.json()["name"]
+    return "v20231027.0"
 
 
 def get_updated_entries():

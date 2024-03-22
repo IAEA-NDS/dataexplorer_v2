@@ -31,7 +31,8 @@ from pages_common import (
     generate_reactions,
     remove_query_parameter,
     limit_number_of_datapoints,
-    exfor_filter_opt,
+    exfor_energy_filter,
+    exfor_year_filter,
     libs_filter_opt,
     input_lin_log_switch,
     reduce_data_switch,
@@ -63,7 +64,7 @@ dash.register_page(
     __name__,
     path="/reactions/xs",
     title="Nuclear Reaction Cross Section",
-    redirect_from=["/xs", "/cs", "/reactions/cs", "/reactions", "/reactions/"],
+    redirect_from=["/xs", "/cs", "/crosssection", "/reactions/cs", "/reactions", "/reactions/"],
 )
 pageparam = "xs"
 
@@ -78,7 +79,9 @@ def input_lib(**query_strings):
         html.Div(children=input_general(pageparam, **query_strings)),
         html.Div(children=input_partial(pageparam, **query_strings)),
         html.Br(),
-        html.Div(children=exfor_filter_opt(pageparam)),
+        html.P("EXFOR Filter Options"),
+        html.Div(children=exfor_energy_filter(pageparam)),
+        html.Div(children=exfor_year_filter(pageparam)),
         html.Br(),
         html.Div(children=reduce_data_switch(pageparam)),
         html.Div(children=excl_mxw_switch(pageparam)),

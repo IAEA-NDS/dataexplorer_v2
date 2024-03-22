@@ -9,7 +9,7 @@
 
 import pandas as pd
 import dash
-from dash import Dash, html, dcc, Input, Output, State, ctx, no_update, callback
+from dash import html, dcc, Input, Output, State, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 
 from pages_common import (
     PARTICLE_FY,
+    ENERGIES,
     sidehead,
     footer,
     libs_navbar,
@@ -28,14 +29,14 @@ from pages_common import (
     input_obs,
     input_target,
     excl_mxw_switch,
-    exfor_filter_opt,
+    exfor_year_filter,
+    exfor_energy_selector,
     libs_filter_opt,
     get_indexes,
     scale_data,
     del_rows_fig,
     highlight_data,
     filter_by_year_range,
-    fileter_by_en_range,
     export_index,
     export_data,
     list_link_of_files,
@@ -43,7 +44,6 @@ from pages_common import (
 )
 
 from modules.reactions.list import color_libs
-from modules.reactions.figs import default_chart, default_axis
 from modules.reactions.tabs import create_tabs
 
 from submodules.common import (
@@ -76,7 +76,10 @@ def input_fy(**query_strings):
             value=query_strings["reaction"] if query_strings.get("reaction") else "n,f",
             style={"font-size": "small", "width": "100%"},
         ),
-        html.Div(children=exfor_filter_opt(pageparam)),
+        html.Br(),
+        html.P("EXFOR Filter Options"),
+        html.Div(children=exfor_energy_selector(pageparam)),
+        html.Div(children=exfor_year_filter(pageparam)),
         html.Br(),
         html.Div(children=excl_mxw_switch(pageparam)),
         html.Br(),
@@ -396,9 +399,11 @@ def initial_data_fy(input_store, r_click):
         Output("main_fig_fy", "figure", allow_duplicate=True),
         Output("reac_product_fy", "options"),
         Output("exfor_table_fy", "rowData"),
+        Output("index_table_fy", "filterModel", allow_duplicate=True),
     ],
     [
         Input("input_store_fy", "data"),
+        Input("energy_unit_fy", "value"),
         Input("entries_store_fy", "data"),
         Input("libs_store_fy", "data"),
         Input("endf_selct_fy", "value"),
@@ -406,20 +411,37 @@ def initial_data_fy(input_store, r_click):
     ],
     prevent_initial_call=True,
 )
-def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
+def create_fig_fy(input_store, energy_unit, legends, libs, endf_selct, plot_opt_fy):
     # print("create_fig")
     if input_store:
         reaction = input_store.get("reaction")
-        mt = input_store.get("mt")
         mesurement_opt_fy = input_store.get("mesurement_opt_fy")
         reac_product_fy = input_store.get("reac_product_fy")
 
     else:
         raise PreventUpdate
 
+    lower = float( ENERGIES[energy_unit][0] )
+    upper = float( ENERGIES[energy_unit][1] )
+    filter_model = {}
+
+    if energy_unit != "All":
+        filter_model = {
+            "e_inc_min": {
+                "filterType": "number",
+                "type": "greaterThanOrEqual",
+                "filter": lower,
+            },
+            "e_inc_max": {
+                "filterType": "number",
+                "type": "lessThanOrEqual",
+                "filter": upper,
+            },
+        }
+
+
     fig = go.Figure(
         layout=go.Layout(
-            # template="plotly_white",
             xaxis={
                 "title": "Incident energy [MeV]",
                 "type": "linear",
@@ -449,6 +471,8 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
             libs_select = libs.keys()
 
         lib_df = lib_fy_data_query(libs_select)
+        lib_df = lib_df[(lib_df["en_inc"] >= lower) & (lib_df["en_inc"] < upper)]
+        print(lib_df)
 
         if plot_opt_fy == "Mass":
             x_ax = "mass"
@@ -477,7 +501,6 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
 
         elif plot_opt_fy == "Charge":
             x_ax = "charge"
-            print(lib_df)
             dff = lib_df.groupby(["reaction_id", "charge", "en_inc"], as_index=False)[
                 "data"
             ].max(numeric_only=True)
@@ -511,6 +534,7 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
 
     if legends:
         df = data_query(input_store, legends.keys())
+        df = df[(df["en_inc"] >= lower) & (df["en_inc"] < upper)]
         df["bib"] = df["entry_id"].map(legends)
         df = pd.concat([df, df["bib"].apply(pd.Series)], axis=1)
         df = df.drop(columns=["bib"])
@@ -585,7 +609,7 @@ def create_fig_fy(input_store, legends, libs, endf_selct, plot_opt_fy):
                 i = 1
         # ------
 
-    return fig, reac_products, df.to_dict("records")
+    return fig, reac_products, df.to_dict("records"), filter_model
 
 
 @callback(
@@ -605,22 +629,28 @@ def update_axis_fy(xaxis_type, yaxis_type, fig):
     return fig
 
 
-@callback(
-    [
-        Output("main_fig_fy", "figure", allow_duplicate=True),
-        Output("index_table_fy", "filterModel", allow_duplicate=True),
-        Output("output_energy_slider_fy", "children"),
-    ],
-    Input("energy_range_fy", "value"),
-    State("main_fig_fy", "figure"),
-    prevent_initial_call=True,
-)
-def fileter_by_en_range_fy(energy_range, fig):
-    range_text = ""
-    fig, filter_model = fileter_by_en_range(energy_range, fig)
-    if filter_model:
-        range_text = f"{filter_model['e_inc_min']['filter']:.2e} - {filter_model['e_inc_max']['filter']:.2e} MeV"
-    return fig, filter_model, range_text
+# @callback(
+#     Output("index_table_fy", "filterModel", allow_duplicate=True),
+#     Input("energy_unit_fy", "value"),
+#     prevent_initial_call=True,
+# )
+# def fileter_by_en_range_fy(energy_unit):
+#     if energy_unit:
+#         filter_model = {
+#             "e_inc_min": {
+#                 "filterType": "number",
+#                 "type": "greaterThan",
+#                 "filter": float( ENERGIES[energy_unit][0] ),
+#             },
+#             "e_inc_max": {
+#                 "filterType": "number",
+#                 "type": "lessThan",
+#                 "filter": float( ENERGIES[energy_unit][1] ),
+#             },
+#         }
+#         return filter_model
+#     else:
+#         return no_update
 
 
 @callback(
