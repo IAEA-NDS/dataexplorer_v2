@@ -1316,8 +1316,8 @@ def list_link_of_files(dir, files):
 def generate_api_link(pageparam, search_str):
     if search_str:
         return (
-            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()].replace(URL_PATH,"")}{search_str}&page=1",
-            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()].replace(URL_PATH,"")}{search_str}&table=True&page=1",
+            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()].replace(URL_PATH,'')}{search_str}&page=1",
+            f"{API_BASE_URL}{lib_page_urls[pageparam.upper()].replace(URL_PATH,'')}{search_str}&table=True&page=1",
         )
     else:
         return no_update, no_update
